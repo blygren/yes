@@ -1,5 +1,4 @@
 # yes
 
 
-[Fluid Simulation](Fluid Simulation.html)
-
+[Fluid Simulation](https://blygren.github.io/yes/Fluid%20Simulation.html)
