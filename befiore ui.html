@@ -1,0 +1,2009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cube Simulation with Achievements & Theme Toggle</title>
+  <!-- Google Font - Added Roboto for modern look -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ========== Base Styles ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+    canvas { display: block; }
+  
+    /* ========== Dark Theme (Default) ========== */
+    /* Settings Menu (Slide-out from Left) */
+    #menu {
+      position: fixed;
+      left: -300px;
+      top: 0;
+      width: 300px;
+      height: 100vh;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 10px;
+      overflow-y: auto;
+      border-right: 2px solid #bb86fc;
+      transition: left 0.3s ease-in-out;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+      z-index: 1000;
+      font-size: 0.9em;
+    }
+    #menu.open { left: 0; }
+    #menu h2 {
+      text-align: center;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 4px;
+      font-size: 1.2em;
+      color: #bb86fc;
+    }
+    #menu label { 
+      display: block; 
+      margin: 6px 0 2px; 
+      font-size: 0.85em;
+      color: #bb86fc; 
+    }
+    
+    /* Collapsible Sections */
+    .settings-section {
+      margin-bottom: 5px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #222;
+    }
+    .section-header {
+      padding: 8px 10px;
+      background: #333;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-header:hover {
+      background: #444;
+    }
+    .section-header i {
+      transition: transform 0.3s;
+    }
+    .section-content {
+      padding: 8px;
+      display: none;
+      border-top: 1px solid #444;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .settings-section.open .section-content {
+      display: block;
+    }
+    .settings-section.open .section-header i {
+      transform: rotate(180deg);
+    }
+    
+    #menu input[type="range"] {
+      width: 100%;
+      margin: 4px 0 8px;
+      height: 4px;
+      background: #444;
+      border-radius: 2px;
+      -webkit-appearance: none;
+    }
+    #menu input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #bb86fc;
+      cursor: pointer;
+    }
+    #menu input[type="color"],
+    #menu input[type="number"],
+    #menu input[type="text"] {
+      width: 100%;
+      margin: 4px 0 8px;
+      padding: 4px;
+      border: none;
+      border-radius: 3px;
+      background: #333;
+      color: #fff;
+    }
+    #menu input[type="checkbox"],
+    #menu input[type="radio"] { 
+      margin-right: 4px;
+      accent-color: #bb86fc;
+    }
+    #menu button {
+      width: 100%;
+      padding: 6px;
+      margin-top: 6px;
+      background: #bb86fc;
+      border: none;
+      border-radius: 3px;
+      color: #121212;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    #menu button:hover { 
+      background: #a370db;
+    }
+  
+    /* Compact value display */
+    .value-display {
+      float: right;
+      font-size: 0.8em;
+      color: #ccc;
+      background: #333;
+      padding: 1px 4px;
+      border-radius: 3px;
+      min-width: 30px;
+      text-align: center;
+    }
+  
+    /* Achievements Panel (Slide-out from Right) */
+    #achievements {
+      position: fixed;
+      right: -300px;
+      top: 0;
+      width: 300px;
+      height: 100vh;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 10px;
+      overflow-y: auto;
+      border-left: 2px solid #03dac6;
+      transition: right 0.3s ease-in-out;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+      z-index: 1000;
+      font-size: 0.9em;
+    }
+    #achievements.open { right: 0; }
+    #achievements h2 {
+      text-align: center;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 4px;
+      font-size: 1.2em;
+      color: #03dac6;
+    }
+    #achievements ul { 
+      list-style: none; 
+      padding: 0; 
+      margin-top: 10px; 
+    }
+    #achievements ul li { 
+      margin: 6px 0; 
+      font-size: 0.85em;
+      padding: 6px;
+      background: #222;
+      border-radius: 3px;
+      border-left: 3px solid #444;
+    }
+    #achievements ul li.unlocked {
+      color: #03dac6;
+      font-weight: 500;
+      border-left-color: #03dac6;
+    }
+  
+    /* Achievement Popup */
+    #achievementPopup {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(187,134,252,0.9);
+      color: #121212;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+      z-index: 1200;
+      font-weight: 500;
+    }
+  
+    /* Floating Toolbar */
+    .toolbar {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      background: rgba(34,34,34,0.8);
+      border-radius: 30px;
+      padding: 6px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      z-index: 900;
+      backdrop-filter: blur(5px);
+    }
+    .tool-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #333;
+      color: #e0e0e0;
+      border: none;
+      margin: 0 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .tool-btn:hover {
+      background: #444;
+      transform: translateY(-2px);
+    }
+    .tool-btn.active {
+      background: #bb86fc;
+      color: #121212;
+    }
+  
+    /* Toggle Buttons - More subtle design */
+    .nav-toggle {
+      position: fixed;
+      width: 36px;
+      height: 36px;
+      background: rgba(34,34,34,0.8);
+      border: none;
+      border-radius: 50%;
+      color: #e0e0e0;
+      cursor: pointer;
+      z-index: 1100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      backdrop-filter: blur(5px);
+    }
+    .nav-toggle:hover { 
+      background: #444; 
+      transform: scale(1.1);
+    }
+    #toggleMenu { left: 20px; top: 20px; }
+    #toggleAchievements { right: 20px; top: 20px; }
+    #toggleTheme { 
+      left: 20px; 
+      top: 66px; 
+      background: rgba(3,218,198,0.2);
+      color: #03dac6;
+    }
+    #toggleTheme:hover { 
+      background: rgba(3,218,198,0.3);
+    }
+  
+    /* Tether Style */
+    .tether-active {
+      cursor: crosshair;
+    }
+    
+    /* Tether Removal Tooltip */
+    #tetherTooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    /* Light Theme Overrides - Kept for compatibility */
+    body.light {
+      background: #f5f5f5;
+      color: #333;
+    }
+    body.light #menu,
+    body.light #achievements {
+      background: #fff;
+      color: #333;
+    }
+    body.light .settings-section {
+      background: #f0f0f0;
+    }
+    body.light .section-header {
+      background: #e0e0e0;
+    }
+    body.light .section-header:hover {
+      background: #d0d0d0;
+    }
+    body.light #menu h2,
+    body.light #menu label {
+      color: #6200ee;
+    }
+    body.light #achievements h2 {
+      color: #018786;
+    }
+    body.light #menu input[type="range"] {
+      background: #ddd;
+    }
+    body.light #menu input[type="range"]::-webkit-slider-thumb {
+      background: #6200ee;
+    }
+    body.light #menu button {
+      background: #6200ee;
+      color: #fff;
+    }
+    body.light #menu button:hover {
+      background: #5000c0;
+    }
+    body.light .value-display {
+      background: #e0e0e0;
+      color: #333;
+    }
+    body.light #achievements ul li {
+      background: #f0f0f0;
+    }
+    body.light #achievements ul li.unlocked {
+      color: #018786;
+      border-left-color: #018786;
+    }
+    body.light .toolbar,
+    body.light .nav-toggle {
+      background: rgba(240,240,240,0.8);
+      color: #333;
+    }
+    body.light .tool-btn {
+      background: #ddd;
+      color: #333;
+    }
+    body.light .tool-btn:hover {
+      background: #ccc;
+    }
+    body.light .tool-btn.active {
+      background: #6200ee;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Toggle Buttons - Now with Icons -->
+  <button id="toggleMenu" class="nav-toggle"><i class="fas fa-bars"></i></button>
+  <button id="toggleAchievements" class="nav-toggle"><i class="fas fa-trophy"></i></button>
+  <!-- New Hints Toggle Button -->
+  <button id="toggleHints" class="nav-toggle" style="right:60px; top:20px;"><i class="fas fa-lightbulb"></i></button>
+  <button id="toggleTheme" class="nav-toggle" style="right:20px; top:60px;"><i class="fas fa-moon"></i></button>
+  <!-- Removed toggleTheme button from achievements header -->
+  
+  <!-- Floating Toolbar -->
+  <div class="toolbar">
+    <button id="toolSpawn" class="tool-btn active" title="Spawn Tool"><i class="fas fa-plus"></i></button>
+    <button id="toolDrag" class="tool-btn" title="Drag Tool"><i class="fas fa-hand-paper"></i></button>
+    <button id="toolSlingshot" class="tool-btn" title="Slingshot Tool"><i class="fas fa-bullseye"></i></button>
+    <button id="toolTether" class="tool-btn" title="Tether Tool"><i class="fas fa-link"></i></button>
+    <button id="clearAllBtn" class="tool-btn" title="Clear All Cubes"><i class="fas fa-trash"></i></button>
+    <button id="toolExplosion" class="tool-btn" title="Explosion Tool"><i class="fas fa-bomb"></i></button>
+    <!-- New Random Tool -->
+    <button id="toolRandom" class="tool-btn" title="Random Tool"><i class="fas fa-random"></i></button>
+    <!-- New Multi-Cube Spawner Tool -->
+    <button id="toolMultiSpawn" class="tool-btn" title="Multi-Cube Spawner"><i class="fas fa-layer-group"></i></button>
+    <!-- New Blade Tool -->
+    <button id="toolBlade" class="tool-btn" title="Blade Tool"><i class="fas fa-cut"></i></button>
+  </div>
+  
+  <!-- Settings Menu -->
+  <div id="menu">
+    <h2>Settings</h2>
+    <button id="closeMenu"><i class="fas fa-times"></i> Close</button>
+    
+    <!-- Physics Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-atom"></i> Physics</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <!-- Gravity Settings -->
+        <label for="gravityX">Gravity X <span id="gravityXVal" class="value-display">0</span></label>
+        <input type="range" id="gravityX" min="-1" max="1" step="0.01" value="0">
+      
+        <label for="gravityY">Gravity Y <span id="gravityYVal" class="value-display">1</span></label>
+        <input type="range" id="gravityY" min="-2" max="2" step="0.01" value="1">
+        
+        <label for="timeScale">Simulation Speed <span id="timeScaleVal" class="value-display">1</span></label>
+        <input type="range" id="timeScale" min="0.1" max="2" step="0.1" value="1">
+        
+        <label for="airFriction">Air Friction <span id="airFrictionVal" class="value-display">0.01</span></label>
+        <input type="range" id="airFriction" min="0" max="0.1" step="0.001" value="0.01">
+      </div>
+    </div>
+  
+    <!-- Cube Properties Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-cube"></i> Cube Properties</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="cubeSize">Size <span id="cubeSizeVal" class="value-display">40</span></label>
+        <input type="range" id="cubeSize" min="10" max="100" step="1" value="40">
+      
+        <label for="cubeRestitution">Restitution <span id="cubeRestitutionVal" class="value-display">0.8</span></label>
+        <input type="range" id="cubeRestitution" min="0" max="1.5" step="0.01" value="0.8">
+      
+        <label for="cubeFriction">Friction <span id="cubeFrictionVal" class="value-display">0.1</span></label>
+        <input type="range" id="cubeFriction" min="0" max="1" step="0.01" value="0.1">
+      
+        <label for="cubeDensity">Density <span id="cubeDensityVal" class="value-display">0.001</span></label>
+        <input type="range" id="cubeDensity" min="0.001" max="0.1" step="0.001" value="0.001">
+      
+        <label for="cubeAngular">Angular Velocity <span id="cubeAngularVal" class="value-display">0</span></label>
+        <input type="range" id="cubeAngular" min="-0.2" max="0.2" step="0.01" value="0">
+      
+        <label for="cubeAngle">Initial Angle <span id="cubeAngleVal" class="value-display">0°</span></label>
+        <input type="range" id="cubeAngle" min="0" max="360" step="1" value="0">
+        
+        <label for="cubeColor">Cube Color</label>
+        <input type="color" id="cubeColor" value="#ff0000">
+        <!-- New Random Colors option -->
+        <label><input type="checkbox" id="randomCubeColors"> Spawn as Random Colors</label>
+      </div>
+    </div>
+    
+    <!-- Spawn Settings Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-magic"></i> Spawn Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="spawnInterval">Interval <span id="spawnIntervalVal" class="value-display">500ms</span></label>
+        <input type="range" id="spawnInterval" min="100" max="2000" step="100" value="500">
+      
+        <label for="maxCubes">Max Cubes <span id="maxCubesVal" class="value-display">20</span></label>
+        <input type="range" id="maxCubes" min="5" max="100" step="1" value="20">
+        
+        <label><input type="checkbox" id="spawnOnClick" checked> Spawn on Click</label>
+        <label><input type="checkbox" id="autoSpawn" checked> Auto Spawn</label>
+      </div>
+    </div>
+    
+    <!-- Floor Settings Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-border-bottom"></i> Floor Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="floorFriction">Friction <span id="floorFrictionVal" class="value-display">0.5</span></label>
+        <input type="range" id="floorFriction" min="0" max="1" step="0.01" value="0.5">
+      
+        <label for="floorRestitution">Restitution <span id="floorRestitutionVal" class="value-display">0.2</span></label>
+        <input type="range" id="floorRestitution" min="0" max="1" step="0.01" value="0.2">
+        
+        <label for="floorColor">Floor Color</label>
+        <!-- Updated starting color to gray -->
+        <input type="color" id="floorColor" value="#808080">
+        
+        <label for="bgColor">Background Color</label>
+        <input type="color" id="bgColor" value="#222222">
+      </div>
+    </div>
+    
+    <!-- Tool Settings Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-tools"></i> Tool Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <!-- Hidden radio buttons, now controlled via toolbar -->
+        <div style="display:none;">
+          <label><input type="radio" name="toolMode" value="spawn" checked> Spawn Tool</label>
+          <label><input type="radio" name="toolMode" value="drag"> Drag Tool</label>
+          <label><input type="radio" name="toolMode" value="slingshot"> Slingshot Tool</label>
+          <label><input type="radio" name="toolMode" value="tether"> Tether Tool</label>
+          <label><input type="radio" name="toolMode" value="explosion"> Explosion Tool</label>
+        </div>
+        
+        <!-- Slingshot Settings -->
+        <h4><i class="fas fa-bullseye"></i> Slingshot Settings</h4>
+        <label for="slingshotStrength">Strength <span id="slingshotStrengthVal" class="value-display">0.0005</span></label>
+        <input type="range" id="slingshotStrength" min="0.0001" max="0.005" step="0.0001" value="0.0005">
+        
+        <!-- Tether Settings -->
+        <h4><i class="fas fa-link"></i> Tether Settings</h4>
+        <label for="tetherStiffness">Stiffness <span id="tetherStiffnessVal" class="value-display">0.001</span></label>
+        <input type="range" id="tetherStiffness" min="0.0001" max="0.01" step="0.0001" value="0.001">
+        
+        <label for="tetherDamping">Damping <span id="tetherDampingVal" class="value-display">0.1</span></label>
+        <input type="range" id="tetherDamping" min="0" max="0.5" step="0.01" value="0.1">
+        
+        <label for="tetherColor">Tether Color</label>
+        <input type="color" id="tetherColor" value="#FFFFFF">
+        
+        <label><input type="checkbox" id="showTethers" checked> Show Tethers</label>
+        <label><input type="checkbox" id="breakableTethers"> Breakable Tethers</label>
+
+        <!-- Explosion Settings -->
+        <h4><i class="fas fa-bomb"></i> Explosion Settings</h4>
+        <label for="explosionForce">Force <span id="explosionForceVal" class="value-display">0.05</span></label>
+        <input type="range" id="explosionForce" min="0.01" max="0.2" step="0.01" value="0.05">
+      </div>
+    </div>
+    
+    <!-- Other Settings Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-cog"></i> Other Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="bounceThreshold">Bounce Threshold <span id="bounceThresholdVal" class="value-display">20</span></label>
+        <input type="range" id="bounceThreshold" min="0" max="100" step="1" value="20">
+      
+        <label><input type="checkbox" id="soundToggle" checked> Enable Sounds</label>
+      </div>
+    </div>
+    
+    <!-- New Destruction Settings Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-fire"></i> Destruction Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="breakStrength">Break Strength <span id="breakStrengthVal" class="value-display">7</span></label>
+        <input type="range" id="breakStrength" min="0" max="20" step="0.1" value="7">
+        
+        <label for="miniCubeCount">Mini Cube Count <span id="miniCubeCountVal" class="value-display">4</span></label>
+        <input type="range" id="miniCubeCount" min="2" max="10" step="1" value="4">
+        
+        <!-- New button to disable destruction -->
+        <button id="toggleDestruction" style="margin-top:8px;">Disable Destruction</button>
+      </div>
+    </div>
+    
+    <!-- New Random Tool Settings Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-random"></i> Random Tool Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="randomForce">Random Force <span id="randomForceVal" class="value-display">0.05</span></label>
+        <input type="range" id="randomForce" min="0.01" max="0.2" step="0.01" value="0.05">
+        <label><input type="checkbox" id="randomColorToggle"> Enable Random Colors</label>
+      </div>
+    </div>
+    
+    <!-- New Multi-Cube Spawner Settings Section -->
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-layer-group"></i> Multi-Cube Spawner Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="spawnCount">Spawn Count <span id="spawnCountVal" class="value-display">3</span></label>
+        <input type="range" id="spawnCount" min="2" max="10" step="1" value="3">
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button id="resetSettings"><i class="fas fa-redo"></i> Reset All Settings</button>
+      <button id="clearCubes"><i class="fas fa-trash"></i> Clear Cubes</button>
+      <button id="clearTethers"><i class="fas fa-unlink"></i> Clear Tethers</button>
+    </div>
+  </div>
+  
+  <!-- Achievements Panel: Modified to include dropdown hints and new tricky achievements -->
+  <div id="achievements">
+    <h2><i class="fas fa-trophy"></i> Achievements</h2>
+    <button id="closeAchievements"><i class="fas fa-times"></i> Close</button>
+    <ul>
+      <!-- Existing Achievements modified with dropdown hints -->
+      <li>
+        <details>
+          <summary id="achievement_playFive"><i class="far fa-clock"></i> Play for 5 Minutes: Locked</summary>
+          <p>Hint: Keep the game open continuously for at least 5 minutes.</p>
+        </details>
+        <!-- removed progress for playFive -->
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_changeColor"><i class="fas fa-palette"></i> Change Your Cube's Colour: Locked</summary>
+          <p>Hint: Alter the cube color using the color picker.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_gravityManip"><i class="fas fa-magnet"></i> Gravity Manipulator: Locked</summary>
+          <p>Hint: Adjust the gravity sliders away from default values repeatedly.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_speedDemon"><i class="fas fa-tachometer-alt"></i> Speed Demon: Locked</summary>
+          <p>Hint: Set the simulation speed above 1.5 for 10 consecutive seconds.</p>
+        </details>
+        <!-- removed progress for speedDemon -->
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_clearItOut"><i class="fas fa-broom"></i> Clear It Out: Locked</summary>
+          <p>Hint: Press the clear cubes button three times in a row.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_chainReaction"><i class="fas fa-atom"></i> Chain Reaction: Locked</summary>
+          <p>Hint: Cause multiple collisions at once (three or more pairs).</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_slingshotAce"><i class="fas fa-bullseye"></i> Slingshot Ace: Locked</summary>
+          <p>Hint: Launch a cube with a force vector above the threshold.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_cubeOverload"><i class="fas fa-cubes"></i> Cube Overload: Locked</summary>
+          <p>Hint: Spawn cubes until the maximum cube limit is reached.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_gravityGuru"><i class="fas fa-meteor"></i> Gravity Guru: Locked</summary>
+          <p>Hint: Modify both gravity sliders away from their defaults.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_perfectReset"><i class="fas fa-redo"></i> Perfect Reset: Locked</summary>
+          <p>Hint: Reset all settings five times consecutively.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_tetherMaster"><i class="fas fa-link"></i> Tether Master: Locked</summary>
+          <p>Hint: Create at least five active tethers between cubes.</p>
+        </details>
+      </li>
+      <!-- New Tricky Achievements -->
+      <li>
+        <details>
+          <summary id="achievement_shadowMaster"><i class="fas fa-user-secret"></i> Shadow Master: Locked</summary>
+          <p>Hint: Use the drag tool to move cubes silently without triggering collisions.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_timeBender"><i class="fas fa-clock"></i> Time Bender: Locked</summary>
+          <p>Hint: Set the simulation speed below 0.5 and keep it steady for 30 seconds.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_precisionMaster"><i class="fas fa-crosshairs"></i> Precision Master: Locked</summary>
+          <p>Hint: Achieve 50 precision clicks on individual cubes.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_nightOwl"><i class="fas fa-moon"></i> Night Owl: Locked</summary>
+          <p>Hint: Play exclusively after midnight for a full session.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_marathonRunner"><i class="fas fa-running"></i> Marathon Runner: Locked</summary>
+          <p>Hint: Keep the game running continuously for 2 hours.</p>
+        </details>
+        <!-- removed progress for marathonRunner -->
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_tactician"><i class="fas fa-chess-king"></i> Tactician: Locked</summary>
+          <p>Hint: Successfully use 3 different tools in one game without errors.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_collector"><i class="fas fa-hdd"></i> Collector: Locked</summary>
+          <p>Hint: Spawn and keep 50 cubes on screen before clearing.</p>
+        </details>
+        <!-- removed progress for collector -->
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_speedster"><i class="fas fa-bolt"></i> Speedster: Locked</summary>
+          <p>Hint: Maintain an average cube speed above a certain level for 30 seconds.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_puzzleSolver"><i class="fas fa-puzzle-piece"></i> Puzzle Solver: Locked</summary>
+          <p>Hint: Align cube spawns to reveal a hidden pattern.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_riskTaker"><i class="fas fa-exclamation-triangle"></i> Risk Taker: Locked</summary>
+          <p>Hint: Trigger an explosion within 30px of a cube 5 times in a row.</p>
+        </details>
+        <!-- removed progress for riskTaker -->
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_berserker"><i class="fas fa-fire"></i> Berserker: Locked</summary>
+          <p>Hint: Cause cube breakage via extreme forces for 10 consecutive collisions.</p>
+        </details>
+        <!-- removed progress for berserker -->
+      </li>
+    </ul>
+  </div>
+  
+  <!-- Achievement Popup -->
+  <div id="achievementPopup"></div>
+
+  <!-- Updated Hints Section with Dropdown Menus -->
+  <div id="hints" style="display: none; position: fixed; right: 320px; top: 0; width: 280px; height: 100vh; background: #1a1a1a; color: #e0e0e0; padding: 10px; overflow-y: auto; border-left: 2px solid #03dac6; box-shadow: -2px 0 10px rgba(0,0,0,0.5); font-size: 0.9em;">
+    <h2 style="text-align: center; color: #03dac6;">Game & Hints</h2>
+    <details open>
+      <summary style="cursor: pointer; font-weight: bold;">Tool Hints</summary>
+      <ul style="list-style: none; padding-left: 10px;">
+        <li><strong>Spawn Tool:</strong> Create cubes by clicking on the canvas.</li>
+        <li><strong>Drag Tool:</strong> Move cubes around by dragging them.</li>
+        <li><strong>Slingshot Tool:</strong> Pull and release cubes to launch them.</li>
+        <li><strong>Tether Tool:</strong> Connect cubes with a tether; click a tether to remove it.</li>
+        <li><strong>Explosion Tool:</strong> Generate an explosion at the click point.</li>
+        <li><strong>Random Tool:</strong> Apply random forces and colors to cubes.</li>
+        <li><strong>Multi-Cube Spawner:</strong> Spawn several cubes at once.</li>
+        <li><strong>Blade Tool:</strong> Split a cube into smaller cubes.</li>
+      </ul>
+    </details>
+    <details>
+      <summary style="cursor: pointer; font-weight: bold;">General Game Info</summary>
+      <ul style="list-style: none; padding-left: 10px;">
+        <li>This game simulates dynamic cube interactions using physics.</li>
+        <li>Explore various tool modes to unlock secret achievements.</li>
+        <li>Customize settings such as gravity, speed, and friction in the menu.</li>
+      </ul>
+    </details>
+    <!-- New Achievement Progress collapsible section -->
+    <details>
+      <summary style="cursor: pointer; font-weight: bold;">Achievement Progress</summary>
+      <ul style="list-style: none; padding-left: 10px;">
+        <li>Play for 5 Minutes: <progress id="progress_playFive" value="0" max="300"></progress></li>
+        <li>Speed Demon: <progress id="progress_speedDemon" value="0" max="10"></progress></li>
+        <li>Marathon Runner: <progress id="progress_marathonRunner" value="0" max="7200"></progress></li>
+        <li>Collector: <progress id="progress_collector" value="0" max="50"></progress></li>
+        <li>Risk Taker: <progress id="progress_riskTaker" value="0" max="5"></progress></li>
+        <li>Berserker: <progress id="progress_berserker" value="0" max="10"></progress></li>
+        <li>Fast Spawner: <progress id="progress_fastSpawner" value="0" max="10"></progress></li>
+        <li>Precision Click: <progress id="progress_precisionClick" value="0" max="20"></progress></li>
+        <li>Master Breaker: <progress id="progress_masterBreaker" value="0" max="5"></progress></li>
+        <li>Ultimate Combo: <progress id="progress_ultimateCombo" value="0" max="3"></progress></li>
+      </ul>
+    </details>
+  </div>
+
+  <!-- Tether Tooltip -->
+  <div id="tetherTooltip">Click to remove tether</div>
+  
+  <!-- Render Canvas -->
+  <canvas id="canvas"></canvas>
+  
+  <!-- Audio Elements -->
+  <audio id="collisionSound" src="audio/myCustomCollisionSound.mp3"></audio>
+  <audio id="spawnSound" src="audio/myCustomSpawnSound.mp3"></audio>
+  <audio id="explosionSound" src="audio/myCustomExplosionSound.mp3"></audio>
+  
+  <!-- Matter.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <script>
+    /******************************
+      Simulation, Achievements & Theme Toggle JS
+    *****************************/
+  
+    // Module aliases
+    const Engine = Matter.Engine,
+          Render = Matter.Render,
+          Runner = Matter.Runner,
+          Bodies = Matter.Bodies,
+          Composite = Matter.Composite,
+          Body = Matter.Body,
+          Mouse = Matter.Mouse,
+          MouseConstraint = Matter.MouseConstraint,
+          Events = Matter.Events,
+          Query = Matter.Query,
+          Constraint = Matter.Constraint;
+  
+    // Create engine and world
+    const engine = Engine.create();
+    engine.positionIterations = 10;  // increased collision resolution to better handle high-speed cubes
+    engine.velocityIterations = 10;  // increased collision resolution to better handle high-speed cubes
+    const world = engine.world;
+  
+    // Setup renderer
+    const canvas = document.getElementById('canvas');
+    const render = Render.create({
+      canvas: canvas,
+      engine: engine,
+      options: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        wireframes: false,
+        background: document.getElementById('bgColor').value
+      }
+    });
+    Render.run(render);
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+  
+    // Setup mouse and mouseConstraint (used for Drag Tool)
+    const mouse = Mouse.create(render.canvas);
+    let mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    });
+    let mouseConstraintAdded = false;
+    render.mouse = mouse;
+  
+    // Globals for tool mode and slingshot
+    let currentToolMode = "spawn";
+    let isSlingshotActive = false;
+    let slingshotCube = null;
+    let slingshotStartPos = null;
+    let slingshotCurrentPos = null;
+  
+    // Globals for tether tool
+    let tetherMode = false;
+    let firstCube = null;
+    let secondCube = null;
+    let tetherConstraints = [];
+    let tetheredPairs = new Map(); // To track which cubes are already tethered
+    let activeTetherPoint = null; // Used for tracking current tether point
+    let tetherHovering = null; // For tracking hover over tether
+    
+    // --- ACHIEVEMENTS VARIABLES & COUNTERS ---
+    const gameStartTime = Date.now();
+    const defaultCubeColor = "#ff0000";
+    let totalCubesSpawned = 0;  // No longer used to unlock spawnTen
+    let gravityChangeCount = 0;
+    let speedDemonTime = 0; // seconds above threshold
+    let clearPressCount = 0;
+    let perfectResetCount = 0;
+    let gravityGuruUnlocked = false;
+  
+    // Object to track unlocked achievements
+    let achievementsUnlocked = {
+      playFive: false,
+      changeColor: false,
+      gravityManip: false,
+      speedDemon: false,
+      clearItOut: false,
+      chainReaction: false,
+      slingshotAce: false,
+      cubeOverload: false,
+      gravityGuru: false,
+      perfectReset: false,
+      tetherMaster: false
+    };
+  
+    // Popup for unlocked achievement
+    function showPopup(message) {
+      const popup = document.getElementById('achievementPopup');
+      popup.textContent = message;
+      popup.style.opacity = "1";
+      popup.style.visibility = "visible";
+      setTimeout(() => {
+        popup.style.opacity = "0";
+        popup.style.visibility = "hidden";
+      }, 2000);
+    }
+  
+    // Function to unlock an achievement
+    function unlockAchievement(key, name) {
+      if (!achievementsUnlocked[key]) {
+        achievementsUnlocked[key] = true;
+        const li = document.getElementById("achievement_" + key);
+        if (li) {
+          li.textContent = name + ": Unlocked";
+          li.classList.add("unlocked");
+        }
+        showPopup("Achievement Unlocked: " + name);
+      }
+    }
+  
+    // Check for "Play for 5 Minutes"
+    setInterval(() => {
+      const elapsed = (Date.now() - gameStartTime) / 1000;
+      if (elapsed >= 300) {
+        unlockAchievement("playFive", "Play for 5 Minutes");
+      }
+    }, 1000);
+  
+    // "Change Your Cube's Colour" achievement via the color input
+    document.getElementById('cubeColor').addEventListener('change', function() {
+      if (this.value.toLowerCase() !== defaultCubeColor && !achievementsUnlocked.changeColor) {
+        unlockAchievement("changeColor", "Change Your Cube's Colour");
+      }
+    });
+  
+    // Monitor gravity changes for "Gravity Manipulator"
+    document.getElementById('gravityX').addEventListener('input', () => {
+      if (document.getElementById('gravityX').value != 0) {
+        gravityChangeCount++;
+        if (gravityChangeCount >= 5) {
+          unlockAchievement("gravityManip", "Gravity Manipulator");
+        }
+      }
+      // Also check for Gravity Guru (both sliders non-default)
+      checkGravityGuru();
+    });
+    document.getElementById('gravityY').addEventListener('input', () => {
+      if (document.getElementById('gravityY').value != 1) {
+        gravityChangeCount++;
+        if (gravityChangeCount >= 5) {
+          unlockAchievement("gravityManip", "Gravity Manipulator");
+        }
+      }
+      checkGravityGuru();
+    });
+    function checkGravityGuru() {
+      let gx = parseFloat(document.getElementById('gravityX').value);
+      let gy = parseFloat(document.getElementById('gravityY').value);
+      if (gx !== 0 && gy !== 1 && !achievementsUnlocked.gravityGuru) {
+        unlockAchievement("gravityGuru", "Gravity Guru");
+      }
+    }
+  
+    // "Speed Demon" achievement: Time Scale above 1.5 for 10 consecutive seconds
+    setInterval(() => {
+      const timeScale = parseFloat(document.getElementById('timeScale').value);
+      if (timeScale > 1.5) {
+        speedDemonTime++;
+      } else {
+        speedDemonTime = 0;
+      }
+      if (speedDemonTime >= 10) {
+        unlockAchievement("speedDemon", "Speed Demon");
+      }
+    }, 1000);
+  
+    // "Clear It Out": when clear button pressed 3 times
+    document.getElementById('clearCubes').addEventListener('click', () => {
+      clearPressCount++;
+      if (clearPressCount >= 3) {
+        unlockAchievement("clearItOut", "Clear It Out");
+      }
+    });
+  
+    // Add new input settings for the tether
+    const inputsSettings = [
+      ['gravityX', 'gravityXVal'],
+      ['gravityY', 'gravityYVal'],
+      ['cubeSize', 'cubeSizeVal'],
+      ['cubeRestitution', 'cubeRestitutionVal'],
+      ['cubeFriction', 'cubeFrictionVal'],
+      ['cubeDensity', 'cubeDensityVal'],
+      ['cubeAngular', 'cubeAngularVal'],
+      ['cubeAngle', 'cubeAngleVal'],
+      ['spawnInterval', 'spawnIntervalVal'],
+      ['maxCubes', 'maxCubesVal'],
+      ['floorFriction', 'floorFrictionVal'],
+      ['floorRestitution', 'floorRestitutionVal'],
+      ['timeScale', 'timeScaleVal'],
+      ['bounceThreshold', 'bounceThresholdVal'],
+      ['airFriction', 'airFrictionVal'],
+      ['slingshotStrength', 'slingshotStrengthVal'],
+      ['tetherStiffness', 'tetherStiffnessVal'],
+      ['tetherDamping', 'tetherDampingVal'],
+      ['explosionForce', 'explosionForceVal']
+    ];
+    
+    // --- Tool mode selection handling ---
+    document.querySelectorAll('input[name="toolMode"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        currentToolMode = document.querySelector('input[name="toolMode"]:checked').value;
+        if (currentToolMode === "drag") {
+          if (!mouseConstraintAdded) {
+            Composite.add(world, mouseConstraint);
+            mouseConstraintAdded = true;
+          }
+          isSlingshotActive = false; slingshotCube = null;
+          render.canvas.classList.remove('tether-active');
+          resetTetherSelection();
+        } else {
+          if (mouseConstraintAdded) {
+            Composite.remove(world, mouseConstraint);
+            mouseConstraintAdded = false;
+          }
+          if (currentToolMode === "tether") {
+            render.canvas.classList.add('tether-active');
+            // Set cursor to indicate tether mode
+            resetTetherSelection();
+          } else {
+            render.canvas.classList.remove('tether-active');
+            if (currentToolMode !== "slingshot") {
+              isSlingshotActive = false; slingshotCube = null;
+            }
+          }
+        }
+      });
+    });
+
+    // Tether tool functions
+    function resetTetherSelection() {
+      firstCube = null;
+      secondCube = null;
+      activeTetherPoint = null;
+    }
+
+    function createTether(bodyA, bodyB) {
+      // Check if these cubes are already tethered
+      const pairKey1 = `${bodyA.id}-${bodyB.id}`;
+      const pairKey2 = `${bodyB.id}-${bodyA.id}`;
+      
+      if (tetheredPairs.has(pairKey1) || tetheredPairs.has(pairKey2)) {
+        console.log("These cubes are already tethered");
+        return null;
+      }
+      
+      const stiffness = parseFloat(document.getElementById('tetherStiffness').value);
+      const damping = parseFloat(document.getElementById('tetherDamping').value);
+      const tetherColor = document.getElementById('tetherColor').value;
+      const showTethers = document.getElementById('showTethers').checked;
+      
+      const constraint = Constraint.create({
+        bodyA: bodyA,
+        bodyB: bodyB,
+        stiffness: stiffness,
+        damping: damping,
+        render: {
+          visible: showTethers,
+          lineColor: tetherColor,
+          lineWidth: 2,
+          type: 'line'
+        }
+      });
+      
+      Composite.add(world, constraint);
+      tetherConstraints.push(constraint);
+      
+      // Store the pair to prevent duplicates
+      tetheredPairs.set(pairKey1, constraint);
+      
+      // Check for TetherMaster achievement
+      if (tetherConstraints.length >= 5 && !achievementsUnlocked.tetherMaster) {
+        unlockAchievement("tetherMaster", "Tether Master");
+      }
+      
+      return constraint;
+    }
+    
+    function removeTether(constraint) {
+      // Remove from tetherConstraints array
+      const index = tetherConstraints.indexOf(constraint);
+      if (index !== -1) {
+        tetherConstraints.splice(index, 1);
+      }
+      
+      // Remove from tetheredPairs map
+      for (const [key, value] of tetheredPairs.entries()) {
+        if (value === constraint) {
+          tetheredPairs.delete(key);
+          break;
+        }
+      }
+      
+      // Remove from world
+      Composite.remove(world, constraint);
+    }
+    
+    // Handle tether tool clicks
+    render.canvas.addEventListener('mousedown', function(e) {
+      if (currentToolMode !== "tether") return;
+      
+      const mousePos = { x: e.clientX, y: e.clientY };
+      
+      // Check if we clicked near a tether to remove it
+      for (let i = 0; i < tetherConstraints.length; i++) {
+        const constraint = tetherConstraints[i];
+        
+        if (!constraint.bodyA || !constraint.bodyB) continue;
+        
+        // Calculate midpoint of the constraint
+        const midX = (constraint.bodyA.position.x + constraint.bodyB.position.x) / 2;
+        const midY = (constraint.bodyA.position.y + constraint.bodyB.position.y) / 2;
+        
+        // Check if click is near the midpoint
+        const distance = Math.sqrt((midX - mousePos.x) ** 2 + (midY - mousePos.y) ** 2);
+        
+        if (distance < 20) {  // 20px click tolerance
+          removeTether(constraint);
+          return; // Exit after removing
+        }
+      }
+      
+      // Normal tether creation flow
+      const bodies = Query.point(cubes, mousePos);
+      
+      if (bodies.length > 0) {
+        if (!firstCube) {
+          firstCube = bodies[0];
+          activeTetherPoint = mousePos;
+        } else if (bodies[0] !== firstCube) { // Prevent self-tethering
+          secondCube = bodies[0];
+          createTether(firstCube, secondCube);
+          resetTetherSelection();
+        }
+      }
+    });
+    
+    // Add mousemove handler for tether tool
+    render.canvas.addEventListener('mousemove', function(e) {
+      if (currentToolMode !== "tether") return;
+      
+      const mousePos = { x: e.clientX, y: e.clientY };
+      
+      // Update the active tether point for drawing
+      if (firstCube) {
+        activeTetherPoint = mousePos;
+      }
+      
+      // Check if hovering over a tether's midpoint
+      const tooltip = document.getElementById('tetherTooltip');
+      tetherHovering = null;
+      
+      for (let i = 0; i < tetherConstraints.length; i++) {
+        const constraint = tetherConstraints[i];
+        
+        if (!constraint.bodyA || !constraint.bodyB) continue;
+        
+        // Calculate midpoint of the constraint
+        const midX = (constraint.bodyA.position.x + constraint.bodyB.position.x) / 2;
+        const midY = (constraint.bodyA.position.y + constraint.bodyB.position.y) / 2;
+        
+        // Check if click is near the midpoint
+        const distance = Math.sqrt((midX - mousePos.x) ** 2 + (midY - mousePos.y) ** 2);
+        
+        if (distance < 20) {  // 20px hover tolerance
+          tetherHovering = constraint;
+          tooltip.style.opacity = "1";
+          tooltip.style.left = `${midX + 10}px`;
+          tooltip.style.top = `${midY + 10}px`;
+          break;
+        }
+      }
+      
+      if (!tetherHovering) {
+        tooltip.style.opacity = "0";
+      }
+    });
+
+    // Clear tethers button
+    document.getElementById('clearTethers').addEventListener('click', function() {
+      for (const constraint of tetherConstraints) {
+        Composite.remove(world, constraint);
+      }
+      tetherConstraints = [];
+      tetheredPairs.clear();
+    });
+
+    // Check for breakable tethers
+    Events.on(engine, 'afterUpdate', function() {
+      if (!document.getElementById('breakableTethers').checked) return;
+      
+      const toRemove = [];
+      
+      for (const constraint of tetherConstraints) {
+        if (!constraint.bodyA || !constraint.bodyB) continue;
+        
+        // Calculate the current length of the constraint
+        const dx = constraint.bodyB.position.x - constraint.bodyA.position.x;
+        const dy = constraint.bodyB.position.y - constraint.bodyA.position.y;
+        const currentLength = Math.sqrt(dx * dx + dy * dy);
+        
+        // If length exceeds threshold, mark for removal
+        // Adjust the multiplier (3) to change breaking threshold
+        if (currentLength > constraint.length * 3) {
+          toRemove.push(constraint);
+        }
+      }
+      
+      // Remove all marked constraints
+      for (const constraint of toRemove) {
+        removeTether(constraint);
+      }
+    });
+    
+    // Settings Menu Toggle
+    const menu = document.getElementById('menu');
+    const toggleMenuButton = document.getElementById('toggleMenu');
+    const closeMenuButton = document.getElementById('closeMenu');
+    // Open menu and hide theme button
+    toggleMenuButton.addEventListener('click', () => {
+      menu.classList.add('open');
+      toggleMenuButton.style.display = 'none';
+      document.getElementById('toggleTheme').style.display = 'none'; // hide lightmode icon
+    });
+    // Close menu and restore theme button
+    closeMenuButton.addEventListener('click', () => {
+      menu.classList.remove('open');
+      toggleMenuButton.style.display = 'block';
+      document.getElementById('toggleTheme').style.display = 'block'; // show lightmode icon
+    });
+  
+    // Achievements Panel Toggle
+    const achievementsTab = document.getElementById('achievements');
+    const toggleAchievementsButton = document.getElementById('toggleAchievements');
+    const closeAchievementsButton = document.getElementById('closeAchievements');
+    toggleAchievementsButton.addEventListener('click', () => {
+      achievementsTab.classList.add('open');
+      toggleAchievementsButton.style.display = 'none';
+      document.getElementById('toggleHints').style.display = 'none'; // hide hints icon
+    });
+    closeAchievementsButton.addEventListener('click', () => {
+      achievementsTab.classList.remove('open');
+      toggleAchievementsButton.style.display = 'block';
+      document.getElementById('toggleHints').style.display = 'block'; // show hints icon
+    });
+  
+    // Theme Toggle Button (Light/Dark)
+    const toggleThemeButton = document.getElementById('toggleTheme');
+    toggleThemeButton.addEventListener('click', () => {
+      document.body.classList.toggle("light");
+    });
+  
+    // Create boundaries
+    let boundaries = [];
+    function createBoundaries() {
+      boundaries.forEach(b => Composite.remove(world, b));
+      boundaries = [];
+      const floor = Bodies.rectangle(
+        window.innerWidth / 2,
+        window.innerHeight - 25,  // Floor raised to be visible
+        window.innerWidth,
+        50,
+        {
+          isStatic: true,
+          friction: parseFloat(document.getElementById('floorFriction').value),
+          restitution: parseFloat(document.getElementById('floorRestitution').value),
+          render: { fillStyle: document.getElementById('floorColor').value }
+        }
+      );
+      const ceiling = Bodies.rectangle(window.innerWidth / 2, -25, window.innerWidth, 50, { isStatic: true });
+      const leftWall = Bodies.rectangle(-25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
+      const rightWall = Bodies.rectangle(window.innerWidth + 25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
+      boundaries.push(floor, ceiling, leftWall, rightWall);
+      Composite.add(world, boundaries);
+    }
+    createBoundaries();
+    window.addEventListener('resize', () => {
+      render.canvas.width = window.innerWidth;
+      render.canvas.height = window.innerHeight;
+      createBoundaries();
+    });
+  
+    // Cube spawning and auto-spawn management
+    const cubes = [];
+    let cubeInterval;
+    function spawnCube() {
+      const maxCubes = parseInt(document.getElementById('maxCubes').value, 10);
+      if (cubes.length >= maxCubes) return;
+      
+      const size = parseInt(document.getElementById('cubeSize').value, 10);
+      const restitution = parseFloat(document.getElementById('cubeRestitution').value);
+      const friction = parseFloat(document.getElementById('cubeFriction').value);
+      const density = parseFloat(document.getElementById('cubeDensity').value);
+      const angVel = parseFloat(document.getElementById('cubeAngular').value);
+      const angleRadians = (parseFloat(document.getElementById('cubeAngle').value) * Math.PI) / 180;
+      let color = document.getElementById('cubeColor').value;
+      if(document.getElementById('randomCubeColors').checked){
+          color = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+      }
+  
+      const cube = Bodies.rectangle(
+        Math.random() * window.innerWidth,
+        -size,
+        size,
+        size,
+        {
+          angle: angleRadians,
+          restitution: restitution,
+          friction: friction,
+          density: density,
+          frictionAir: parseFloat(document.getElementById('airFriction').value),
+          render: { fillStyle: color }
+        }
+      );
+      Body.setAngularVelocity(cube, angVel);
+      cube.customSize = size;
+      cubes.push(cube);
+      Composite.add(world, cube);
+  
+      if (cubes.length === maxCubes) {
+        unlockAchievement("cubeOverload", "Cube Overload");
+      }
+  
+      const spawnSound = document.getElementById('spawnSound');
+      if (spawnSound) {
+        spawnSound.currentTime = 0;
+        spawnSound.play().catch(err => console.log('Spawn sound error:', err));
+      }
+    }
+  
+    function clearCubes() {
+      cubes.forEach(cube => Composite.remove(world, cube));
+      cubes.length = 0;
+      clearPressCount++;
+      if (clearPressCount >= 3) {
+        unlockAchievement("clearItOut", "Clear It Out");
+      }
+    }
+  
+    // Setup input displays
+    inputsSettings.forEach(pair => {
+      const [inputId, valueId] = pair;
+      document.getElementById(inputId).addEventListener('input', () => {
+        document.getElementById(valueId).innerText = document.getElementById(inputId).value;
+        if (["floorFriction", "floorRestitution", "floorColor", "bgColor"].includes(inputId)) {
+          createBoundaries();
+          render.options.background = document.getElementById('bgColor').value;
+        }
+      });
+    });
+    document.getElementById('floorColor').addEventListener('change', createBoundaries);
+    document.getElementById('bgColor').addEventListener('change', () => {
+      render.options.background = document.getElementById('bgColor').value;
+    });
+  
+    function updateGravity() {
+      engine.world.gravity.x = parseFloat(document.getElementById('gravityX').value);
+      engine.world.gravity.y = parseFloat(document.getElementById('gravityY').value);
+    }
+    document.getElementById('gravityX').addEventListener('input', updateGravity);
+    document.getElementById('gravityY').addEventListener('input', updateGravity);
+  
+    document.getElementById('timeScale').addEventListener('input', (e) => {
+      engine.timing.timeScale = parseFloat(e.target.value);
+    });
+  
+    function startAutoSpawn() {
+      clearInterval(cubeInterval);
+      cubeInterval = setInterval(() => {
+        if (document.getElementById('autoSpawn').checked) {
+          spawnCube();
+        }
+      }, parseInt(document.getElementById('spawnInterval').value, 10));
+    }
+    document.getElementById('spawnInterval').addEventListener('input', startAutoSpawn);
+    document.getElementById('autoSpawn').addEventListener('change', () => {
+      if (document.getElementById('autoSpawn').checked) startAutoSpawn();
+      else clearInterval(cubeInterval);
+    });
+    startAutoSpawn();
+  
+    window.addEventListener('click', (e) => {
+      if (
+        e.target.closest('#menu') ||
+        e.target.closest('#achievements') ||
+        e.target.id === 'toggleMenu' ||
+        e.target.id === 'toggleAchievements' ||
+        e.target.id === 'toggleTheme'
+      ) return;
+      if (currentToolMode === "spawn" && document.getElementById('spawnOnClick').checked) {
+        const size = parseInt(document.getElementById('cubeSize').value, 10);
+        const restitution = parseFloat(document.getElementById('cubeRestitution').value);
+        const friction = parseFloat(document.getElementById('cubeFriction').value);
+        const density = parseFloat(document.getElementById('cubeDensity').value);
+        const angVel = parseFloat(document.getElementById('cubeAngular').value);
+        const angleRadians = (parseFloat(document.getElementById('cubeAngle').value) * Math.PI) / 180;
+        let color = document.getElementById('cubeColor').value;
+        if(document.getElementById('randomCubeColors').checked){
+          color = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        }
+  
+        const cube = Bodies.rectangle(e.clientX, e.clientY, size, size, {
+          angle: angleRadians,
+          restitution: restitution,
+          friction: friction,
+          density: density,
+          frictionAir: parseFloat(document.getElementById('airFriction').value),
+          render: { fillStyle: color }
+        });
+        Body.setAngularVelocity(cube, angVel);
+        cube.customSize = size;
+        cubes.push(cube);
+        Composite.add(world, cube);
+      }
+      else if (currentToolMode === "explosion") {
+        const explosionCenter = { x: e.clientX, y: e.clientY };
+        const explosionRadius = 150;
+        const explosionForce = parseFloat(document.getElementById('explosionForce').value);
+        cubes.forEach(cube => {
+          const dx = cube.position.x - explosionCenter.x;
+          const dy = cube.position.y - explosionCenter.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < explosionRadius && dist > 0) {
+            const forceMagnitude = (explosionForce * (explosionRadius - dist)) / explosionRadius;
+            const force = { x: (dx/dist) * forceMagnitude, y: (dy/dist) * forceMagnitude };
+            Body.applyForce(cube, cube.position, force);
+          }
+        });
+        // Play explosion sound
+        const expSound = document.getElementById('explosionSound');
+        if (expSound) {
+          expSound.currentTime = 0;
+          expSound.play().catch(err => console.log('Explosion sound error:', err));
+        }
+      }
+    });
+  
+    // Reset All Settings Button
+    document.getElementById('resetSettings').addEventListener('click', () => {
+      document.getElementById('gravityX').value = 0;
+      document.getElementById('gravityY').value = 1;
+      document.getElementById('cubeSize').value = 40;
+      document.getElementById('cubeRestitution').value = 0.8;
+      document.getElementById('cubeFriction').value = 0.1;
+      document.getElementById('cubeDensity').value = 0.001;
+      document.getElementById('cubeAngular').value = 0;
+      document.getElementById('cubeAngle').value = 0;
+      document.getElementById('spawnInterval').value = 500;
+      document.getElementById('maxCubes').value = 20;
+      document.getElementById('floorFriction').value = 0.5;
+      document.getElementById('floorRestitution').value = 0.2;
+      document.getElementById('timeScale').value = 1;
+      document.getElementById('bounceThreshold').value = 20;
+      document.getElementById('airFriction').value = 0.01;
+      document.getElementById('cubeColor').value = "#ff0000";
+      document.getElementById('floorColor').value = "#00ff00";
+      document.getElementById('bgColor').value = "#222222";
+      document.getElementById('slingshotStrength').value = 0.0005;
+      document.getElementById('tetherStiffness').value = 0.001;
+      document.getElementById('tetherDamping').value = 0.1;
+      document.getElementById('tetherColor').value = "#FFFFFF";
+      document.getElementById('explosionForce').value = 0.05;
+      document.getElementById('showTethers').checked = true;
+      document.getElementById('breakableTethers').checked = false;
+  
+      document.getElementById('soundToggle').checked = true;
+      document.getElementById('spawnOnClick').checked = true;
+      document.getElementById('autoSpawn').checked = true;
+  
+      // Reset new Destruction Settings
+      document.getElementById('breakStrength').value = 7;
+      document.getElementById('miniCubeCount').value = 4;
+  
+      // Reset tool mode to Spawn
+      document.querySelector('input[name="toolMode"][value="spawn"]').checked = true;
+      currentToolMode = "spawn";
+      if (mouseConstraintAdded) {
+        Composite.remove(world, mouseConstraint);
+        mouseConstraintAdded = false;
+      }
+      isSlingshotActive = false;
+      slingshotCube = null;
+  
+      inputsSettings.forEach(pair => {
+        const [inputId, valueId] = pair;
+        document.getElementById(valueId).innerText = document.getElementById(inputId).value;
+      });
+  
+      updateGravity();
+      createBoundaries();
+      render.options.background = document.getElementById('bgColor').value;
+  
+      // Increment perfect reset count, and unlock Perfect Reset if threshold met
+      perfectResetCount++;
+      if (perfectResetCount >= 5) {
+        unlockAchievement("perfectReset", "Perfect Reset");
+      }
+    });
+  
+    // Clear Cubes Button
+    document.getElementById('clearCubes').addEventListener('click', clearCubes);
+  
+    // Collision Sound on Impact and Chain Reaction Achievement
+    Events.on(engine, 'collisionStart', function(event) {
+      if (event.pairs.length >= 3) {
+        unlockAchievement("chainReaction", "Chain Reaction");
+      }
+      if (document.getElementById('soundToggle').checked && event.pairs.length > 0) {
+        const sound = document.getElementById('collisionSound');
+        sound.currentTime = 0;
+        sound.play().catch(err => console.log('Sound play error:', err));
+      }
+      // Use the break strength slider value instead of hardcoded threshold
+      const breakStrength = parseFloat(document.getElementById('breakStrength').value);
+      event.pairs.forEach(pair => {
+        [pair.bodyA, pair.bodyB].forEach(body => {
+          if(cubes.includes(body) && !body.isBroken && body.customSize > 20) {
+            const relVel = Math.hypot(
+              pair.bodyA.velocity.x - pair.bodyB.velocity.x,
+              pair.bodyA.velocity.y - pair.bodyB.velocity.y
+            );
+            if(relVel > breakStrength) {
+              breakCube(body);
+            }
+          }
+        });
+      });
+    });
+  
+    // Slingshot Tool Events
+    render.canvas.addEventListener('mousedown', function(e) {
+      if (currentToolMode !== "slingshot") return;
+      const mousePos = { x: e.clientX, y: e.clientY };
+      const bodies = Query.point(cubes, mousePos);
+      if (bodies.length > 0) {
+        slingshotCube = bodies[0];
+        isSlingshotActive = true;
+        slingshotStartPos = mousePos;
+      }
+    });
+    render.canvas.addEventListener('mousemove', function(e) {
+      if (currentToolMode !== "slingshot" || !isSlingshotActive) return;
+      slingshotCurrentPos = { x: e.clientX, y: e.clientY };
+    });
+    render.canvas.addEventListener('mouseup', function(e) {
+      if (currentToolMode !== "slingshot" || !isSlingshotActive || !slingshotCube) return;
+      const releasePos = { x: e.clientX, y: e.clientY };
+      const strength = parseFloat(document.getElementById('slingshotStrength').value);
+      const forceVector = {
+        x: (slingshotStartPos.x - releasePos.x) * strength,
+        y: (slingshotStartPos.y - releasePos.y) * strength
+      };
+      // If the magnitude of the force vector is high, unlock Slingshot Ace
+      const magnitude = Math.sqrt(forceVector.x * forceVector.x + forceVector.y * forceVector.y);
+      if (magnitude > 0.005) {
+        unlockAchievement("slingshotAce", "Slingshot Ace");
+      }
+      Body.applyForce(slingshotCube, slingshotCube.position, forceVector);
+      isSlingshotActive = false;
+      slingshotCube = null;
+    });
+  
+    // Visual Guide for Tether
+    (function renderLoop() {
+      const context = render.context;
+      requestAnimationFrame(renderLoop);
+      
+      // Draw tether preview
+      if (currentToolMode === "tether" && firstCube && activeTetherPoint) {
+        context.beginPath();
+        context.moveTo(firstCube.position.x, firstCube.position.y);
+        context.lineTo(activeTetherPoint.x, activeTetherPoint.y);
+        context.strokeStyle = document.getElementById('tetherColor').value;
+        context.lineWidth = 2;
+        context.stroke();
+      }
+      
+      // Highlight hovering tether
+      if (tetherHovering) {
+        context.beginPath();
+        context.moveTo(tetherHovering.bodyA.position.x, tetherHovering.bodyA.position.y);
+        context.lineTo(tetherHovering.bodyB.position.x, tetherHovering.bodyB.position.y);
+        context.strokeStyle = '#ff0000';
+        context.lineWidth = 4;
+        context.stroke();
+      }
+      
+      // ...existing slingshot code...
+      if (currentToolMode === "slingshot" && isSlingshotActive && slingshotStartPos && slingshotCurrentPos) {
+        context.beginPath();
+        context.moveTo(slingshotStartPos.x, slingshotStartPos.y);
+        context.lineTo(slingshotCurrentPos.x, slingshotCurrentPos.y);
+        context.strokeStyle = '#ffffff';
+        context.lineWidth = 2;
+        context.stroke();
+      }
+    })();
+
+    // Initialize collapsible sections
+    document.querySelectorAll('.section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const section = header.parentElement;
+        section.classList.toggle('open');
+      });
+    });
+
+    // Open the first section by default
+    document.querySelector('.settings-section').classList.add('open');
+    
+    // Toolbar tool selection
+    const toolButtons = {
+      toolSpawn: "spawn",
+      toolDrag: "drag",
+      toolSlingshot: "slingshot",
+      toolTether: "tether",
+      toolExplosion: "explosion"
+    };
+    
+    Object.keys(toolButtons).forEach(buttonId => {
+      document.getElementById(buttonId).addEventListener('click', function() {
+        // Update toolbar UI
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Set the actual radio button
+        document.querySelector(`input[name="toolMode"][value="${toolButtons[buttonId]}"]`).checked = true;
+        
+        // Trigger the change event on the radio button
+        const event = new Event('change');
+        document.querySelector(`input[name="toolMode"][value="${toolButtons[buttonId]}"]`).dispatchEvent(event);
+      });
+    });
+    
+    // Clear all button in toolbar
+    document.getElementById('clearAllBtn').addEventListener('click', clearCubes);
+    
+    // Theme toggle - Update icon based on theme
+    toggleThemeButton.addEventListener('click', () => {
+      document.body.classList.toggle("light");
+      const themeIcon = document.querySelector('#toggleTheme i');
+      if (document.body.classList.contains('light')) {
+        themeIcon.className = 'fas fa-sun';
+      } else {
+        themeIcon.className = 'fas fa-moon';
+      }
+    });
+
+    /* New Explosion Ability: Press "E" to trigger an explosion at the mouse location */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'e' || e.key === 'E') {
+        const explosionCenter = { x: mouse.position.x, y: mouse.position.y };
+        const explosionRadius = 150;
+        const explosionForce = 0.05; // Adjust as needed
+        cubes.forEach(cube => {
+          const dx = cube.position.x - explosionCenter.x;
+          const dy = cube.position.y - explosionCenter.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < explosionRadius && dist > 0) {
+            const forceMagnitude = (explosionForce * (explosionRadius - dist)) / explosionRadius;
+            const force = { x: (dx/dist) * forceMagnitude, y: (dy/dist) * forceMagnitude };
+            Body.applyForce(cube, cube.position, force);
+          }
+        });
+      }
+    });
+
+    /* Updated Theme Toggle: ensure listener is attached after DOM load */
+    document.addEventListener('DOMContentLoaded', function(){
+      const toggleThemeButton = document.getElementById('toggleTheme');
+      toggleThemeButton.addEventListener('click', () => {
+        document.body.classList.toggle("light");
+        const themeIcon = document.querySelector('#toggleTheme i');
+        if (document.body.classList.contains('light')) {
+          themeIcon.className = 'fas fa-sun';
+        } else {
+          themeIcon.className = 'fas fa-moon';
+        }
+      });
+    });
+
+    // New breakCube function to split a cube under high impact
+    function breakCube(cube) {
+      if (!destructionEnabled) return; // disable destruction when flag is false
+      cube.isBroken = true;
+      Composite.remove(world, cube);
+      const index = cubes.indexOf(cube);
+      if(index !== -1) { cubes.splice(index, 1); }
+      const newSize = cube.customSize / 2;
+      // Use the mini cube count slider value
+      const miniCount = parseInt(document.getElementById('miniCubeCount').value, 10);
+      for(let i = 0; i < miniCount; i++){
+        const offsetX = (Math.random() - 0.5) * newSize;
+        const offsetY = (Math.random() - 0.5) * newSize;
+        const newCube = Bodies.rectangle(
+          cube.position.x + offsetX,
+          cube.position.y + offsetY,
+          newSize,
+          newSize,
+          {
+            angle: Math.random() * Math.PI * 2,
+            restitution: cube.restitution,
+            friction: cube.friction,
+            density: cube.density,
+            frictionAir: cube.frictionAir,
+            render: { fillStyle: cube.render.fillStyle }
+          }
+        );
+        newCube.customSize = newSize;
+        cubes.push(newCube);
+        Composite.add(world, newCube);
+      }
+    }
+
+    /* Fix Destruction Settings: update slider values on input */
+    document.getElementById('breakStrength').addEventListener('input', () => {
+      document.getElementById('breakStrengthVal').innerText = document.getElementById('breakStrength').value;
+    });
+    document.getElementById('miniCubeCount').addEventListener('input', () => {
+      document.getElementById('miniCubeCountVal').innerText = document.getElementById('miniCubeCount').value;
+    });
+
+    /* New Achievements Counters */
+    let fastSpawnerCount = 0;
+    let precisionClickCount = 0;
+    let masterBreakerCount = 0;
+    let ultimateComboCount = 0;
+
+    /* Update spawnCube to count fast spawner progress */
+    const originalSpawnCube = spawnCube;
+    spawnCube = function() {
+      originalSpawnCube();
+      fastSpawnerCount++;
+      document.getElementById('progress_fastSpawner').value = fastSpawnerCount;
+      if(fastSpawnerCount >= 10) {
+        unlockAchievement("fastSpawner", "Fast Spawner");
+      }
+    };
+
+    /* Listen for canvas clicks for precision click achievement */
+    document.getElementById('canvas').addEventListener('click', () => {
+      precisionClickCount++;
+      document.getElementById('progress_precisionClick').value = precisionClickCount;
+      if(precisionClickCount >= 20) {
+        unlockAchievement("precisionClick", "Precision Click");
+      }
+    });
+
+    /* Increment masterBreakerCount when breaking a cube */
+    const originalBreakCube = breakCube;
+    breakCube = function(cube) {
+      originalBreakCube(cube);
+      masterBreakerCount++;
+      document.getElementById('progress_masterBreaker').value = masterBreakerCount;
+      if(masterBreakerCount >= 5) {
+        unlockAchievement("masterBreaker", "Master Breaker");
+      }
+    };
+
+    /* Upgrade chain reaction handling to count ultimate combo */
+    Events.on(engine, 'collisionStart', function(event) {
+      if(event.pairs.length >= 6){
+        ultimateComboCount++;
+        document.getElementById('progress_ultimateCombo').value = ultimateComboCount;
+        if(ultimateComboCount >= 3) {
+          unlockAchievement("ultimateCombo", "Ultimate Combo");
+        }
+      }
+      // ...existing collision handling...
+    });
+
+    /* Update progress for Play for 5 Minutes and Speed Demon */
+    setInterval(() => {
+      const elapsed = (Date.now() - gameStartTime) / 1000;
+      document.getElementById('progress_playFive').value = Math.min(elapsed, 300);
+      if (elapsed >= 300) {
+        unlockAchievement("playFive", "Play for 5 Minutes");
+      }
+    }, 1000);
+    setInterval(() => {
+      const timeScale = parseFloat(document.getElementById('timeScale').value);
+      let current = parseInt(document.getElementById('progress_speedDemon').value, 10);
+      if (timeScale > 1.5) {
+        current++;
+      } else {
+        current = 0;
+      }
+      document.getElementById('progress_speedDemon').value = current;
+      if (current >= 10) {
+        unlockAchievement("speedDemon", "Speed Demon");
+      }
+    }, 1000);
+
+    /* Ensure the new toggleTheme button (now in achievements header) is attached to the listener */
+    toggleTheme.addEventListener('click', () => {
+      document.body.classList.toggle("light");
+      const themeIcon = document.querySelector('#toggleTheme i');
+      if (document.body.classList.contains('light')) {
+        themeIcon.className = 'fas fa-sun';
+      } else {
+        themeIcon.className = 'fas fa-moon';
+      }
+    });
+
+    /* New Random Tool: set tool mode and add simple behavior */
+    document.getElementById('toolRandom').addEventListener('click', function() {
+      // Update toolbar UI and set a new mode "random"
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      currentToolMode = "random";
+      // Add additional random tool functionality as needed
+      console.log("Random Tool selected.");
+    });
+    
+    /* New Random Tool Settings: update randomForce display */
+    document.getElementById('randomForce').addEventListener('input', () => {
+      document.getElementById('randomForceVal').innerText = document.getElementById('randomForce').value;
+    });
+    
+    /* Example: When in random tool mode, on canvas click, apply random force and optionally change color */
+    render.canvas.addEventListener('click', function(e) {
+      if(currentToolMode !== "random") return;
+      const force = parseFloat(document.getElementById('randomForce').value);
+      cubes.forEach(cube => {
+        // Apply random force vector
+        const angle = Math.random() * Math.PI * 2;
+        const fx = Math.cos(angle) * force;
+        const fy = Math.sin(angle) * force;
+        Body.applyForce(cube, cube.position, {x: fx, y: fy});
+        // Optionally change cube color when randomColorToggle is checked
+        if(document.getElementById('randomColorToggle').checked) {
+          cube.render.fillStyle = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        }
+      });
+    });
+    
+    /* Update theme toggle button to switch light/dark theme */
+    document.getElementById('toggleTheme').addEventListener('click', () => {
+      document.body.classList.toggle("light");
+      const themeIcon = document.querySelector('#toggleTheme i');
+      if (document.body.classList.contains('light')) {
+        themeIcon.className = 'fas fa-sun';
+      } else {
+        themeIcon.className = 'fas fa-moon';
+      }
+    });
+
+    /* New global flag to control destruction; enabled by default */
+    let destructionEnabled = true;
+    document.getElementById('toggleDestruction').addEventListener('click', () => {
+      destructionEnabled = !destructionEnabled;
+      const btn = document.getElementById('toggleDestruction');
+      btn.textContent = destructionEnabled ? "Disable Destruction" : "Enable Destruction";
+    });
+
+    /* New tool mode: multiSpawn */
+    document.getElementById('toolMultiSpawn').addEventListener('click', function() {
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      currentToolMode = "multiSpawn";
+      console.log("Multi-Cube Spawner Tool selected.");
+    });
+
+    /* Update spawnCount display */
+    document.getElementById('spawnCount').addEventListener('input', () => {
+      document.getElementById('spawnCountVal').innerText = document.getElementById('spawnCount').value;
+    });
+
+    /* Extend canvas click handler for multiSpawn tool */
+    render.canvas.addEventListener('click', function(e) {
+      if(currentToolMode !== "multiSpawn") return;
+      const count = parseInt(document.getElementById('spawnCount').value, 10);
+      for(let i=0; i<count; i++){
+        const size = parseInt(document.getElementById('cubeSize').value, 10);
+        const restitution = parseFloat(document.getElementById('cubeRestitution').value);
+        const friction = parseFloat(document.getElementById('cubeFriction').value);
+        const density = parseFloat(document.getElementById('cubeDensity').value);
+        const angVel = parseFloat(document.getElementById('cubeAngular').value);
+        const angleRadians = (parseFloat(document.getElementById('cubeAngle').value) * Math.PI) / 180;
+        let color = document.getElementById('cubeColor').value;
+        if(document.getElementById('randomCubeColors').checked){
+            color = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        }
+        const offsetX = (Math.random() - 0.5) * 50;
+        const offsetY = (Math.random() - 0.5) * 50;
+        const cube = Bodies.rectangle(
+          e.clientX + offsetX,
+          e.clientY + offsetY,
+          size,
+          size,
+          {
+            angle: angleRadians,
+            restitution: restitution,
+            friction: friction,
+            density: density,
+            frictionAir: parseFloat(document.getElementById('airFriction').value),
+            render: { fillStyle: color }
+          }
+        );
+        Body.setAngularVelocity(cube, angVel);
+        cube.customSize = size;
+        cubes.push(cube);
+        Composite.add(world, cube);
+      }
+    });
+
+    // New bladeCube function to split a cube into two smaller cubes
+    function bladeCube(cube) {
+      // Remove original cube
+      Composite.remove(world, cube);
+      const index = cubes.indexOf(cube);
+      if(index !== -1) cubes.splice(index, 1);
+      // Calculate new side: cutting the square into two equal-area parts
+      const newSize = cube.customSize / Math.sqrt(2);
+      const offset = newSize / 2;
+      const cube1 = Bodies.rectangle(cube.position.x - offset, cube.position.y, newSize, newSize, {
+        angle: cube.angle,
+        restitution: cube.restitution,
+        friction: cube.friction,
+        density: cube.density,
+        frictionAir: cube.frictionAir,
+        render: { fillStyle: cube.render.fillStyle }
+      });
+      const cube2 = Bodies.rectangle(cube.position.x + offset, cube.position.y, newSize, newSize, {
+        angle: cube.angle,
+        restitution: cube.restitution,
+        friction: cube.friction,
+        density: cube.density,
+        frictionAir: cube.frictionAir,
+        render: { fillStyle: cube.render.fillStyle }
+      });
+      cube1.customSize = newSize;
+      cube2.customSize = newSize;
+      cubes.push(cube1, cube2);
+      Composite.add(world, [cube1, cube2]);
+    }
+
+    // Blade Tool button event listener
+    document.getElementById('toolBlade').addEventListener('click', function() {
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      currentToolMode = "blade";
+      console.log("Blade Tool selected.");
+    });
+
+    // Extend canvas click handler for blade tool
+    render.canvas.addEventListener('click', function(e) {
+      if (
+        e.target.closest('#menu') ||
+        e.target.closest('#achievements') ||
+        e.target.id === 'toggleMenu' ||
+        e.target.id === 'toggleAchievements' ||
+        e.target.id === 'toggleTheme'
+      ) return;
+      
+      if (currentToolMode === "blade") {
+        const clicked = Query.point(cubes, { x: e.clientX, y: e.clientY });
+        if (clicked.length) {
+          bladeCube(clicked[0]);
+        }
+      }
+      // ...existing canvas click handling for other tools...
+    });
+
+    // Add zoom functionality after existing render setup
+    let zoom = 1;
+    window.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      // Adjust zoom level (scrolling up to zoom in, down to zoom out)
+      zoom += (e.deltaY > 0 ? -0.05 : 0.05);
+      zoom = Math.max(0.1, Math.min(zoom, 3));
+      // Get current center of the view
+      const center = {
+        x: (render.bounds.min.x + render.bounds.max.x) / 2,
+        y: (render.bounds.min.y + render.bounds.max.y) / 2
+      };
+      // Calculate new bounds based on zoom
+      const width = window.innerWidth / zoom;
+      const height = window.innerHeight / zoom;
+      render.bounds.min.x = center.x - width/2;
+      render.bounds.max.x = center.x + width/2;
+      render.bounds.min.y = center.y - height/2;
+      render.bounds.max.y = center.y + height/2;
+    });
+
+    // Toggle Hints Section on lightbulb icon click
+    document.getElementById('toggleHints').addEventListener('click', function() {
+      const hints = document.getElementById('hints');
+      hints.style.display = (hints.style.display === 'none' || hints.style.display === '') ? 'block' : 'none';
+    });
+  </script>
+</body>
+</html>
