@@ -68,14 +68,16 @@
         #steamBtn { background-color: #d3d3d3; color: #2c3e50; }
         #rustBtn { background-color: #cd853f; }
         #ashBtn { background-color: #555555; }
-        /* New styles for side menu */
+        /* New dark and modern styles for side menu */
         #side-menu {
             position: fixed;
             top: 0;
             left: -250px;
             width: 250px;
             height: 100%;
-            background: #34495e;
+            background: #1c1c1c;
+            border-left: 4px solid #2980b9; /* accent border */
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
             transition: left 0.3s ease;
             padding: 20px;
             overflow-y: auto;
@@ -84,25 +86,30 @@
         #side-menu.open {
             left: 0;
         }
+        /* New dark and modern style for side menu buttons */
         #side-menu .element-btn {
             width: 100%;
             margin-bottom: 10px;
             text-align: left;
+            background: #2c2c2c;
+            border: none;
+            color: #ecf0f1;
         }
-        /* Toggle button for side menu */
+        /* Updated toggle button style */
         #menu-toggle {
             position: fixed;
             top: 10px;
             left: 10px;
             z-index: 1100;
             cursor: pointer;
-            background: #34495e;
-            border: none;
+            background: #1c1c1c;
+            border: 2px solid #2980b9;
             color: #ecf0f1;
             padding: 10px;
             border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
         }
-        /* New style for the close button inside side menu */
+        /* Updated close button style */
         #menu-close {
             background: none;
             border: none;
@@ -132,6 +139,7 @@
         <button id="steamBtn" class="element-btn">Steam</button>
         <button id="rustBtn" class="element-btn">Rust</button>
         <button id="ashBtn" class="element-btn">Ash</button>
+        <button id="acidBtn" class="element-btn">Acid</button>
         <!-- New remover brush button at the bottom -->
         <button id="removerBtn" class="element-btn">Remover Brush</button>
         <!-- New slider for brush size -->
@@ -154,6 +162,7 @@
         <button id="steamBtn" class="element-btn">Steam</button>
         <button id="rustBtn" class="element-btn">Rust</button>
         <button id="ashBtn" class="element-btn">Ash</button>  <!-- New spawnable Ash button -->
+        <button id="acidBtn" class="element-btn">Acid</button>
         <button id="clearBtn">Clear Canvas</button>
     </div>
 
@@ -199,6 +208,8 @@
         // Add new particle types for burning wood and ash
         const BURNING_WOOD = 11;
         const ASH = 12;
+        const GLASS = 13; // new element: glass (solid and slightly transparent)
+        const ACID = 14; // new element: acid (gooey liquid that melts things)
         // Add new constant for remover brush
         const REMOVER = -1;
         
@@ -245,6 +256,8 @@
         document.getElementById('ashBtn').addEventListener('click', () => selectElement(ASH, 'ashBtn'));
         // New event for the remover brush button
         document.getElementById('removerBtn').addEventListener('click', () => selectElement(REMOVER, 'removerBtn'));
+        // Add acid event listener
+        document.getElementById('acidBtn').addEventListener('click', () => selectElement(ACID, 'acidBtn'));
         
         function selectElement(element, btnId) {
             currentElement = element;
@@ -301,6 +314,9 @@
                         else if (currentElement === ASH) {  // New spawnable element "Ash"
                             grid[x][y] = ASH;
                         }
+                        else if (currentElement === ACID) { // Add acid placement
+                            grid[x][y] = ACID;
+                        }
                     }
                 }
             }
@@ -326,6 +342,7 @@
                     else if (grid[x][y] === RUST) { updateRust(x, y); }
                     else if (grid[x][y] === BURNING_WOOD) { updateBurningWood(x, y); }
                     else if (grid[x][y] === ASH) { updateAsh(x, y); }
+                    else if (grid[x][y] === ACID) { updateAcid(x, y); }
                     // Stone, Wood, and Metal don't move
                 }
             }
@@ -381,6 +398,14 @@
                     else if (grid[x][y] === ASH) {
                         ctx.fillStyle = "dimgray"; // ash appears as a dark gray
                         ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === GLASS) {
+                        ctx.fillStyle = "rgba(180, 220, 255, 0.6)"; // glass: slightly transparent
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                    else if (grid[x][y] === ACID) {
+                        // Acid appears as a glowing, toxic green with some opacity
+                        ctx.fillStyle = "rgba(0, 220, 0, 0.7)";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
                     }
                 }
             }
@@ -389,6 +414,18 @@
         }
         
         function updateSand(x, y) {
+            // If sand is heated by adjacent lava, transform into glass with a chance
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    let nx = x + i, ny = y + j;
+                    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === LAVA) {
+                        if (Math.random() < 0.1) { // 10% chance to transform
+                            grid[x][y] = GLASS;
+                            return;
+                        }
+                    }
+                }
+            }
             // Try to move down
             if (y < rows - 1 && (grid[x][y + 1] === EMPTY || grid[x][y + 1] === WATER)) {
                 // If falling into water, swap positions (sand sinks in water)
@@ -525,7 +562,7 @@
                     return;
                 }
                 if (grid[x][y + 1] === WATER) {
-                    grid[x][y + 1] = STEAM;
+                    grid[x][y + 1] = STONE; // changed: water becomes stone when lava goes onto it
                     return;
                 }
                 if (grid[x][y + 1] === WOOD) {
@@ -543,7 +580,7 @@
                         return;
                     }
                     if (grid[x - 1][y + 1] === WATER) {
-                        grid[x - 1][y + 1] = STEAM;
+                        grid[x - 1][y + 1] = STONE; // changed: water becomes stone when lava goes onto it
                         return;
                     }
                     if (grid[x - 1][y + 1] === WOOD) {
@@ -560,7 +597,7 @@
                         return;
                     }
                     if (grid[x + 1][y + 1] === WATER) {
-                        grid[x + 1][y + 1] = STEAM;
+                        grid[x + 1][y + 1] = STONE; // changed: water becomes stone when lava goes onto it
                         return;
                     }
                     if (grid[x + 1][y + 1] === WOOD) {
@@ -736,6 +773,70 @@
             if (x < cols - 1 && grid[x+1][y] === WATER && Math.random() < 0.5) {
                 grid[x][y] = WATER;
                 grid[x+1][y] = ASH;
+            }
+        }
+        
+        // New acid update function
+        function updateAcid(x, y) {
+            // Slowly melt adjacent materials
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const nx = x + i;
+                    const ny = y + j;
+                    
+                    // Check bounds
+                    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                        // If neighbor is not empty and not acid, try to dissolve it
+                        if (grid[nx][ny] !== EMPTY && grid[nx][ny] !== ACID) {
+                            if (Math.random() < 0.01) { // 1% chance to dissolve per frame
+                                grid[nx][ny] = ACID;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Flow behavior (similar to oil but more viscous)
+            // Move down if possible
+            if (y < rows - 1 && grid[x][y + 1] === EMPTY) {
+                grid[x][y] = EMPTY;
+                grid[x][y + 1] = ACID;
+                return;
+            }
+            
+            // Check diagonal movement with lower probability (more viscous)
+            if (y < rows - 1 && Math.random() < 0.7) {
+                if (x > 0 && grid[x - 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y + 1] = ACID;
+                    return;
+                } else if (x < cols - 1 && grid[x + 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y + 1] = ACID;
+                    return;
+                }
+            }
+            
+            // Limited horizontal flow (more viscous than water)
+            if (Math.random() < 0.3) { // Lower probability for horizontal flow
+                let leftEmpty = (x > 0 && grid[x - 1][y] === EMPTY);
+                let rightEmpty = (x < cols - 1 && grid[x + 1][y] === EMPTY);
+                
+                if (leftEmpty && rightEmpty) {
+                    if (Math.random() > 0.5) {
+                        grid[x][y] = EMPTY;
+                        grid[x - 1][y] = ACID;
+                    } else {
+                        grid[x][y] = EMPTY;
+                        grid[x + 1][y] = ACID;
+                    }
+                } else if (leftEmpty) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y] = ACID;
+                } else if (rightEmpty) {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y] = ACID;
+                }
             }
         }
         
