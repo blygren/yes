@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Sand Game</title>
+    <style>
+        /* Updated body styling: modern gradient and clean font */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #ecf0f1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        /* Canvas: remove border, add rounded corners and subtle shadow */
+        canvas {
+            border: none;
+            border-radius: 8px;
+            background-color: #1c1c1c;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        /* Control panel: increased spacing */
+        .controls {
+            display: none;
+        }
+        .controls.open {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        /* Modern flat button styles for elements and clear */
+        .element-btn, #clearBtn {
+            padding: 10px 16px;
+            cursor: pointer;
+            border: none;
+            background: #34495e;
+            color: #ecf0f1;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .element-btn:hover, #clearBtn:hover {
+            background: #3d5a73;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .element-btn.selected {
+            background: #ecf0f1;
+            color: #2c3e50;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+            outline: 2px solid yellow; /* added yellow outline */
+        }
+        /* Override button colours for visual distinction */
+        #sandBtn { background-color: #d4be8d; color: #2c3e50; }
+        #waterBtn { background-color: #4287f5; }
+        #stoneBtn { background-color: #888888; }
+        #lavaBtn { background-color: #ff4500; }
+        #iceBtn { background-color: #afeeee; color: #2c3e50; }
+        #woodBtn { background-color: #8b4513; }
+        #oilBtn { background-color: #2f4f4f; }
+        #metalBtn { background-color: #b0c4de; color: #2c3e50; }
+        #steamBtn { background-color: #d3d3d3; color: #2c3e50; }
+        #rustBtn { background-color: #cd853f; }
+        #ashBtn { background-color: #555555; }
+        /* New styles for side menu */
+        #side-menu {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background: #34495e;
+            transition: left 0.3s ease;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        #side-menu.open {
+            left: 0;
+        }
+        #side-menu .element-btn {
+            width: 100%;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        /* Toggle button for side menu */
+        #menu-toggle {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1100;
+            cursor: pointer;
+            background: #34495e;
+            border: none;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        /* New style for the close button inside side menu */
+        #menu-close {
+            background: none;
+            border: none;
+            color: #ecf0f1;
+            font-size: 1.5em;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- New menu toggle button -->
+    <button id="menu-toggle">☰</button>
+    <!-- Slide out menu container for element selection -->
+    <div id="side-menu">
+        <button id="menu-close">✕</button>
+        <button id="sandBtn" class="element-btn selected">Sand</button>
+        <button id="waterBtn" class="element-btn">Water</button>
+        <button id="stoneBtn" class="element-btn">Stone</button>
+        <button id="lavaBtn" class="element-btn">Lava</button>
+        <button id="iceBtn" class="element-btn">Ice</button>
+        <button id="woodBtn" class="element-btn">Wood</button>
+        <button id="oilBtn" class="element-btn">Oil</button>
+        <button id="metalBtn" class="element-btn">Metal</button>
+        <button id="steamBtn" class="element-btn">Steam</button>
+        <button id="rustBtn" class="element-btn">Rust</button>
+        <button id="ashBtn" class="element-btn">Ash</button>
+        <!-- New remover brush button at the bottom -->
+        <button id="removerBtn" class="element-btn">Remover Brush</button>
+        <!-- New slider for brush size -->
+        <label for="brushSizeSlider">Brush Size:</label>
+        <input type="range" id="brushSizeSlider" min="1" max="10" value="2">
+    </div>
+    <h1>Falling Sand Game</h1>
+    <!-- Updated canvas dimensions for a slightly smaller playing area -->
+    <canvas id="sandCanvas" width="1200" height="900"></canvas>
+    <div class="controls">
+        <button id="sandBtn" class="element-btn selected">Sand</button>
+        <button id="waterBtn" class="element-btn">Water</button>
+        <button id="stoneBtn" class="element-btn">Stone</button>
+        <button id="lavaBtn" class="element-btn">Lava</button>
+        <button id="iceBtn" class="element-btn">Ice</button>
+        <button id="woodBtn" class="element-btn">Wood</button>
+        <button id="oilBtn" class="element-btn">Oil</button>
+        <button id="metalBtn" class="element-btn">Metal</button>
+        <!-- New buttons for spawnable gas and rust -->
+        <button id="steamBtn" class="element-btn">Steam</button>
+        <button id="rustBtn" class="element-btn">Rust</button>
+        <button id="ashBtn" class="element-btn">Ash</button>  <!-- New spawnable Ash button -->
+        <button id="clearBtn">Clear Canvas</button>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('sandCanvas');
+        const ctx = canvas.getContext('2d');
+        // Auto-enter fullscreen on load
+        window.addEventListener('load', () => {
+            if (canvas.requestFullscreen) {
+                canvas.requestFullscreen();
+            } else if (canvas.mozRequestFullScreen) {
+                canvas.mozRequestFullScreen();
+            } else if (canvas.webkitRequestFullscreen) {
+                canvas.webkitRequestFullscreen();
+            } else if (canvas.msRequestFullscreen) {
+                canvas.msRequestFullscreen();
+            }
+        });
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Pixel size (determines resolution of the simulation)
+        const pixelSize = 4;
+        const cols = Math.floor(width / pixelSize);
+        const rows = Math.floor(height / pixelSize);
+        
+        // Grid to track particles
+        let grid = new Array(cols).fill().map(() => new Array(rows).fill(0));
+        
+        // Particle types
+        const EMPTY = 0;
+        const SAND = 1;
+        const WATER = 2;
+        const STONE = 3;
+        const LAVA  = 4;
+        const ICE   = 5;
+        const WOOD  = 6;
+        const OIL   = 7;
+        const METAL = 8;
+        const STEAM = 9;
+        const RUST = 10; // new element: rust (brown powder)
+        // Add new particle types for burning wood and ash
+        const BURNING_WOOD = 11;
+        const ASH = 12;
+        // Add new constant for remover brush
+        const REMOVER = -1;
+        
+        // Current selected element
+        let currentElement = SAND;
+        
+        // Mouse tracking
+        let isMouseDown = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        // Update mouse position
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = Math.floor((e.clientX - rect.left) / pixelSize);
+            mouseY = Math.floor((e.clientY - rect.top) / pixelSize);
+            
+            if (isMouseDown) {
+                placeElement();
+            }
+        });
+        
+        // Handle mouse events
+        canvas.addEventListener('mousedown', () => {
+            isMouseDown = true;
+            placeElement();
+        });
+        canvas.addEventListener('mouseup', () => isMouseDown = false);
+        canvas.addEventListener('mouseleave', () => isMouseDown = false);
+        
+        // Element selection buttons
+        document.getElementById('sandBtn').addEventListener('click', () => selectElement(SAND, 'sandBtn'));
+        document.getElementById('waterBtn').addEventListener('click', () => selectElement(WATER, 'waterBtn'));
+        document.getElementById('stoneBtn').addEventListener('click', () => selectElement(STONE, 'stoneBtn'));
+        document.getElementById('lavaBtn').addEventListener('click', () => selectElement(LAVA, 'lavaBtn'));
+        document.getElementById('iceBtn').addEventListener('click', () => selectElement(ICE, 'iceBtn'));
+        document.getElementById('woodBtn').addEventListener('click', () => selectElement(WOOD, 'woodBtn'));
+        document.getElementById('oilBtn').addEventListener('click', () => selectElement(OIL, 'oilBtn'));
+        document.getElementById('metalBtn').addEventListener('click', () => selectElement(METAL, 'metalBtn'));
+        // New spawnable elements:
+        document.getElementById('steamBtn').addEventListener('click', () => selectElement(STEAM, 'steamBtn'));
+        document.getElementById('rustBtn').addEventListener('click', () => selectElement(RUST, 'rustBtn'));
+        // Add event listener for spawnable ash
+        document.getElementById('ashBtn').addEventListener('click', () => selectElement(ASH, 'ashBtn'));
+        // New event for the remover brush button
+        document.getElementById('removerBtn').addEventListener('click', () => selectElement(REMOVER, 'removerBtn'));
+        
+        function selectElement(element, btnId) {
+            currentElement = element;
+            
+            // Update selected button styles
+            document.querySelectorAll('.element-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById(btnId).classList.add('selected');
+        }
+        
+        // Clear button functionality
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            grid = new Array(cols).fill().map(() => new Array(rows).fill(0));
+        });
+        
+        function placeElement() {
+            // Use slider value as brush size instead of fixed value
+            const brushSize = parseInt(document.getElementById('brushSizeSlider').value);
+            for (let i = -brushSize; i <= brushSize; i++) {
+                for (let j = -brushSize; j <= brushSize; j++) {
+                    const x = mouseX + i;
+                    const y = mouseY + j;
+                    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                        if (currentElement === REMOVER) {
+                            grid[x][y] = EMPTY;
+                        }
+                        // Different scatter patterns based on element type
+                        else if (currentElement === SAND && Math.random() > 0.3) {
+                            grid[x][y] = SAND;
+                        } else if (currentElement === WATER && Math.random() > 0.2) {
+                            grid[x][y] = WATER;
+                        } else if (currentElement === STONE) {
+                            if (i*i + j*j <= brushSize*brushSize) { // circular brush for stone
+                                grid[x][y] = STONE;
+                            }
+                        } else if (currentElement === LAVA) {
+                            grid[x][y] = LAVA;
+                        } else if (currentElement === ICE) {
+                            grid[x][y] = ICE;
+                        } else if (currentElement === WOOD) {
+                            grid[x][y] = WOOD;
+                        } else if (currentElement === OIL) {
+                            grid[x][y] = OIL;
+                        } else if (currentElement === METAL) {
+                            grid[x][y] = METAL;
+                        }
+                        // New spawnable elements: spawn deterministically
+                        else if (currentElement === STEAM) {
+                            grid[x][y] = STEAM;
+                        } else if (currentElement === RUST) {
+                            grid[x][y] = RUST;
+                        }
+                        else if (currentElement === ASH) {  // New spawnable element "Ash"
+                            grid[x][y] = ASH;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Main game loop
+        function update() {
+            // Update particles (bottom to top to avoid double-movement)
+            for (let y = rows - 1; y >= 0; y--) {
+                // For water, sometimes iterate left to right, sometimes right to left
+                // This makes water flow more naturally in both directions
+                const startX = Math.random() > 0.5 ? 0 : cols - 1;
+                const endX = startX === 0 ? cols : -1;
+                const stepX = startX === 0 ? 1 : -1;
+                
+                for (let x = startX; x !== endX; x += stepX) {
+                    if (grid[x][y] === SAND) { updateSand(x, y); }
+                    else if (grid[x][y] === WATER) { updateWater(x, y); }
+                    else if (grid[x][y] === LAVA) { updateLava(x, y); }
+                    else if (grid[x][y] === ICE) { updateIce(x, y); }
+                    else if (grid[x][y] === OIL) { updateOil(x, y); }
+                    else if (grid[x][y] === STEAM) { updateSteam(x, y); }
+                    else if (grid[x][y] === RUST) { updateRust(x, y); }
+                    else if (grid[x][y] === BURNING_WOOD) { updateBurningWood(x, y); }
+                    else if (grid[x][y] === ASH) { updateAsh(x, y); }
+                    // Stone, Wood, and Metal don't move
+                }
+            }
+            
+            // Render
+            ctx.clearRect(0, 0, width, height);
+            for (let x = 0; x < cols; x++) {
+                for (let y = 0; y < rows; y++) {
+                    if (grid[x][y] === SAND) {
+                        // Slightly randomize sand color for visual interest
+                        const r = 220 + Math.floor(Math.random() * 20);
+                        const g = 190 + Math.floor(Math.random() * 20);
+                        const b = 140 + Math.floor(Math.random() * 20);
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === WATER) {
+                        // Slightly randomize water color
+                        const r = 30 + Math.floor(Math.random() * 20);
+                        const g = 100 + Math.floor(Math.random() * 30);
+                        const b = 200 + Math.floor(Math.random() * 55);
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === STONE) {
+                        // Slightly randomize stone color
+                        const shade = 120 + Math.floor(Math.random() * 40);
+                        ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === LAVA) {
+                        ctx.fillStyle = "orangered";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === ICE) {
+                        ctx.fillStyle = "lightblue";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === WOOD) {
+                        ctx.fillStyle = "saddlebrown";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === OIL) {
+                        ctx.fillStyle = "darkslategray";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === METAL) {
+                        ctx.fillStyle = "lightslategrey";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === STEAM) {
+                        ctx.fillStyle = "grey";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === RUST) {
+                        ctx.fillStyle = "maroon"; // rust now appears maroon
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === BURNING_WOOD) {
+                        ctx.fillStyle = "yellow"; // burning wood appears yellow
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } 
+                    else if (grid[x][y] === ASH) {
+                        ctx.fillStyle = "dimgray"; // ash appears as a dark gray
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+        
+        function updateSand(x, y) {
+            // Try to move down
+            if (y < rows - 1 && (grid[x][y + 1] === EMPTY || grid[x][y + 1] === WATER)) {
+                // If falling into water, swap positions (sand sinks in water)
+                if (grid[x][y + 1] === WATER) {
+                    grid[x][y] = WATER;
+                    grid[x][y + 1] = SAND;
+                } else {
+                    grid[x][y] = EMPTY;
+                    grid[x][y + 1] = SAND;
+                }
+            }
+            // Try to move down-left or down-right
+            else if (y < rows - 1) {
+                // Randomly decide left or right first
+                const goLeftFirst = Math.random() > 0.5;
+                
+                if (goLeftFirst) {
+                    if (x > 0 && (grid[x - 1][y + 1] === EMPTY || grid[x - 1][y + 1] === WATER)) {
+                        if (grid[x - 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x - 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x - 1][y + 1] = SAND;
+                        }
+                    } else if (x < cols - 1 && (grid[x + 1][y + 1] === EMPTY || grid[x + 1][y + 1] === WATER)) {
+                        if (grid[x + 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x + 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x + 1][y + 1] = SAND;
+                        }
+                    }
+                } else {
+                    if (x < cols - 1 && (grid[x + 1][y + 1] === EMPTY || grid[x + 1][y + 1] === WATER)) {
+                        if (grid[x + 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x + 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x + 1][y + 1] = SAND;
+                        }
+                    } else if (x > 0 && (grid[x - 1][y + 1] === EMPTY || grid[x - 1][y + 1] === WATER)) {
+                        if (grid[x - 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x - 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x - 1][y + 1] = SAND;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function updateWater(x, y) {
+            // Check adjacent cells for lava; if found, convert this water cell to steam.
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    let nx = x + i, ny = y + j;
+                    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === LAVA) {
+                        grid[x][y] = STEAM;
+                        return;
+                    }
+                }
+            }
+            // Rust conversion: check neighbor cells for METAL
+            let neighbors = [
+                [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+            ];
+            neighbors.forEach(pos => {
+                let [nx, ny] = pos;
+                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === METAL) {
+                    if (Math.random() < 0.001) { // very slow rusting
+                        grid[nx][ny] = RUST;
+                    }
+                }
+            });
+            // Try to move down
+            if (y < rows - 1 && grid[x][y + 1] === EMPTY) {
+                grid[x][y] = EMPTY;
+                grid[x][y + 1] = WATER;
+                return;
+            }
+            // Try to move diagonally down if available
+            if (y < rows - 1) {
+                if (x > 0 && grid[x - 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y + 1] = WATER;
+                    return;
+                } else if (x < cols - 1 && grid[x + 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y + 1] = WATER;
+                    return;
+                }
+            }
+            // Equalize: try to flow horizontally to empty spaces
+            let leftEmpty = (x > 0 && grid[x - 1][y] === EMPTY);
+            let rightEmpty = (x < cols - 1 && grid[x + 1][y] === EMPTY);
+            if (leftEmpty && rightEmpty) {
+                // Move to a random side if both are empty
+                if (Math.random() > 0.5) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y] = WATER;
+                } else {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y] = WATER;
+                }
+            } else if (leftEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x - 1][y] = WATER;
+            } else if (rightEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x + 1][y] = WATER;
+            }
+            // Optional extra horizontal move chance to enhance fluidity
+            else if (Math.random() < 0.1) {
+                if (x > 0 && grid[x - 1][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y] = WATER;
+                } else if (x < cols - 1 && grid[x + 1][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y] = WATER;
+                }
+            }
+        }
+        
+        function updateLava(x, y) {
+            if (y < rows - 1) {
+                if (grid[x][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x][y + 1] = LAVA;
+                    return;
+                }
+                if (grid[x][y + 1] === WATER) {
+                    grid[x][y + 1] = STEAM;
+                    return;
+                }
+                if (grid[x][y + 1] === WOOD) {
+                    if (Math.random() < 0.05) { // 5% chance to start burning
+                        grid[x][y + 1] = BURNING_WOOD;
+                    }
+                    return;
+                }
+            }
+            if (y < rows - 1) {
+                if (x > 0) {
+                    if (grid[x - 1][y + 1] === EMPTY) {
+                        grid[x][y] = EMPTY;
+                        grid[x - 1][y + 1] = LAVA;
+                        return;
+                    }
+                    if (grid[x - 1][y + 1] === WATER) {
+                        grid[x - 1][y + 1] = STEAM;
+                        return;
+                    }
+                    if (grid[x - 1][y + 1] === WOOD) {
+                        if (Math.random() < 0.05) {
+                            grid[x - 1][y + 1] = BURNING_WOOD;
+                        }
+                        return;
+                    }
+                }
+                if (x < cols - 1) {
+                    if (grid[x + 1][y + 1] === EMPTY) {
+                        grid[x][y] = EMPTY;
+                        grid[x + 1][y + 1] = LAVA;
+                        return;
+                    }
+                    if (grid[x + 1][y + 1] === WATER) {
+                        grid[x + 1][y + 1] = STEAM;
+                        return;
+                    }
+                    if (grid[x + 1][y + 1] === WOOD) {
+                        if (Math.random() < 0.05) {
+                            grid[x + 1][y + 1] = BURNING_WOOD;
+                        }
+                        return;
+                    }
+                }
+            }
+            // Equalize horizontally like water
+            let leftEmpty = (x > 0 && grid[x - 1][y] === EMPTY);
+            let rightEmpty = (x < cols - 1 && grid[x + 1][y] === EMPTY);
+            if (leftEmpty && rightEmpty) {
+                if (Math.random() > 0.5) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y] = LAVA;
+                } else {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y] = LAVA;
+                }
+            } else if (leftEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x - 1][y] = LAVA;
+            } else if (rightEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x + 1][y] = LAVA;
+            }
+        }
+        
+        function updateIce(x, y) {
+            // Check all adjacent cells for LAVA or BURNING_WOOD (fire)
+            let nearFire = false;
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    let nx = x + i, ny = y + j;
+                    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                        if (grid[nx][ny] === LAVA || grid[nx][ny] === BURNING_WOOD) {
+                            nearFire = true;
+                        }
+                    }
+                }
+            }
+            if (nearFire) {
+                // Turn into steam when heat is near.
+                grid[x][y] = STEAM;
+            } else {
+                // Drip from any direction: check all 8 neighbors for emptiness.
+                let emptyPositions = [];
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        let nx = x + i, ny = y + j;
+                        if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === EMPTY) {
+                            emptyPositions.push([nx, ny]);
+                        }
+                    }
+                }
+                // With a very small chance, melt and drip into a random empty neighbor.
+                if (emptyPositions.length > 0 && Math.random() < 0.001) {
+                    const [nx, ny] = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
+                    grid[x][y] = EMPTY;
+                    grid[nx][ny] = WATER;
+                }
+            }
+        }
+        
+        function updateOil(x, y) {
+            // Burning effect for oil: ignite if any neighbor is LAVA or BURNING_WOOD
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    let nx = x + i, ny = y + j;
+                    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                        if (grid[nx][ny] === LAVA || grid[nx][ny] === BURNING_WOOD) {
+                            if (Math.random() < 0.05) {
+                                grid[x][y] = LAVA;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            // Oil behaves like water but with a stronger horizontal spread.
+            if (y < rows - 1 && grid[x][y + 1] === EMPTY) {
+                grid[x][y] = EMPTY;
+                grid[x][y + 1] = OIL;
+                return;
+            }
+            if (y < rows - 1) {
+                if (x > 0 && grid[x - 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y + 1] = OIL;
+                    return;
+                } else if (x < cols - 1 && grid[x + 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y + 1] = OIL;
+                    return;
+                }
+            }
+            // Enhanced horizontal flow
+            let leftEmpty = (x > 0 && grid[x - 1][y] === EMPTY);
+            let rightEmpty = (x < cols - 1 && grid[x + 1][y] === EMPTY);
+            if (leftEmpty && rightEmpty) {
+                if (Math.random() > 0.6) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y] = OIL;
+                } else {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y] = OIL;
+                }
+            } else if (leftEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x - 1][y] = OIL;
+            } else if (rightEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x + 1][y] = OIL;
+            }
+        }
+        
+        function updateSteam(x, y) {
+            // Simplified: gas only moves upward slowly without horizontal drift.
+            if (y > 0 && Math.random() < 0.7) { // 70% chance to move upward
+                let temp = grid[x][y - 1];
+                grid[x][y - 1] = STEAM;
+                grid[x][y] = temp;
+            }
+        }
+
+        function updateRust(x, y) {
+            // Rust sinks: if below is empty or water, rust sinks
+            if (y < rows - 1 && (grid[x][y + 1] === EMPTY || grid[x][y + 1] === WATER)) {
+                grid[x][y] = EMPTY;
+                grid[x][y + 1] = RUST;
+            }
+        }
+
+        // New update function for burning wood
+        function updateBurningWood(x, y) {
+            // Attempt to spread fire: adjacent wood may start burning.
+            const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+            directions.forEach(dir => {
+                let nx = x + dir[0], ny = y + dir[1];
+                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === WOOD) {
+                    if (Math.random() < 0.05) { // 5% chance to ignite adjacent wood
+                        grid[nx][ny] = BURNING_WOOD;
+                    }
+                }
+            });
+            // Slowly, burning wood turns into ash.
+            if (Math.random() < 0.01) {
+                grid[x][y] = ASH;
+            }
+        }
+
+        // New update function for ash (sinking behavior)
+        function updateAsh(x, y) {
+            // Sinking behavior: if cell below is empty, sink.
+            if (y < rows - 1 && grid[x][y+1] === EMPTY) {
+                grid[x][y] = EMPTY;
+                grid[x][y+1] = ASH;
+                return;
+            }
+            // Floating: if water is directly above, swap upward.
+            if (y > 0 && grid[x][y-1] === WATER) {
+                grid[x][y] = WATER;
+                grid[x][y-1] = ASH;
+            }
+            // New equalisation on water: if adjacent horizontally is water, swap to spread out.
+            if (x > 0 && grid[x-1][y] === WATER && Math.random() < 0.5) {
+                grid[x][y] = WATER;
+                grid[x-1][y] = ASH;
+            }
+            if (x < cols - 1 && grid[x+1][y] === WATER && Math.random() < 0.5) {
+                grid[x][y] = WATER;
+                grid[x+1][y] = ASH;
+            }
+        }
+        
+        // Menu toggle code
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.getElementById('side-menu').classList.toggle('open');
+            document.querySelector('.controls').classList.toggle('open');
+            // Hide the menu toggle button when menu is open
+            document.getElementById('menu-toggle').style.display = 'none';
+        });
+
+        // New event: when the close button is clicked, hide the side menu and reveal the menu button
+        document.getElementById('menu-close').addEventListener('click', () => {
+            document.getElementById('side-menu').classList.remove('open');
+            document.getElementById('menu-toggle').style.display = '';
+        });
+
+        // Start the simulation
+        update();
+    </script>
+</body>
+</html>
