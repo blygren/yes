@@ -145,6 +145,8 @@
         <!-- New slider for brush size -->
         <label for="brushSizeSlider">Brush Size:</label>
         <input type="range" id="brushSizeSlider" min="1" max="10" value="2">
+        <!-- New virus button -->
+        <button id="virusBtn" class="element-btn">Virus</button>
     </div>
     <h1>Falling Sand Game</h1>
     <!-- Updated canvas dimensions for a slightly smaller playing area -->
@@ -210,6 +212,7 @@
         const ASH = 12;
         const GLASS = 13; // new element: glass (solid and slightly transparent)
         const ACID = 14; // new element: acid (gooey liquid that melts things)
+        const VIRUS = 15; // new element: virus (spreads to all and turns them purple)
         // Add new constant for remover brush
         const REMOVER = -1;
         
@@ -258,6 +261,8 @@
         document.getElementById('removerBtn').addEventListener('click', () => selectElement(REMOVER, 'removerBtn'));
         // Add acid event listener
         document.getElementById('acidBtn').addEventListener('click', () => selectElement(ACID, 'acidBtn'));
+        // Add virus button event listener
+        document.getElementById('virusBtn').addEventListener('click', () => selectElement(VIRUS, 'virusBtn'));
         
         function selectElement(element, btnId) {
             currentElement = element;
@@ -317,6 +322,9 @@
                         else if (currentElement === ACID) { // Add acid placement
                             grid[x][y] = ACID;
                         }
+                        else if (currentElement === VIRUS) { // virus placement
+                            grid[x][y] = VIRUS;
+                        }
                     }
                 }
             }
@@ -343,6 +351,7 @@
                     else if (grid[x][y] === BURNING_WOOD) { updateBurningWood(x, y); }
                     else if (grid[x][y] === ASH) { updateAsh(x, y); }
                     else if (grid[x][y] === ACID) { updateAcid(x, y); }
+                    else if (grid[x][y] === VIRUS) { updateVirus(x, y); }
                     // Stone, Wood, and Metal don't move
                 }
             }
@@ -405,6 +414,9 @@
                     else if (grid[x][y] === ACID) {
                         // Acid appears as a glowing, toxic green with some opacity
                         ctx.fillStyle = "rgba(0, 220, 0, 0.7)";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === VIRUS) { // render virus as a purple powder
+                        ctx.fillStyle = "purple";
                         ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
                     }
                 }
@@ -836,6 +848,29 @@
                 } else if (rightEmpty) {
                     grid[x][y] = EMPTY;
                     grid[x + 1][y] = ACID;
+                }
+            }
+        }
+        
+        // New virus update function
+        function updateVirus(x, y) {
+            // Powder-like settling behavior: move down if possible
+            if (y < rows - 1 && grid[x][y + 1] === EMPTY) {
+                grid[x][y + 1] = VIRUS;
+                grid[x][y] = EMPTY;
+                return;
+            }
+            // Spread infection: convert neighboring non-EMPTY, non-VIRUS cells to VIRUS
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    let nx = x + i, ny = y + j;
+                    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] !== VIRUS) {
+                        if (grid[nx][ny] !== EMPTY) {
+                            if (Math.random() < 0.05) { // 5% chance to infect neighbor
+                                grid[nx][ny] = VIRUS;
+                            }
+                        }
+                    }
                 }
             }
         }
