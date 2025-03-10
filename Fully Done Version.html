@@ -120,6 +120,30 @@
             right: 10px;
             cursor: pointer;
         }
+        /* Style for wind control buttons */
+        .wind-btn {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: none;
+            background: #3a4452;
+            color: #ecf0f1;
+            border-radius: 4px;
+            margin-right: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .wind-btn.selected {
+            background: #2ecc71;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        #side-menu h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #ecf0f1;
+            font-size: 1em;
+        }
     </style>
 </head>
 <body>
@@ -147,6 +171,11 @@
         <input type="range" id="brushSizeSlider" min="1" max="10" value="2">
         <!-- New virus button -->
         <button id="virusBtn" class="element-btn">Virus</button>
+        <!-- New wind control section -->
+        <h3>Wind Controls</h3>
+        <button id="windLeftBtn" class="wind-btn">Wind Left</button>
+        <button id="windRightBtn" class="wind-btn">Wind Right</button>
+        <button id="windOffBtn" class="wind-btn selected">Wind Off</button>
     </div>
     <h1>Falling Sand Game</h1>
     <!-- Updated canvas dimensions for a slightly smaller playing area -->
@@ -218,6 +247,10 @@
         
         // Current selected element
         let currentElement = SAND;
+        
+        // Wind control variables
+        let windDirection = 0; // 0 = none, -1 = left, 1 = right
+        let windStrength = 5; // Wind strength (higher values = stronger wind)
         
         // Mouse tracking
         let isMouseDown = false;
@@ -330,6 +363,22 @@
             }
         }
         
+        // Add event listeners for wind buttons
+        document.getElementById('windLeftBtn').addEventListener('click', () => setWind(-1, 'windLeftBtn'));
+        document.getElementById('windRightBtn').addEventListener('click', () => setWind(1, 'windRightBtn'));
+        document.getElementById('windOffBtn').addEventListener('click', () => setWind(0, 'windOffBtn'));
+        
+        // Function to set wind direction
+        function setWind(direction, btnId) {
+            windDirection = direction;
+            
+            // Update selected button styles
+            document.querySelectorAll('.wind-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById(btnId).classList.add('selected');
+        }
+        
         // Main game loop
         function update() {
             // Update particles (bottom to top to avoid double-movement)
@@ -426,6 +475,16 @@
         }
         
         function updateSand(x, y) {
+            // Apply wind effect to sand with probability based on wind strength
+            if (windDirection !== 0 && Math.random() < 0.2) {
+                const nx = x + windDirection;
+                if (nx >= 0 && nx < cols && grid[nx][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[nx][y] = SAND;
+                    return;
+                }
+            }
+            
             // If sand is heated by adjacent lava, transform into glass with a chance
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
@@ -495,6 +554,16 @@
         }
         
         function updateWater(x, y) {
+            // Apply wind effect to water with higher probability than sand
+            if (windDirection !== 0 && Math.random() < 0.3) {
+                const nx = x + windDirection;
+                if (nx >= 0 && nx < cols && grid[nx][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[nx][y] = WATER;
+                    return;
+                }
+            }
+            
             // Check adjacent cells for lava; if found, convert this water cell to steam.
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
@@ -678,6 +747,16 @@
         }
         
         function updateOil(x, y) {
+            // Apply wind effect to oil
+            if (windDirection !== 0 && Math.random() < 0.25) {
+                const nx = x + windDirection;
+                if (nx >= 0 && nx < cols && grid[nx][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[nx][y] = OIL;
+                    return;
+                }
+            }
+            
             // Burning effect for oil: ignite if any neighbor is LAVA or BURNING_WOOD
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
@@ -730,6 +809,16 @@
         }
         
         function updateSteam(x, y) {
+            // Apply strong wind effect to steam
+            if (windDirection !== 0 && Math.random() < 0.7) {
+                const nx = x + windDirection;
+                if (nx >= 0 && nx < cols && grid[nx][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[nx][y] = STEAM;
+                    return;
+                }
+            }
+            
             // Simplified: gas only moves upward slowly without horizontal drift.
             if (y > 0 && Math.random() < 0.7) { // 70% chance to move upward
                 let temp = grid[x][y - 1];
@@ -766,6 +855,16 @@
 
         // New update function for ash (sinking behavior)
         function updateAsh(x, y) {
+            // Apply wind effect to ash (light particles)
+            if (windDirection !== 0 && Math.random() < 0.4) {
+                const nx = x + windDirection;
+                if (nx >= 0 && nx < cols && grid[nx][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[nx][y] = ASH;
+                    return;
+                }
+            }
+            
             // Sinking behavior: if cell below is empty, sink.
             if (y < rows - 1 && grid[x][y+1] === EMPTY) {
                 grid[x][y] = EMPTY;
@@ -854,6 +953,16 @@
         
         // New virus update function
         function updateVirus(x, y) {
+            // Apply wind effect to virus particles
+            if (windDirection !== 0 && Math.random() < 0.3) {
+                const nx = x + windDirection;
+                if (nx >= 0 && nx < cols && grid[nx][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[nx][y] = VIRUS;
+                    return;
+                }
+            }
+            
             // Powder-like settling behavior: move down if possible
             if (y < rows - 1 && grid[x][y + 1] === EMPTY) {
                 grid[x][y + 1] = VIRUS;
