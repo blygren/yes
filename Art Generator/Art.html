@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Art and Pattern Generator</title>
+    <style>
+        /* Slick dark modern UI styles */
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        canvas {
+            border: 2px solid #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #333;
+        }
+        /* New style for settings sections */
+        #settings, #patternCustomisations {
+            margin-bottom: 20px;
+        }
+        label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- New Settings Section -->
+    <div id="settings">
+        <label for="shapeCount">Shape Count: </label>
+        <input type="number" id="shapeCount" value="50" min="10" max="200" step="1">
+        <label for="bgChance">Background Chance (%): </label>
+        <input type="number" id="bgChance" value="30" min="0" max="100" step="5">
+        <label for="lineWidth">Line Width Factor: </label>
+        <input type="number" id="lineWidth" value="5" min="1" max="10" step="1">
+    </div>
+    <!-- New Pattern Customisations Section -->
+    <div id="patternCustomisations">
+        <label for="linesBoxes">
+            <input type="checkbox" id="linesBoxes"> Lines &amp; Boxes Only
+        </label>
+    </div>
+    <!-- New Advanced Settings Section -->
+    <div id="advancedSettings" style="margin-bottom:20px;">
+        <label for="maxSize">Max Shape Size: </label>
+        <input type="number" id="maxSize" value="60" min="10" max="100" step="5">
+        <br/>
+        <span>Shapes Allowed:</span>
+        <label><input type="checkbox" id="allowLine" checked> Line</label>
+        <label><input type="checkbox" id="allowSquare" checked> Square</label>
+        <label><input type="checkbox" id="allowCircle" checked> Circle</label>
+        <label><input type="checkbox" id="allowTriangle" checked> Triangle</label>
+        <br/>
+        <label><input type="checkbox" id="fillShapes" checked> Fill Shapes</label>
+        <label><input type="checkbox" id="outlineShapes" checked> Outline Shapes</label>
+        <br/>
+        <label for="customPalette">Custom Color Palette (comma separated hex): </label>
+        <input type="text" id="customPalette" placeholder="#FF0000,#00FF00,#0000FF">
+    </div>
+    <canvas id="canvas" width="600" height="400" style="border:1px solid #000;"></canvas>
+    <br/>
+    <button onclick="generateArt()">Generate Art</button>
+    <button onclick="generatePattern()">Generate Pattern</button>
+    <button onclick="generateBackground()">Background Generator</button>
+    <button onclick="downloadImage()">Download Image</button>
+
+    <script>
+        // New helper function: return a random color from palette or random color
+        function getColor() {
+            const paletteInput = document.getElementById('customPalette').value.trim();
+            if(paletteInput !== "") {
+                const palette = paletteInput.split(',').map(c => c.trim());
+                return palette[Math.floor(Math.random() * palette.length)];
+            }
+            return getRandomColor();
+        }
+        
+        // Updated generateArt to use advanced settings for outcomes
+        function generateArt() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Retrieve basic settings
+            const shapeCount = Number(document.getElementById('shapeCount').value) || 50;
+            const bgChance = (Number(document.getElementById('bgChance').value) || 30) / 100;
+            const lineFactor = Number(document.getElementById('lineWidth').value) || 5;
+            // Retrieve advanced settings
+            const maxSize = Number(document.getElementById('maxSize').value) || 60;
+            const allowLine = document.getElementById('allowLine').checked;
+            const allowSquare = document.getElementById('allowSquare').checked;
+            const allowCircle = document.getElementById('allowCircle').checked;
+            const allowTriangle = document.getElementById('allowTriangle').checked;
+            const fillShapes = document.getElementById('fillShapes').checked;
+            const outlineShapes = document.getElementById('outlineShapes').checked;
+            
+            // Customizable chance to add a background color
+            if(Math.random() < bgChance) {
+                ctx.fillStyle = getColor();
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Determine allowed shapes based on advanced settings
+            let allowedShapes = [];
+            if(allowLine) allowedShapes.push(0);
+            if(allowSquare) allowedShapes.push(1);
+            if(allowCircle) allowedShapes.push(2);
+            if(allowTriangle) allowedShapes.push(3);
+            if(allowedShapes.length === 0) allowedShapes = [0,1,2,3];
+            
+            for(let i=0; i<shapeCount; i++){
+                const shape = allowedShapes[Math.floor(Math.random()*allowedShapes.length)];
+                ctx.lineWidth = Math.random() * lineFactor + 1;
+                // Set colors using palette if provided
+                const strokeColor = getColor();
+                const fillColor = getColor();
+                ctx.strokeStyle = strokeColor;
+                ctx.fillStyle = fillColor;
+                
+                if(shape === 0) { // Line always outlines
+                    ctx.beginPath();
+                    ctx.moveTo(Math.random()*canvas.width, Math.random()*canvas.height);
+                    ctx.lineTo(Math.random()*canvas.width, Math.random()*canvas.height);
+                    ctx.stroke();
+                } else if(shape === 1) { // Square
+                    const size = Math.random()*maxSize + 10;
+                    const x = Math.random()*(canvas.width-size);
+                    const y = Math.random()*(canvas.height-size);
+                    if(fillShapes) ctx.fillRect(x, y, size, size);
+                    if(outlineShapes) ctx.strokeRect(x, y, size, size);
+                } else if(shape === 2) { // Circle
+                    const radius = Math.random()*maxSize/2 + 5;
+                    const x = radius + Math.random()*(canvas.width - 2*radius);
+                    const y = radius + Math.random()*(canvas.height - 2*radius);
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI*2);
+                    if(fillShapes) ctx.fill();
+                    if(outlineShapes) ctx.stroke();
+                } else { // Triangle
+                    const size = Math.random()*maxSize + 10;
+                    const x = Math.random()*(canvas.width-size);
+                    const y = Math.random()*(canvas.height-size);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x+size, y);
+                    ctx.lineTo(x+size/2, y-size);
+                    ctx.closePath();
+                    if(fillShapes) ctx.fill();
+                    if(outlineShapes) ctx.stroke();
+                }
+            }
+        }
+        
+        // Updated generatePattern to include customisation
+        function generatePattern() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Check if "Lines & Boxes Only" is enabled
+            if (document.getElementById('linesBoxes').checked) {
+                generateLinesBoxesPattern(ctx, canvas);
+            } else {
+                const patternType = Math.floor(Math.random() * 4); // 0: grid, 1: bars, 2: circles, 3: stripes
+                if (patternType === 0) {
+                    generateGridPattern(ctx, canvas);
+                } else if (patternType === 1) {
+                    generateBarsPattern(ctx, canvas);
+                } else if (patternType === 2) {
+                    generateCirclePattern(ctx, canvas);
+                } else {
+                    generateStripesPattern(ctx, canvas);
+                }
+            }
+        }
+        
+        // New function: Generate lines and boxes pattern customisation
+        function generateLinesBoxesPattern(ctx, canvas) {
+            const cols = 10;
+            const rows = 8;
+            const cellWidth = canvas.width / cols;
+            const cellHeight = canvas.height / rows;
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    // Draw box outline
+                    ctx.strokeStyle = getRandomColor();
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(i * cellWidth, j * cellHeight, cellWidth, cellHeight);
+                    // Draw diagonal line in box
+                    ctx.beginPath();
+                    ctx.moveTo(i * cellWidth, j * cellHeight);
+                    ctx.lineTo((i + 1) * cellWidth, (j + 1) * cellHeight);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        // New function: Generate grid pattern with random dimensions and colors
+        function generateGridPattern(ctx, canvas) {
+            const cols = Math.floor(Math.random() * 5) + 5; // random cols between 5 and 9
+            const rows = Math.floor(Math.random() * 5) + 5; // random rows between 5 and 9
+            const cellWidth = canvas.width / cols;
+            const cellHeight = canvas.height / rows;
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    ctx.fillStyle = getRandomColor();
+                    ctx.fillRect(i * cellWidth, j * cellHeight, cellWidth, cellHeight);
+                }
+            }
+        }
+        
+        // New function: Generate bars pattern with random bar count and colors
+        function generateBarsPattern(ctx, canvas) {
+            const numBars = Math.floor(Math.random() * 10) + 5; // 5 to 14 bars
+            const barWidth = canvas.width / numBars;
+            for (let i = 0; i < numBars; i++) {
+                ctx.fillStyle = getRandomColor();
+                ctx.fillRect(i * barWidth, 0, barWidth, canvas.height);
+            }
+        }
+        
+        // New function: Generate circle pattern arranged in a grid
+        function generateCirclePattern(ctx, canvas) {
+            const cols = Math.floor(Math.random() * 5) + 3; // 3 to 7 columns
+            const rows = Math.floor(Math.random() * 5) + 3; // 3 to 7 rows
+            const cellWidth = canvas.width / cols;
+            const cellHeight = canvas.height / rows;
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    const x = i * cellWidth + cellWidth / 2;
+                    const y = j * cellHeight + cellHeight / 2;
+                    const radius = Math.min(cellWidth, cellHeight) / 4;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = getRandomColor();
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // New function: Generate diagonal stripes pattern
+        function generateStripesPattern(ctx, canvas) {
+            const stripeCount = Math.floor(Math.random() * 10) + 5; // 5 to 14 stripes
+            for (let i = -canvas.height; i < canvas.width; i += canvas.width / stripeCount) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i + canvas.height, canvas.height);
+                ctx.strokeStyle = getRandomColor();
+                ctx.lineWidth = Math.random() * 5 + 1;
+                ctx.stroke();
+            }
+        }
+        
+        // Utility function to generate a random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+        
+        // New function: Add a unique generated background using a linear gradient
+        function addBackground() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            let gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, getRandomColor());
+            gradient.addColorStop(1, getRandomColor());
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // New function: Generate a unique background
+        function generateBackground() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const type = Math.floor(Math.random() * 3); // 0: gradient, 1: checkerboard, 2: solid
+            if (type === 0) {
+                generateGradientBackground(ctx, canvas);
+            } else if (type === 1) {
+                generateCheckerBackground(ctx, canvas);
+            } else {
+                generateSolidBackground(ctx, canvas);
+            }
+        }
+        
+        // Generate a linear gradient background
+        function generateGradientBackground(ctx, canvas) {
+            let gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, getRandomColor());
+            gradient.addColorStop(1, getRandomColor());
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Generate a black and white checkerboard background
+        function generateCheckerBackground(ctx, canvas) {
+            const cellSize = Math.floor(Math.random() * 40) + 20; // 20 to 60 pixels
+            for (let y = 0; y < canvas.height; y += cellSize) {
+                for (let x = 0; x < canvas.width; x += cellSize) {
+                    ctx.fillStyle = ((x / cellSize + y / cellSize) % 2 === 0) ? '#000000' : '#FFFFFF';
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                }
+            }
+        }
+        
+        // Generate a solid color background
+        function generateSolidBackground(ctx, canvas) {
+            ctx.fillStyle = getRandomColor();
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // New function: Download canvas as image
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            const image = canvas.toDataURL("image/png");
+            const a = document.createElement('a');
+            a.href = image;
+            a.download = 'art.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
