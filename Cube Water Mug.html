@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Coffee Mug</title>
+    <style>
+        /* Add CSS variables for theme colors */
+        :root {
+            --bg-color: #f0f0f0;
+            --grid-color: #ccc;
+            --text-color: #333;
+            --menu-bg: #fff;
+            --menu-shadow: rgba(0,0,0,0.3);
+        }
+        
+        /* Dark mode theme */
+        body.dark-mode {
+            --bg-color: #222;
+            --grid-color: #444;
+            --text-color: #000; /* changed from #eee to black */
+            --menu-bg: #333;
+            --menu-shadow: rgba(0,0,0,0.5);
+        }
+        
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: var(--bg-color); 
+            background-image: linear-gradient(0deg, var(--grid-color) 1px, transparent 1px),
+                              linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+        }
+        canvas { display: block; }
+        .instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: var(--text-color);
+            background: rgba(255,255,255,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+        }
+        /* NEW: Side menu styles */
+        #sideMenu {
+            position: fixed;
+            top: 0;
+            right: -200px;
+            width: 200px;
+            height: 100%;
+            background: var(--menu-bg);
+            box-shadow: -2px 0 5px var(--menu-shadow);
+            padding: 20px;
+            box-sizing: border-box;
+            transition: right 0.3s;
+            font-family: Arial, sans-serif;
+            color: var(--text-color);
+        }
+        #sideMenu.open { right: 0; }
+        #menuToggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ccc;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        #sideMenu h2 { margin-top: 0; }
+        #sideMenu button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            cursor: pointer;
+        }
+        /* NEW: Collapsible menu styles */
+        .menu-section {
+            margin-bottom: 10px;
+        }
+        
+        .menu-header {
+            background: #e0e0e0;
+            padding: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+        }
+        
+        .menu-header:hover {
+            background: #d0d0d0;
+        }
+        
+        .menu-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .menu-content.expanded {
+            max-height: 200px;
+        }
+        
+        .menu-header:after {
+            content: '▼';
+            font-size: 10px;
+        }
+        
+        .menu-header.collapsed:after {
+            content: '►';
+        }
+        
+        /* NEW: Increase max-height for the Liquids dropdown */
+        #liquidsMenuContent.expanded {
+            max-height: 350px; /* increased from 300px */
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">Click and drag the mug to tip it!</div>
+    <button id="menuToggle">Menu</button>
+    <!-- NEW: Slide out side menu -->
+    <div id="sideMenu" class="open">
+        <h2>Physics Sandbox</h2>
+        
+        <!-- Tools section -->
+        <div class="menu-section">
+            <div class="menu-header">Tools</div>
+            <div class="menu-content expanded">
+                <button id="grabTool">Grab Tool</button>
+                <button id="noGrabTool">No Grab</button>
+                <button id="freezeTool">Freeze Tool</button> <!-- NEW: Added Freeze Tool -->
+                <button id="removerTool">Remover Tool</button>
+            </div>
+        </div>
+        
+        <!-- Liquids section -->
+        <div class="menu-section">
+            <div class="menu-header">Liquids</div>
+            <div class="menu-content expanded" id="liquidsMenuContent">
+                <button id="coffeeSpawner">Coffee</button>
+                <button id="milkSpawner">Milk</button>
+                <button id="waterSpawner">Water</button>
+                <button id="wineSpawner">Wine</button> <!-- NEW -->
+                <button id="peeSpawner">Pee</button> <!-- NEW -->
+                <button id="acidSpawner">Acid</button> <!-- NEW: Add acid spawner -->
+                <button id="snowSpawner">Snow</button> <!-- NEW: Snow liquid -->
+            </div>
+        </div>
+        
+        <!-- Props section -->
+        <div class="menu-section">
+            <div class="menu-header">Props</div>
+            <div class="menu-content expanded">
+                <button id="mugSpawner">Mug</button>
+                <button id="cubeSpawner">Cube</button>
+                <button id="circleSpawner">Circle</button> <!-- NEW: replaced table -->
+                <button id="triangleSpawner">Triangle</button> <!-- NEW: replaced chair -->
+            </div>
+        </div>
+        
+        <!-- NEW: Settings section -->
+        <div class="menu-section">
+            <div class="menu-header">Settings</div>
+            <div class="menu-content expanded">
+                <button id="lightModeBtn">Light Mode</button>
+                <button id="darkModeBtn">Dark Mode</button>
+                <!-- NEW: Spawning Speed slider -->
+                <label for="spawnSpeedSlider">Spawning Speed:</label>
+                <input id="spawnSpeedSlider" type="range" min="10" max="600" step="1" value="33">
+                <button id="clearMapBtn">Clear Map</button> <!-- NEW: Clear Map button -->
+            </div>
+        </div>
+    </div>
+    <canvas id="world"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script>
+        const Engine = Matter.Engine,
+              Render = Matter.Render,
+              Runner = Matter.Runner,
+              World = Matter.World,
+              Bodies = Matter.Bodies,
+              Body = Matter.Body,
+              MouseConstraint = Matter.MouseConstraint,
+              Mouse = Matter.Mouse;
+        
+        // Create engine and world
+        const engine = Engine.create();
+        engine.positionIterations = 20;
+        engine.velocityIterations = 20;
+        const world = engine.world;
+        world.gravity.y = 1;
+        
+        // Setup canvas and renderer
+        const render = Render.create({
+            canvas: document.getElementById('world'),
+            engine: engine,
+            options: {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                wireframes: false,
+                background: 'transparent' // changed from '#f0f0f0' to transparent
+            }
+        });
+        
+        // Dimensions for the mug
+        const mugWidth = 200;
+        const mugHeight = 250;
+        const wallThickness = 20;
+        const mugX = window.innerWidth / 2;
+        const mugY = window.innerHeight / 2;
+        
+        // Build mug as a compound body (mug is now white)
+        const leftWall = Bodies.rectangle(
+            -mugWidth/2 + wallThickness/2, 
+            0, 
+            wallThickness, 
+            mugHeight, 
+            { render: { fillStyle: '#FFFFFF' } }
+        );
+        const rightWall = Bodies.rectangle(
+            mugWidth/2 - wallThickness/2, 
+            0, 
+            wallThickness, 
+            mugHeight, 
+            { render: { fillStyle: '#FFFFFF' } }
+        );
+        const bottom = Bodies.rectangle(
+            0, 
+            mugHeight/2 - wallThickness/2, 
+            mugWidth - wallThickness, 
+            wallThickness, 
+            { render: { fillStyle: '#FFFFFF' } }
+        );
+        // Removed: handle and rim so coffee can escape the top
+        // Comment out or remove the default mug spawn:
+        // const mug = Body.create({
+        //     parts: [leftWall, rightWall, bottom]
+        // });
+        // Body.setPosition(mug, { x: mugX, y: mugY });
+        // World.add(world, mug);
+        
+        /*
+         // Add coffee droplets
+         const coffeeDrops = [];
+         for (let i = 0; i < 200; i++) {
+             const drop = Bodies.circle(
+                 mugX - mugWidth/3 + Math.random() * (mugWidth/1.5), 
+                 mugY - mugHeight/2 + 50 + Math.random() * (mugHeight/2 - 50), 
+                 3 + Math.random() * 3, 
+                 { 
+                     // Adjust properties to reduce excessive bouncing/tunneling
+                     restitution: 0.1,
+                     friction: 0.05,
+                     density: 0.003,
+                     render: { fillStyle: '#6F4E37' }
+                 }
+             );
+             coffeeDrops.push(drop);
+         }
+         World.add(world, coffeeDrops);
+        */
+        
+        // Add mouse control
+        const mouse = Mouse.create(render.canvas);
+        const mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.2,
+                render: {
+                    visible: true
+                }
+            }
+        });
+        
+        World.add(world, mouseConstraint);
+        render.mouse = mouse;
+        
+        // Store the mouseConstraint for later use/removal
+        let activeMouseConstraint = mouseConstraint;
+        
+        // Create function to add mouse constraint
+        function enableGrab() {
+            if (!activeMouseConstraint) {
+                const mouse = Mouse.create(render.canvas);
+                const mouseConstraint = MouseConstraint.create(engine, {
+                    mouse: mouse,
+                    constraint: {
+                        stiffness: 0.2,
+                        render: {
+                            visible: true
+                        }
+                    }
+                });
+                
+                World.add(world, mouseConstraint);
+                render.mouse = mouse;
+                activeMouseConstraint = mouseConstraint;
+            }
+        }
+        
+        // Create function to remove mouse constraint
+        function disableGrab() {
+            if (activeMouseConstraint) {
+                World.remove(world, activeMouseConstraint);
+                activeMouseConstraint = null;
+            }
+        }
+        
+        // Initialize the grab functionality
+        enableGrab();
+        
+        // Create ground to catch spilled coffee
+        const ground = Bodies.rectangle(
+            window.innerWidth / 2,
+            window.innerHeight + 50,
+            window.innerWidth,
+            100,
+            { isStatic: true, render: { fillStyle: '#cccccc' } }
+        );
+        World.add(world, ground);
+
+        // NEW: Add left, right, and top borders
+        const leftBorder = Bodies.rectangle(
+            -50,
+            window.innerHeight / 2,
+            100,
+            window.innerHeight,
+            { isStatic: true, render: { fillStyle: '#cccccc' } }
+        );
+        const rightBorder = Bodies.rectangle(
+            window.innerWidth + 50,
+            window.innerHeight / 2,
+            100,
+            window.innerHeight,
+            { isStatic: true, render: { fillStyle: '#cccccc' } }
+        );
+        const topBorder = Bodies.rectangle(
+            window.innerWidth / 2,
+            -50,
+            window.innerWidth,
+            100,
+            { isStatic: true, render: { fillStyle: '#cccccc' } }
+        );
+        World.add(world, [leftBorder, rightBorder, topBorder]);
+        
+        // Global tool variable and spawn variables for coffee spawner
+        let currentTool = 'grab';
+        let spawnInterval;
+        let lastMousePos = { x: 0, y: 0 };
+        
+        // Tool selection from side menu
+        document.getElementById('grabTool').addEventListener('click', () => {
+            currentTool = 'grab';
+            enableGrab();
+            updateSelectedTool('grabTool');
+        });
+        document.getElementById('coffeeSpawner').addEventListener('click', () => {
+            currentTool = 'coffee';
+            enableGrab();
+            updateSelectedTool('coffeeSpawner');
+        });
+        
+        // NEW: Toggle side menu visibility
+        const menuToggle = document.getElementById('menuToggle');
+        const sideMenu = document.getElementById('sideMenu');
+        menuToggle.addEventListener('click', () => {
+            sideMenu.classList.toggle('open');
+        });
+        
+        // NEW: Spawn coffee droplets continuously when coffee spawner is active
+        const canvasElem = render.canvas;
+        canvasElem.addEventListener('mousedown', (e) => {
+            if (currentTool === 'coffee' || currentTool === 'milk' || currentTool === 'water' || 
+                currentTool === 'wine' || currentTool === 'pee' || currentTool === 'acid' || currentTool === 'snow') {
+                lastMousePos = { x: e.clientX, y: e.clientY };
+                let dropletColor;
+                let additionalProps = {};
+                
+                if (currentTool === 'coffee') {
+                    dropletColor = '#6F4E37';
+                } else if (currentTool === 'milk') {
+                    dropletColor = '#FFFDD0';
+                } else if (currentTool === 'water') {
+                    dropletColor = '#ADD8E6';
+                } else if (currentTool === 'wine') {
+                    dropletColor = '#8B0000';  // Dark red for wine
+                } else if (currentTool === 'pee') {
+                    dropletColor = '#FFFF00';  // Yellow for pee
+                } else if (currentTool === 'acid') {
+                    dropletColor = '#39FF14';  // Bright neon green for acid
+                } else if (currentTool === 'snow') {
+                    dropletColor = '#FFFFFF';  // White for snow
+                    additionalProps = { frictionAir: 0.8 }; // Makes it fall slowly
+                }
+                
+                spawnInterval = setInterval(() => {
+                    const newDrop = Bodies.circle(
+                        lastMousePos.x,
+                        lastMousePos.y,
+                        3 + Math.random() * 3,
+                        Object.assign({
+                            restitution: 0.1,
+                            friction: 0.05,
+                            density: 0.003,
+                            render: { fillStyle: dropletColor }
+                        }, additionalProps)
+                    );
+                    World.add(world, newDrop);
+                }, spawnDelay); // use spawnDelay instead of 33
+            }
+            else if (currentTool === 'mug') {
+                spawnMug(e.clientX, e.clientY);
+            }
+            else if (currentTool === 'cube') {
+                spawnCube(e.clientX, e.clientY);
+            }
+            else if (currentTool === 'circle') { // NEW: replaced table
+                spawnCircle(e.clientX, e.clientY);
+            }
+            else if (currentTool === 'triangle') { // NEW: replaced chair
+                spawnTriangle(e.clientX, e.clientY);
+            }
+            else if (currentTool === 'remover') {
+                // Find bodies near click point and remove them
+                const bodies = Matter.Composite.allBodies(world).filter(body => !body.isStatic);
+                const mousePosition = { x: e.clientX, y: e.clientY };
+                const radius = 20;
+                
+                // Find bodies near click point
+                for (let i = 0; i < bodies.length; i++) {
+                    const body = bodies[i];
+                    const distance = Matter.Vector.magnitude(
+                        Matter.Vector.sub(body.position, mousePosition)
+                    );
+                    
+                    if (distance < radius) {
+                        World.remove(world, body);
+                        break;
+                    }
+                }
+            }
+            else if (currentTool === 'freeze') {
+                // Find bodies near click point
+                const bodies = Matter.Composite.allBodies(world).filter(body => !body.isStatic || body.isFrozen);
+                const mousePosition = { x: e.clientX, y: e.clientY };
+                const radius = 20;
+                
+                for (let i = 0; i < bodies.length; i++) {
+                    const body = bodies[i];
+                    const distance = Matter.Vector.magnitude(
+                        Matter.Vector.sub(body.position, mousePosition)
+                    );
+                    
+                    if (distance < radius) {
+                        // Toggle frozen state
+                        if (body.isStatic) {
+                            // Unfreeze
+                            Body.setStatic(body, false);
+                            body.isFrozen = false;
+                            
+                            // Restore original render properties if we saved them
+                            if (body.originalRender) {
+                                body.render.strokeStyle = body.originalRender.strokeStyle;
+                                body.render.lineWidth = body.originalRender.lineWidth;
+                            }
+                        } else {
+                            // Freeze
+                            // Save original render properties
+                            body.originalRender = {
+                                strokeStyle: body.render.strokeStyle,
+                                lineWidth: body.render.lineWidth
+                            };
+                            
+                            // Add visual indication it's frozen
+                            body.render.strokeStyle = '#00FFFF'; // Cyan outline
+                            body.render.lineWidth = 2;
+                            
+                            Body.setStatic(body, true);
+                            body.isFrozen = true;
+                        }
+                        break;
+                    }
+                }
+            }
+        });
+        canvasElem.addEventListener('mousemove', (e) => {
+            // Update lastMousePos for all spawn tools: coffee, milk, and water
+            if (currentTool === 'coffee' || currentTool === 'milk' || currentTool === 'water' || 
+                currentTool === 'wine' || currentTool === 'pee' || currentTool === 'acid' || currentTool === 'snow') {
+                lastMousePos = { x: e.clientX, y: e.clientY };
+            }
+        });
+        canvasElem.addEventListener('mouseup', () => {
+            if (spawnInterval) {
+                clearInterval(spawnInterval);
+                spawnInterval = null;
+            }
+        });
+        
+        // NEW: Tool selection for mug spawner
+        document.getElementById('mugSpawner').addEventListener('click', () => {
+            currentTool = 'mug';
+            enableGrab();
+            updateSelectedTool('mugSpawner');
+        });
+        
+        // NEW: Tool selection for milk and water spawners
+        document.getElementById('milkSpawner').addEventListener('click', () => {
+            currentTool = 'milk';
+            enableGrab();
+            updateSelectedTool('milkSpawner');
+        });
+        document.getElementById('waterSpawner').addEventListener('click', () => {
+            currentTool = 'water';
+            enableGrab();
+            updateSelectedTool('waterSpawner');
+        });
+        
+        // NEW: Tool selection for new tools
+        document.getElementById('cubeSpawner').addEventListener('click', () => {
+            currentTool = 'cube';
+            enableGrab();
+            updateSelectedTool('cubeSpawner');
+        });
+        
+        document.getElementById('removerTool').addEventListener('click', () => {
+            currentTool = 'remover';
+            enableGrab();
+            updateSelectedTool('removerTool');
+        });
+        
+        // Replace table and chair event listeners with circle and triangle
+        document.getElementById('circleSpawner').addEventListener('click', () => {
+            currentTool = 'circle';
+            enableGrab();
+            updateSelectedTool('circleSpawner');
+        });
+        
+        document.getElementById('triangleSpawner').addEventListener('click', () => {
+            currentTool = 'triangle';
+            enableGrab();
+            updateSelectedTool('triangleSpawner');
+        });
+        
+        // NEW: Add event listener for No Grab tool
+        document.getElementById('noGrabTool').addEventListener('click', () => {
+            currentTool = 'noGrab';
+            disableGrab();
+            updateSelectedTool('noGrabTool');
+        });
+        
+        // NEW: Add event handlers for the new liquid types
+        document.getElementById('wineSpawner').addEventListener('click', () => {
+            currentTool = 'wine';
+            enableGrab();
+            updateSelectedTool('wineSpawner');
+        });
+        
+        document.getElementById('peeSpawner').addEventListener('click', () => {
+            currentTool = 'pee';
+            enableGrab();
+            updateSelectedTool('peeSpawner');
+        });
+        
+        // NEW: Function to spawn a cube
+        function spawnCube(x, y) {
+            const cube = Bodies.rectangle(
+                x, 
+                y, 
+                50, 
+                50, 
+                { 
+                    render: { fillStyle: '#FF6A33' },
+                    density: 0.002
+                }
+            );
+            World.add(world, cube);
+        }
+        
+        // NEW: Function to spawn a mug at given coordinates
+        function spawnMug(x, y) {
+            const leftWall = Bodies.rectangle(
+                -mugWidth/2 + wallThickness/2, 
+                0, 
+                wallThickness, 
+                mugHeight, 
+                { render: { fillStyle: '#FFFFFF' } }
+            );
+            const rightWall = Bodies.rectangle(
+                mugWidth/2 - wallThickness/2, 
+                0, 
+                wallThickness, 
+                mugHeight, 
+                { render: { fillStyle: '#FFFFFF' } }
+            );
+            const bottom = Bodies.rectangle(
+                0, 
+                mugHeight/2 - wallThickness/2, 
+                mugWidth - wallThickness, 
+                wallThickness, 
+                { render: { fillStyle: '#FFFFFF' } }
+            );
+            const newMug = Body.create({
+                parts: [leftWall, rightWall, bottom]
+            });
+            Body.setPosition(newMug, { x: x, y: y });
+            World.add(world, newMug);
+        }
+        
+        // NEW: Function to spawn a circle at given coordinates
+        function spawnCircle(x, y) {
+            const circle = Bodies.circle(
+                x, 
+                y, 
+                40, // radius
+                { 
+                    render: { fillStyle: '#4CAF50' }, // green color
+                    density: 0.001
+                }
+            );
+            World.add(world, circle);
+        }
+        
+        // NEW: Function to spawn a triangle at given coordinates
+        function spawnTriangle(x, y) {
+            const triangle = Bodies.polygon(
+                x,
+                y,
+                3, // number of sides (3 = triangle)
+                50, // radius of circumscribed circle
+                {
+                    render: { fillStyle: '#9C27B0' }, // purple color
+                    density: 0.001
+                }
+            );
+            World.add(world, triangle);
+        }
+        
+        // Run the physics engine
+        Render.run(render);
+        const runner = Runner.create();
+        Runner.run(runner, engine);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            render.options.width = window.innerWidth;
+            render.options.height = window.innerHeight;
+            Render.setPixelRatio(render, window.devicePixelRatio);
+            
+            // Update ground position
+            Body.setPosition(ground, {
+                x: window.innerWidth / 2,
+                y: window.innerHeight + 50
+            });
+            // NEW: Update border positions
+            Body.setPosition(leftBorder, { x: -50, y: window.innerHeight / 2 });
+            Body.setPosition(rightBorder, { x: window.innerWidth + 50, y: window.innerHeight / 2 });
+            Body.setPosition(topBorder, { x: window.innerWidth / 2, y: -50 });
+        });
+        
+        // NEW: Add collapsible menu functionality
+        const menuHeaders = document.querySelectorAll('.menu-header');
+        menuHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                header.classList.toggle('collapsed');
+                const content = header.nextElementSibling;
+                content.classList.toggle('expanded');
+            });
+        });
+        
+        // Add theme toggle functionality
+        document.getElementById('lightModeBtn').addEventListener('click', () => {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+        });
+        
+        document.getElementById('darkModeBtn').addEventListener('click', () => {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+        });
+        
+        // Check for saved theme preference and apply it
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Add CSS for selected button
+        document.head.insertAdjacentHTML('beforeend', `
+            <style>
+                #sideMenu button.selected {
+                    outline: 2px solid yellow;
+                }
+            </style>
+        `);
+
+        // Function to update selected tool button
+        function updateSelectedTool(toolId) {
+            document.querySelectorAll('#sideMenu button').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById(toolId).classList.add('selected');
+        }
+        
+        // Set default selected tool
+        updateSelectedTool('grabTool');
+
+        // NEW: Add event listener for Freeze Tool
+        document.getElementById('freezeTool').addEventListener('click', () => {
+            currentTool = 'freeze';
+            enableGrab();
+            updateSelectedTool('freezeTool');
+        });
+        
+        // Update other tool event listeners to use the updateSelectedTool function
+        document.getElementById('grabTool').addEventListener('click', () => {
+            currentTool = 'grab';
+            enableGrab();
+            updateSelectedTool('grabTool');
+        });
+        
+        document.getElementById('noGrabTool').addEventListener('click', () => {
+            currentTool = 'noGrab';
+            disableGrab();
+            updateSelectedTool('noGrabTool');
+        });
+        
+        document.getElementById('removerTool').addEventListener('click', () => {
+            currentTool = 'remover';
+            enableGrab();
+            updateSelectedTool('removerTool');
+        });
+        
+        document.getElementById('coffeeSpawner').addEventListener('click', () => {
+            currentTool = 'coffee';
+            enableGrab();
+            updateSelectedTool('coffeeSpawner');
+        });
+        
+        // Add event handler for acid spawner
+        document.getElementById('acidSpawner').addEventListener('click', () => {
+            currentTool = 'acid';
+            enableGrab();
+            updateSelectedTool('acidSpawner');
+        });
+
+        // Add event listener for snow spawner
+        document.getElementById('snowSpawner').addEventListener('click', () => {
+            currentTool = 'snow';
+            enableGrab();
+            updateSelectedTool('snowSpawner');
+        });
+        
+        // NEW: Global variable for spawn delay
+        let spawnDelay = parseInt(document.getElementById('spawnSpeedSlider').value, 10);
+
+        // NEW: Update spawnDelay when slider value changes
+        document.getElementById('spawnSpeedSlider').addEventListener('input', (e) => {
+            spawnDelay = parseInt(e.target.value, 10);
+        });
+
+        // NEW: Add Clear Map button event listener
+        document.getElementById('clearMapBtn').addEventListener('click', () => {
+            // Remove all non-static bodies from the world
+            const bodies = Matter.Composite.allBodies(world).filter(body => !body.isStatic);
+            for (let i = 0; i < bodies.length; i++) {
+                World.remove(world, bodies[i]);
+            }
+        });
+    </script>
+</body>
+</html>
