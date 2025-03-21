@@ -164,18 +164,27 @@
         <button id="rustBtn" class="element-btn">Rust</button>
         <button id="ashBtn" class="element-btn">Ash</button>
         <button id="acidBtn" class="element-btn">Acid</button>
-        <!-- New remover brush button at the bottom -->
+        <button id="virusBtn" class="element-btn">Virus</button>
+        <button id="platynumBtn" class="element-btn">Platynum</button>
+        <button id="fireBtn" class="element-btn">Fire</button>
+        <button id="bouncyBtn" class="element-btn">Bouncy</button>
         <button id="removerBtn" class="element-btn">Remover Brush</button>
         <!-- New slider for brush size -->
         <label for="brushSizeSlider">Brush Size:</label>
         <input type="range" id="brushSizeSlider" min="1" max="10" value="2">
-        <!-- New virus button -->
-        <button id="virusBtn" class="element-btn">Virus</button>
         <!-- New wind control section -->
         <h3>Wind Controls</h3>
         <button id="windLeftBtn" class="wind-btn">Wind Left</button>
         <button id="windRightBtn" class="wind-btn">Wind Right</button>
         <button id="windOffBtn" class="wind-btn selected">Wind Off</button>
+        <label for="windSpeedSlider">Wind Speed:</label>
+        <input type="range" id="windSpeedSlider" min="1" max="80" value="5">
+        <!-- Add new Colorize tool -->
+        <button id="colorizeBtn" class="element-btn">Colorize</button>
+        <label for="colorPicker">Pick Colour:</label>
+        <input type="color" id="colorPicker" value="#ff00ff">
+        <!-- Add new Vacuum tool -->
+        <button id="vacuumBtn" class="element-btn">Vacuum</button>
     </div>
     <h1>Falling Sand Game</h1>
     <!-- Updated canvas dimensions for a slightly smaller playing area -->
@@ -224,6 +233,12 @@
         // Grid to track particles
         let grid = new Array(cols).fill().map(() => new Array(rows).fill(0));
         
+        // Add new constant for colorizer
+        const COLORIZE = 19; // new element: colorizer
+
+        // After grid definition, add a new grid to store colors
+        let colorGrid = new Array(cols).fill().map(() => new Array(rows).fill(null));
+
         // Particle types
         const EMPTY = 0;
         const SAND = 1;
@@ -242,15 +257,20 @@
         const GLASS = 13; // new element: glass (solid and slightly transparent)
         const ACID = 14; // new element: acid (gooey liquid that melts things)
         const VIRUS = 15; // new element: virus (spreads to all and turns them purple)
+        const PLATYNUM = 16; // new element: platynum (hovers slightly above ground and supports elements)
+        const FIRE = 17; // new element: fire
+        const BOUNCY = 18; // new element: bouncy
         // Add new constant for remover brush
         const REMOVER = -1;
+        // Add new constant for vacuum element
+        const VACUUM = 20; // new element: vacuum
         
         // Current selected element
         let currentElement = SAND;
         
         // Wind control variables
         let windDirection = 0; // 0 = none, -1 = left, 1 = right
-        let windStrength = 5; // Wind strength (higher values = stronger wind)
+        let windStrength = 5; // windStrength set via slider
         
         // Mouse tracking
         let isMouseDown = false;
@@ -296,6 +316,16 @@
         document.getElementById('acidBtn').addEventListener('click', () => selectElement(ACID, 'acidBtn'));
         // Add virus button event listener
         document.getElementById('virusBtn').addEventListener('click', () => selectElement(VIRUS, 'virusBtn'));
+        // Add platynum event listener to side menu
+        document.getElementById('platynumBtn').addEventListener('click', () => selectElement(PLATYNUM, 'platynumBtn'));
+        // Add new event listener for Fire element
+        document.getElementById('fireBtn').addEventListener('click', () => selectElement(FIRE, 'fireBtn'));
+        // Add event listener for bouncy element in side menu
+        document.getElementById('bouncyBtn').addEventListener('click', () => selectElement(BOUNCY, 'bouncyBtn'));
+        // In the script, add event listener for Colorize button:
+        document.getElementById('colorizeBtn').addEventListener('click', () => selectElement(COLORIZE, 'colorizeBtn'));
+        // In the script, add event listener for Vacuum:
+        document.getElementById('vacuumBtn').addEventListener('click', () => selectElement(VACUUM, 'vacuumBtn'));
         
         function selectElement(element, btnId) {
             currentElement = element;
@@ -310,6 +340,7 @@
         // Clear button functionality
         document.getElementById('clearBtn').addEventListener('click', () => {
             grid = new Array(cols).fill().map(() => new Array(rows).fill(0));
+            colorGrid = new Array(cols).fill().map(() => new Array(rows).fill(null));
         });
         
         function placeElement() {
@@ -322,6 +353,11 @@
                     if (x >= 0 && x < cols && y >= 0 && y < rows) {
                         if (currentElement === REMOVER) {
                             grid[x][y] = EMPTY;
+                            colorGrid[x][y] = null;
+                        }
+                        else if (currentElement === COLORIZE) {
+                            // Set the cell's color to the picker's value
+                            colorGrid[x][y] = document.getElementById('colorPicker').value;
                         }
                         // Different scatter patterns based on element type
                         else if (currentElement === SAND && Math.random() > 0.3) {
@@ -358,6 +394,18 @@
                         else if (currentElement === VIRUS) { // virus placement
                             grid[x][y] = VIRUS;
                         }
+                        else if (currentElement === PLATYNUM) { // platynum placement
+                            grid[x][y] = PLATYNUM;
+                        }
+                        else if (currentElement === FIRE) { // new fire placement
+                            grid[x][y] = FIRE;
+                        }
+                        else if (currentElement === BOUNCY) { // new bouncy placement
+                            grid[x][y] = BOUNCY;
+                        }
+                        else if (currentElement === VACUUM) { // new vacuum placement
+                            grid[x][y] = VACUUM;
+                        }
                     }
                 }
             }
@@ -378,6 +426,11 @@
             });
             document.getElementById(btnId).classList.add('selected');
         }
+        
+        // New wind speed slider update
+        document.getElementById('windSpeedSlider').addEventListener('input', (e) => {
+            windStrength = parseInt(e.target.value);
+        });
         
         // Main game loop
         function update() {
@@ -401,6 +454,10 @@
                     else if (grid[x][y] === ASH) { updateAsh(x, y); }
                     else if (grid[x][y] === ACID) { updateAcid(x, y); }
                     else if (grid[x][y] === VIRUS) { updateVirus(x, y); }
+                    else if (grid[x][y] === PLATYNUM) { updatePlatynum(x, y); }
+                    else if (grid[x][y] === FIRE) { updateFire(x, y); } // new fire update
+                    else if (grid[x][y] === BOUNCY) { updateBouncy(x, y); } // new bouncy update
+                    else if (grid[x][y] === VACUUM) { updateVacuum(x, y); } // new vacuum update
                     // Stone, Wood, and Metal don't move
                 }
             }
@@ -409,7 +466,11 @@
             ctx.clearRect(0, 0, width, height);
             for (let x = 0; x < cols; x++) {
                 for (let y = 0; y < rows; y++) {
-                    if (grid[x][y] === SAND) {
+                    if (colorGrid[x][y]) {
+                        ctx.fillStyle = colorGrid[x][y];
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                    else if (grid[x][y] === SAND) {
                         // Slightly randomize sand color for visual interest
                         const r = 220 + Math.floor(Math.random() * 20);
                         const g = 190 + Math.floor(Math.random() * 20);
@@ -466,6 +527,22 @@
                         ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
                     } else if (grid[x][y] === VIRUS) { // render virus as a purple powder
                         ctx.fillStyle = "purple";
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                    else if (grid[x][y] === PLATYNUM) {
+                        ctx.fillStyle = "cyan"; // platynum rendered as cyan, light and weightless
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                    else if (grid[x][y] === FIRE) {
+                        ctx.fillStyle = "orange"; // fire rendered as orange
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                    else if (grid[x][y] === BOUNCY) {
+                        ctx.fillStyle = "magenta"; // bouncy rendered as magenta (visibly bouncing)
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                    else if (grid[x][y] === VACUUM) {
+                        ctx.fillStyle = "black"; // vacuum rendered as black
                         ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
                     }
                 }
@@ -977,6 +1054,97 @@
                         if (grid[nx][ny] !== EMPTY) {
                             if (Math.random() < 0.05) { // 5% chance to infect neighbor
                                 grid[nx][ny] = VIRUS;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Modified updatePlatynum function for light, weightless behavior:
+        function updatePlatynum(x, y) {
+            // Very weightless: only rarely fall
+            if (Math.random() < 0.05 && y < rows - 1) {
+                if (y < rows - 2 && grid[x][y+1] === EMPTY && grid[x][y+2] !== EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x][y+1] = PLATYNUM;
+                } else if (grid[x][y+1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x][y+1] = PLATYNUM;
+                }
+            }
+        }
+        
+        // Add new updateFire function:
+        function updateFire(x, y) {
+            // Fire floats upward slowly: if above is empty, move up with 30% chance.
+            if (y > 0 && grid[x][y-1] === EMPTY && Math.random() < 0.3) {
+                grid[x][y] = EMPTY;
+                grid[x][y-1] = FIRE;
+                return;
+            }
+            // Ignite adjacent WOOD into BURNING_WOOD (like lava effect)
+            const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+            directions.forEach(dir => {
+                let nx = x + dir[0], ny = y + dir[1];
+                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === WOOD) {
+                    if (Math.random() < 0.2) { // 20% chance to ignite wood
+                        grid[nx][ny] = BURNING_WOOD;
+                    }
+                }
+            });
+            // Fire disappears over time (average lifetime ~240 frames = 4 sec at ~60fps)
+            if (Math.random() < 1/240) {
+                grid[x][y] = EMPTY;
+            }
+        }
+        
+        // New update function for bouncy element:
+        function updateBouncy(x, y) {
+            // If below is empty, fall with 50% chance.
+            if (y < rows - 1 && grid[x][y+1] === EMPTY && Math.random() < 0.5) {
+                grid[x][y] = EMPTY;
+                grid[x][y+1] = BOUNCY;
+                return;
+            }
+            // If below is blocked, try bouncing upward if above is empty.
+            if (y > 0 && grid[x][y-1] === EMPTY) {
+                grid[x][y] = EMPTY;
+                grid[x][y-1] = BOUNCY;
+                return;
+            }
+            // Otherwise, randomly try moving horizontally if adjacent cell is empty.
+            const dirs = [[-1,0],[1,0]];
+            for (let d of dirs) {
+                let nx = x + d[0];
+                if (nx >= 0 && nx < cols && grid[nx][y] === EMPTY && Math.random() < 0.3) {
+                    grid[x][y] = EMPTY;
+                    grid[nx][y] = BOUNCY;
+                    return;
+                }
+            }
+        }
+        
+        // Add new updateVacuum function:
+        function updateVacuum(vx, vy) {
+            const radius = 5; // attraction radius
+            for (let i = vx - radius; i <= vx + radius; i++) {
+                for (let j = vy - radius; j <= vy + radius; j++) {
+                    if (i >= 0 && i < cols && j >= 0 && j < rows) {
+                        if (i === vx && j === vy) continue;
+                        // If cell has a particle (non-empty, non-vacuum)
+                        if (grid[i][j] !== EMPTY && grid[i][j] !== VACUUM) {
+                            // Compute direction vector from particle to vacuum cell
+                            let dx = vx - i, dy = vy - j;
+                            let stepX = (dx === 0) ? 0 : Math.sign(dx);
+                            let stepY = (dy === 0) ? 0 : Math.sign(dy);
+                            // If the cell in direction is empty, move particle toward vacuum
+                            if (grid[i + stepX] && grid[i + stepX][j + stepY] === EMPTY) {
+                                grid[i + stepX][j + stepY] = grid[i][j];
+                                grid[i][j] = EMPTY;
+                                // If there's also a color in colorGrid, move it
+                                colorGrid[i + stepX][j + stepY] = colorGrid[i][j];
+                                colorGrid[i][j] = null;
                             }
                         }
                     }
