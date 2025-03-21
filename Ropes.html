@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Node Based Physics Simulation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <style>
+    body { 
+      margin: 0; 
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    canvas { display: block; }
+    #sliderContainer {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(35, 35, 40, 0.85);
+      padding: 15px;
+      border-radius: 8px;
+      z-index: 1000;
+      color: #eee;
+      width: 240px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(90, 90, 100, 0.2);
+    }
+    .setting-group {
+      margin-bottom: 15px;
+    }
+    .setting-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+    .slider-wrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .slider-value {
+      align-self: flex-end;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: #444;
+      border-radius: 3px;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #2196F3;
+      cursor: pointer;
+    }
+    input[type="range"]:focus {
+      outline: none;
+    }
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+    }
+    .checkbox-wrapper label {
+      margin-right: 10px;
+    }
+    input[type="checkbox"] {
+      position: relative;
+      width: 40px;
+      height: 20px;
+      -webkit-appearance: none;
+      background: #444;
+      outline: none;
+      border-radius: 10px;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+    input[type="checkbox"]:checked {
+      background: #2196F3;
+    }
+    input[type="checkbox"]:before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      background: #fff;
+      transition: 0.3s;
+    }
+    input[type="checkbox"]:checked:before {
+      left: 22px;
+    }
+    .settings-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="sliderContainer">
+    <div class="settings-title">Physics Simulation</div>
+    
+    <div class="setting-group">
+      <div class="setting-title">Chain Length</div>
+      <div class="slider-wrapper">
+        <div class="slider-value"><span id="chainLengthLabel">10</span> nodes</div>
+        <input type="range" id="chainSlider" min="3" max="20" value="10">
+      </div>
+    </div>
+    
+    <!-- Added node size setting -->
+    <div class="setting-group">
+      <div class="setting-title">Node Size</div>
+      <div class="slider-wrapper">
+        <div class="slider-value"><span id="nodeSizeLabel">20</span>px</div>
+        <input type="range" id="nodeSizeSlider" min="5" max="40" value="20">
+      </div>
+    </div>
+    
+    <!-- Added spring stiffness setting -->
+    <div class="setting-group">
+      <div class="setting-title">Spring Stiffness</div>
+      <div class="slider-wrapper">
+        <div class="slider-value"><span id="stiffnessLabel">0.05</span></div>
+        <input type="range" id="stiffnessSlider" min="1" max="20" value="5">
+      </div>
+    </div>
+    
+    <!-- Added gravity setting -->
+    <div class="setting-group">
+      <div class="setting-title">Gravity</div>
+      <div class="slider-wrapper">
+        <div class="slider-value"><span id="gravityLabel">1</span>g</div>
+        <input type="range" id="gravitySlider" min="0" max="20" value="10">
+      </div>
+    </div>
+    
+    <!-- Added node color setting -->
+    <div class="setting-group">
+      <div class="setting-title">Node Color</div>
+      <input type="color" id="nodeColorPicker" value="#4285F4" style="width: 100%; height: 30px;">
+    </div>
+    
+    <!-- Add connection color picker -->
+    <div class="setting-group">
+      <div class="setting-title">Connection Color</div>
+      <input type="color" id="connectionColorPicker" value="#ffffff" style="width: 100%; height: 30px;">
+    </div>
+    
+    <div class="setting-group">
+      <div class="setting-title">Visual Options</div>
+      <div class="checkbox-wrapper">
+        <label for="gridToggle">Show Grid</label>
+        <input type="checkbox" id="gridToggle">
+      </div>
+      <div class="checkbox-wrapper" style="margin-top: 10px;">
+        <label for="showConnectionsToggle">Show Connections</label>
+        <input type="checkbox" id="showConnectionsToggle" checked>
+      </div>
+      <!-- Add rainbow chain toggle -->
+      <div class="checkbox-wrapper" style="margin-top: 10px;">
+        <label for="rainbowToggle">Rainbow Chain</label>
+        <input type="checkbox" id="rainbowToggle">
+      </div>
+      <!-- Add animated rainbow toggle -->
+      <div class="checkbox-wrapper" style="margin-top: 10px;">
+        <label for="animatedRainbowToggle">Animate Rainbow</label>
+        <input type="checkbox" id="animatedRainbowToggle">
+      </div>
+    </div>
+    
+    <!-- Add bounce/elasticity setting -->
+    <div class="setting-group">
+      <div class="setting-title">Node Elasticity</div>
+      <div class="slider-wrapper">
+        <div class="slider-value"><span id="elasticityLabel">0.9</span></div>
+        <input type="range" id="elasticitySlider" min="0" max="20" value="9">
+      </div>
+    </div>
+    
+    <!-- Add wind force setting -->
+    <div class="setting-group">
+      <div class="setting-title">Wind Force</div>
+      <div class="slider-wrapper">
+        <div class="slider-value"><span id="windLabel">0</span></div>
+        <input type="range" id="windSlider" min="-10" max="10" value="0">
+      </div>
+    </div>
+    
+    <!-- Add node shape setting -->
+    <div class="setting-group">
+      <div class="setting-title">Node Shape</div>
+      <select id="nodeShapeSelect" style="width: 100%; background: #333; color: #fff; padding: 5px; border: 1px solid #555;">
+        <option value="circle">Circle</option>
+        <option value="square">Square</option>
+        <option value="triangle">Triangle</option>
+        <option value="hexagon">Hexagon</option>
+      </select>
+    </div>
+    
+    <!-- Add fixed top node toggle -->
+    <div class="setting-group">
+      <div class="setting-title">Chain Settings</div>
+      <div class="checkbox-wrapper">
+        <label for="fixedTopToggle">Fixed Top Node</label>
+        <input type="checkbox" id="fixedTopToggle">
+      </div>
+    </div>
+    
+    <!-- Add explosion button -->
+    <button id="explosionButton" style="width: 100%; background: #f44336; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: bold;">
+      EXPLOSION!
+    </button>
+    
+  </div>
+  <canvas id="canvas"></canvas>
+  <script>
+    // filepath: c:\Users\billy\Downloads\New folder\g.html
+    // Initialize Matter.js engine and world
+    const { Engine, Render, Runner, World, Bodies, Constraint, Mouse, MouseConstraint, Events, Body } = Matter;
+    const engine = Engine.create();
+    const world = engine.world;
+
+    const canvas = document.getElementById('canvas');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    const render = Render.create({
+      canvas: canvas,
+      engine: engine,
+      options: {
+        width: width,
+        height: height,
+        wireframes: false,
+        background: '' // cleared background option
+      }
+    });
+
+    // added function to create a dark grid pattern background
+    function createGridPattern() {
+      const patternCanvas = document.createElement('canvas');
+      const size = 40;
+      patternCanvas.width = size;
+      patternCanvas.height = size;
+      const ctx = patternCanvas.getContext('2d');
+      ctx.fillStyle = '#222'; // dark base
+      ctx.fillRect(0, 0, size, size);
+      ctx.strokeStyle = '#444'; // grid lines
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(size, 0);
+      ctx.lineTo(size, size);
+      ctx.moveTo(0, size);
+      ctx.lineTo(size, size);
+      ctx.stroke();
+      return patternCanvas.toDataURL();
+    }
+
+    const gridPatternURL = createGridPattern();
+    // removed initial grid background assignment so grid is off by default
+    // canvas.style.backgroundImage = 'url(' + gridPatternURL + ')';
+    // canvas.style.backgroundSize = '40px 40px';
+
+    // added event listener for grid toggle checkbox
+    const gridToggle = document.getElementById('gridToggle');
+    gridToggle.addEventListener('change', () => {
+      if(gridToggle.checked){
+        canvas.style.backgroundImage = 'url(' + gridPatternURL + ')';
+        canvas.style.backgroundSize = '40px 40px';
+      } else {
+        canvas.style.backgroundImage = '';
+      }
+    });
+
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
+
+    // Global variables for chain
+    let chainNodes = [];
+    let chainConstraints = [];
+
+    // Set default values for new parameters
+    let nodeSize = 20;
+    let springStiffness = 0.05;
+    let nodeColor = "#4285F4";
+    let connectionColor = "#ffffff";
+    let showConnections = true;
+    let rainbow = false;
+    let animatedRainbow = false;
+    let nodeElasticity = 0.9;
+    let rainbowOffset = 0;
+    let windForce = 0;
+    let nodeShape = "circle";
+    let fixedTop = false;
+    
+    // Update gravity
+    engine.world.gravity.y = 1;
+
+    // Add rainbow color function
+    function getRainbowColor(index, animated = false) {
+      if (animated) {
+        index = (index + rainbowOffset) % 360;
+      }
+      // Generate rainbow color using HSL
+      const hue = index * 30 % 360;
+      return `hsl(${hue}, 100%, 60%)`;
+    }
+
+    // Animation loop for rainbow effect
+    function animateRainbow() {
+      if (animatedRainbow) {
+        rainbowOffset += 1;
+        createChain(chainLength);
+        requestAnimationFrame(animateRainbow);
+      }
+    }
+
+    // Apply wind force
+    Events.on(engine, 'beforeUpdate', function() {
+      if (windForce !== 0) {
+        chainNodes.forEach(node => {
+          Body.applyForce(node, node.position, { x: windForce * 0.0001, y: 0 });
+        });
+      }
+    });
+    
+    // Function to create a polygon shape based on selected shape
+    function createNodeShape(x, y, nodeSize) {
+      switch(nodeShape) {
+        case 'square':
+          return Bodies.rectangle(x, y, nodeSize*1.5, nodeSize*1.5, {
+            chamfer: { radius: nodeSize/8 }
+          });
+        case 'triangle':
+          return Bodies.polygon(x, y, 3, nodeSize*1.2);
+        case 'hexagon':
+          return Bodies.polygon(x, y, 6, nodeSize);
+        case 'circle':
+        default:
+          return Bodies.circle(x, y, nodeSize);
+      }
+    }
+
+    // Function to create the chain
+    function createChain(chainLength) {
+      // Remove existing chain, if any
+      chainNodes.forEach(node => World.remove(world, node));
+      chainConstraints.forEach(constraint => World.remove(world, constraint));
+      chainNodes = [];
+      chainConstraints = [];
+      
+      const startX = width / 2;
+      const startY = height / 4;
+      
+      // Create nodes with custom shape, size, and color
+      for (let i = 0; i < chainLength; i++) {
+        // Apply rainbow coloring if enabled
+        const nodeFillColor = rainbow ? getRainbowColor(i, animatedRainbow) : nodeColor;
+        
+        // Create node with selected shape
+        let node = createNodeShape(startX, startY + i * 60, nodeSize);
+        
+        // Set node properties
+        node.restitution = nodeElasticity;
+        node.render.fillStyle = nodeFillColor;
+        
+        // Make top node static if fixedTop is true
+        if (i === 0 && fixedTop) {
+          Body.setStatic(node, true);
+        }
+        
+        chainNodes.push(node);
+      }
+      World.add(world, chainNodes);
+      
+      // Connect nodes with constraints (springs) with custom stiffness
+      for (let i = 0; i < chainLength - 1; i++) {
+        // Apply rainbow coloring to connections if enabled
+        const connectionStrokeColor = rainbow ? getRainbowColor(i, animatedRainbow) : connectionColor;
+        
+        let spring = Constraint.create({
+          bodyA: chainNodes[i],
+          bodyB: chainNodes[i + 1],
+          stiffness: springStiffness,
+          length: 60,
+          render: {
+            visible: showConnections,
+            strokeStyle: connectionStrokeColor,
+            lineWidth: 2
+          }
+        });
+        chainConstraints.push(spring);
+      }
+      World.add(world, chainConstraints);
+    }
+
+    // Initial chain creation with default length
+    let chainLength = parseInt(document.getElementById('chainSlider').value, 10);
+    createChain(chainLength);
+
+    // Slider event listener to update chain length
+    document.getElementById('chainSlider').addEventListener('input', (e) => {
+      chainLength = parseInt(e.target.value, 10);
+      document.getElementById('chainLengthLabel').textContent = chainLength;
+      createChain(chainLength);
+    });
+
+    // Node size slider event listener
+    document.getElementById('nodeSizeSlider').addEventListener('input', (e) => {
+      nodeSize = parseInt(e.target.value, 10);
+      document.getElementById('nodeSizeLabel').textContent = nodeSize;
+      createChain(chainLength);
+    });
+    
+    // Spring stiffness slider event listener
+    document.getElementById('stiffnessSlider').addEventListener('input', (e) => {
+      const value = parseInt(e.target.value, 10) / 100;
+      springStiffness = value;
+      document.getElementById('stiffnessLabel').textContent = value.toFixed(2);
+      createChain(chainLength);
+    });
+    
+    // Gravity slider event listener
+    document.getElementById('gravitySlider').addEventListener('input', (e) => {
+      const gravity = parseInt(e.target.value, 10) / 10;
+      engine.world.gravity.y = gravity;
+      document.getElementById('gravityLabel').textContent = gravity.toFixed(1);
+    });
+    
+    // Node color picker event listener
+    document.getElementById('nodeColorPicker').addEventListener('input', (e) => {
+      nodeColor = e.target.value;
+      createChain(chainLength);
+    });
+    
+    // Connection color picker event listener
+    document.getElementById('connectionColorPicker').addEventListener('input', (e) => {
+      connectionColor = e.target.value;
+      if (!rainbow) {
+        createChain(chainLength);
+      }
+    });
+    
+    // Rainbow toggle event listener
+    document.getElementById('rainbowToggle').addEventListener('change', (e) => {
+      rainbow = e.target.checked;
+      if (rainbow && animatedRainbow) {
+        animateRainbow();
+      } else {
+        createChain(chainLength);
+      }
+    });
+    
+    // Animated rainbow toggle event listener
+    document.getElementById('animatedRainbowToggle').addEventListener('change', (e) => {
+      animatedRainbow = e.target.checked;
+      if (rainbow && animatedRainbow) {
+        animateRainbow();
+      } else {
+        createChain(chainLength);
+      }
+    });
+    
+    // Elasticity slider event listener
+    document.getElementById('elasticitySlider').addEventListener('input', (e) => {
+      nodeElasticity = parseInt(e.target.value, 10) / 10;
+      document.getElementById('elasticityLabel').textContent = nodeElasticity.toFixed(1);
+      createChain(chainLength);
+    });
+
+    // Connection visibility toggle event listener
+    document.getElementById('showConnectionsToggle').addEventListener('change', (e) => {
+      showConnections = e.target.checked;
+      createChain(chainLength);
+    });
+
+    // Wind force slider event listener
+    document.getElementById('windSlider').addEventListener('input', (e) => {
+      windForce = parseInt(e.target.value, 10);
+      document.getElementById('windLabel').textContent = windForce;
+    });
+    
+    // Node shape select event listener
+    document.getElementById('nodeShapeSelect').addEventListener('change', (e) => {
+      nodeShape = e.target.value;
+      createChain(chainLength);
+    });
+    
+    // Fixed top toggle event listener
+    document.getElementById('fixedTopToggle').addEventListener('change', (e) => {
+      fixedTop = e.target.checked;
+      createChain(chainLength);
+    });
+    
+    // Explosion button event listener
+    document.getElementById('explosionButton').addEventListener('click', () => {
+      chainNodes.forEach(node => {
+        const forceMagnitude = 0.05;
+        const angle = Math.random() * Math.PI * 2;
+        Body.applyForce(node, node.position, {
+          x: Math.cos(angle) * forceMagnitude,
+          y: Math.sin(angle) * forceMagnitude
+        });
+      });
+    });
+
+    // Add a floor
+    const floor = Bodies.rectangle(width / 2, height, width, 40, { isStatic: true });
+    World.add(world, floor);
+
+    // Enable mouse control
+    const mouse = Mouse.create(canvas);
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    });
+    World.add(world, mouseConstraint);
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      render.options.width = width;
+      render.options.height = height;
+    });
+  </script>
+</body>
+</html>
