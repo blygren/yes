@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phys Code</title>
+    <!-- Add Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Theme variables */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            --text-color: #e6e6e6;
+            --container-bg: rgba(0,0,0,0.3);
+            --button-bg: rgba(255, 255, 255, 0.08);
+            --hover-bg: rgba(255, 255, 255, 0.15);
+            --accent-color: rgba(101, 213, 255, 0.8);
+        }
+        
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0f7fa, #bbdefb, #c5cae9);
+            --text-color: #333333;
+            --container-bg: rgba(255,255,255,0.7);
+            --button-bg: rgba(0, 0, 0, 0.08);
+            --hover-bg: rgba(0, 0, 0, 0.12);
+            --accent-color: rgba(33, 150, 243, 0.8);
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            text-align: center;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background elements */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-animation span {
+            position: absolute;
+            display: block;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            animation: move 3s linear infinite;
+            border-radius: 50%;
+            bottom: -150px;
+        }
+        
+        @keyframes move {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+                border-radius: 0;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+                border-radius: 50%;
+            }
+        }
+        
+        h1 { 
+            font-size: 3em; 
+            margin-bottom: 40px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6;
+            }
+            to {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #0073e6, 0 0 40px #0073e6;
+            }
+        }
+        
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 800px;
+        }
+        
+        button { 
+            margin: 0;
+            padding: 16px 32px; 
+            font-size: 18px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            background-color: var(--button-bg);
+            backdrop-filter: blur(5px);
+            color: var(--text-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: 160px;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        button:hover { 
+            transform: translateY(-5px);
+            box-shadow: 0 7px 15px rgba(0,0,0,0.3);
+            background-color: var(--hover-bg);
+            letter-spacing: 1px;
+        }
+        
+        button i {
+            font-size: 1.2em;
+        }
+        
+        .container {
+            background-color: var(--container-bg);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .patch-notes {
+            margin-top: 30px;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            text-align: left;
+            border-left: 3px solid rgba(101, 213, 255, 0.5);
+        }
+        
+        .patch-notes h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: rgba(101, 213, 255, 0.8);
+            font-weight: 400;
+        }
+        
+        .patch-notes ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        
+        .patch-notes li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .timestamp {
+            font-size: 0.8em;
+            margin-top: 25px;
+            opacity: 0.6;
+            font-style: italic;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 15px;
+            width: 100%;
+        }
+        
+        /* New tag styling */
+        .new-tag {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #ff4757;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Game category badges */
+        .category {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            vertical-align: middle;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        
+        .category.physics { background-color: #3498db; }
+        .category.game { background-color: #2ecc71; }
+        .category.simulation { background-color: #e74c3c; }
+        
+        /* Theme toggle switch */
+        .theme-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 30px;
+            cursor: pointer;
+        }
+        
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        /* Search bar */
+        .search-container {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        #searchInput {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        #searchInput:focus {
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+        
+        /* Loading animation */
+        .loader-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+        
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--accent-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Improved settings button styles */
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .settings-btn:hover {
+            transform: rotate(90deg);
+            background-color: var(--hover-bg);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+        
+        .settings-btn i {
+            font-size: 22px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Fixed settings panel to be fully hidden */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: -100%;  /* Changed from -350px to ensure it's fully off-screen */
+            width: 350px;
+            height: 100%;
+            background-color: var(--container-bg);
+            backdrop-filter: blur(10px);
+            box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+            transition: left 0.4s ease;
+            z-index: 999;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .settings-panel.open {
+            left: 0;
+        }
+        
+        .settings-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .settings-section {
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px;
+        }
+        
+        .settings-section h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+        
+        /* Theme presets */
+        .theme-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .theme-preset {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-preset.active {
+            border-color: white;
+            transform: scale(1.1);
+        }
+        
+        .theme-preset:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-preset[data-theme="dark"] {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+        
+        .theme-preset[data-theme="light"] {
+            background: linear-gradient(135deg, #e0f7fa, #bbdefb);
+        }
+        
+        .theme-preset[data-theme="sunset"] {
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+        }
+        
+        .theme-preset[data-theme="ocean"] {
+            background: linear-gradient(135deg, #2193b0, #6dd5ed);
+        }
+        
+        .theme-preset[data-theme="forest"] {
+            background: linear-gradient(135deg, #134e5e, #71b280);
+        }
+        
+        .theme-preset[data-theme="hacker"] {
+            background: linear-gradient(135deg, #000000, #003300);
+        }
+        
+        .theme-preset[data-theme="rgb"] {
+            background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff);
+            background-size: 200% 200%;
+            animation: rgbShift 4s ease infinite;
+        }
+        
+        /* New hacker theme */
+        [data-theme="hacker"] {
+            --bg-gradient: linear-gradient(135deg, #000000, #0a0a0a, #050505);
+            --text-color: #00ff00;
+            --container-bg: rgba(0,20,0,0.7);
+            --button-bg: rgba(0,50,0,0.3);
+            --hover-bg: rgba(0,80,0,0.4);
+            --accent-color: rgba(0,255,0,0.8);
+        }
+        
+        /* New RGB theme with animation */
+        [data-theme="rgb"] {
+            --container-bg: rgba(0,0,0,0.7);
+            --button-bg: rgba(255, 255, 255, 0.1);
+            --hover-bg: rgba(255, 255, 255, 0.2);
+            --text-color: #ffffff;
+        }
+        
+        @keyframes rgbShift {
+            0% { --accent-color: rgba(255, 0, 0, 0.8); background-position: 0% 50%; }
+            33% { --accent-color: rgba(0, 255, 0, 0.8); background-position: 50% 50%; }
+            66% { --accent-color: rgba(0, 0, 255, 0.8); background-position: 100% 50%; }
+            100% { --accent-color: rgba(255, 0, 0, 0.8); background-position: 0% 50%; }
+        }
+        
+        [data-theme="rgb"] body {
+            background: linear-gradient(-45deg, #ff0000, #ff7300, #ffd900, #22e600, #0099ff, #9900ff);
+            background-size: 400% 400%;
+            animation: rgbShift 15s ease infinite;
+        }
+        
+        /* Beta testing section */
+        .beta-section {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .beta-badge {
+            display: inline-block;
+            background-color: #ff9800;
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: 10px;
+            text-transform: uppercase;
+        }
+        
+        .beta-code-input {
+            display: flex;
+            margin-top: 15px;
+        }
+        
+        .beta-code-input input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px 0 0 4px;
+            background-color: rgba(255,255,255,0.1);
+            color: var(--text-color);
+        }
+        
+        .beta-code-input button {
+            min-width: auto;
+            border-radius: 0 4px 4px 0;
+            padding: 8px 15px;
+        }
+        
+        .beta-message {
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--text-color);
+            min-height: 20px;
+        }
+        
+        /* Overlay for settings panel */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 998;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+        
+        .settings-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Game format styles */
+        .format-toggle {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .format-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        /* Tile layout styles */
+        .button-container.tile-format {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .game-tile {
+            display: flex;
+            flex-direction: column;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: var(--button-bg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+            height: 200px;
+        }
+        
+        .game-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 7px 15px rgba(0,0,0,0.3);
+        }
+        
+        .game-tile .thumbnail {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .game-tile .game-info {
+            padding: 10px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .game-tile .game-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .game-tile .game-title i {
+            font-size: 14px;
+        }
+        
+        .game-tile .play-button {
+            background-color: rgba(255,255,255,0.1);
+            border: none;
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+        
+        .game-tile .play-button:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .game-tile .category {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 2;
+        }
+        
+        .game-tile .new-tag {
+            top: 5px;
+            right: 5px;
+            z-index: 2;
+        }
+        
+        /* New theme preset buttons */
+        .theme-preset[data-theme="cyberpunk"] {
+            background: linear-gradient(135deg, #000000, #240046);
+            box-shadow: 0 0 5px #f700ff, 0 0 10px #00ccff;
+        }
+        
+        .theme-preset[data-theme="space"] {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23111133'/%3E%3Ccircle cx='10' cy='10' r='1' fill='white' opacity='0.7'/%3E%3Ccircle cx='25' cy='15' r='0.5' fill='white' opacity='0.9'/%3E%3Ccircle cx='18' cy='32' r='0.7' fill='white' opacity='0.8'/%3E%3Ccircle cx='32' cy='28' r='0.6' fill='white' opacity='0.7'/%3E%3Ccircle cx='5' cy='25' r='0.8' fill='white' opacity='0.6'/%3E%3C/svg%3E");
+            background-size: cover;
+        }
+        
+        .theme-preset[data-theme="retro"] {
+            background: linear-gradient(135deg, #004d00, #003300);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .theme-preset[data-theme="retro"]::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: repeating-linear-gradient(90deg, transparent, transparent 2px, #00ff00 2px, #00ff00 4px);
+        }
+        
+        .theme-preset[data-theme="pastel"] {
+            background: linear-gradient(135deg, #ffd1dc, #c9e4de, #d0f0c0);
+        }
+        
+        .theme-preset[data-theme="blueprint"] {
+            background-color: #0a2e52;
+            background-image: linear-gradient(0deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 10px 10px;
+        }
+        
+        /* Cyberpunk theme */
+        [data-theme="cyberpunk"] {
+            --bg-gradient: radial-gradient(circle at center, #240046 0%, #0f0329 100%);
+            --text-color: #fdfffc;
+            --container-bg: rgba(20, 0, 50, 0.7);
+            --button-bg: rgba(101, 10, 180, 0.3);
+            --hover-bg: rgba(171, 20, 255, 0.4);
+            --accent-color: rgba(255, 0, 242, 0.8);
+        }
+        
+        [data-theme="cyberpunk"] h1 {
+            text-shadow: 0 0 10px #f700ff, 0 0 15px #00ccff;
+            animation: cyberpunkGlow 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes cyberpunkGlow {
+            from {
+                text-shadow: 0 0 10px #f700ff, 0 0 15px #00ccff;
+            }
+            to {
+                text-shadow: 0 0 15px #f700ff, 0 0 25px #00ccff, 0 0 35px #f700ff;
+            }
+        }
+        
+        /* Space theme */
+        [data-theme="space"] {
+            --bg-gradient: linear-gradient(to bottom, #000000, #071e3d);
+            --text-color: #ffffff;
+            --container-bg: rgba(10, 30, 50, 0.7);
+            --button-bg: rgba(30, 50, 100, 0.3);
+            --hover-bg: rgba(40, 80, 160, 0.4);
+            --accent-color: rgba(100, 170, 255, 0.8);
+        }
+        
+        [data-theme="space"] body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(white, rgba(255,255,255,0) 2px);
+            background-size: 100px 100px;
+            background-position: 0 0, 50px 50px;
+            z-index: -1;
+        }
+        
+        /* Retro theme */
+        [data-theme="retro"] {
+            --bg-gradient: linear-gradient(to bottom, #000000, #002000);
+            --text-color: #00ff00;
+            --container-bg: rgba(0, 20, 0, 0.8);
+            --button-bg: rgba(0, 50, 0, 0.3);
+            --hover-bg: rgba(0, 80, 0, 0.5);
+            --accent-color: rgba(0, 255, 0, 0.8);
+            font-family: "Courier New", monospace;
+        }
+        
+        [data-theme="retro"] .container {
+            position: relative;
+            border: 1px solid #00ff00;
+        }
+        
+        [data-theme="retro"] .container::before {
+            content: "TERMINAL v1.0";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #000000;
+            padding: 0 10px;
+            font-size: 12px;
+            color: #00ff00;
+        }
+        
+        /* Pastel theme */
+        [data-theme="pastel"] {
+            --bg-gradient: linear-gradient(135deg, #ffd1dc, #c9e4de, #d0f0c0);
+            --text-color: #5a5a5a;
+            --container-bg: rgba(255, 255, 255, 0.8);
+            --button-bg: rgba(230, 230, 250, 0.5);
+            --hover-bg: rgba(230, 230, 250, 0.8);
+            --accent-color: rgba(164, 143, 201, 0.8);
+        }
+        
+        /* Blueprint theme */
+        [data-theme="blueprint"] {
+            --bg-gradient: linear-gradient(135deg, #0a2e52, #053159);
+            --text-color: #ffffff;
+            --container-bg: rgba(10, 46, 82, 0.7);
+            --button-bg: rgba(20, 60, 120, 0.3);
+            --hover-bg: rgba(30, 80, 160, 0.4);
+            --accent-color: rgba(65, 157, 248, 0.8);
+        }
+        
+        [data-theme="blueprint"] body {
+            background-color: #0a2e52;
+            background-image: linear-gradient(0deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+                             linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        [data-theme="blueprint"] .container {
+            border: 1px solid rgba(65, 157, 248, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading screen -->
+    <div class="loader-container" id="loader">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Animated background elements -->
+    <div class="bg-animation">
+        <span style="--i:11;"></span>
+        <span style="--i:12;"></span>
+        <span style="--i:24;"></span>
+        <span style="--i:10;"></span>
+        <span style="--i:14;"></span>
+        <span style="--i:23;"></span>
+        <span style="--i:18;"></span>
+        <span style="--i:16;"></span>
+        <span style="--i:19;"></span>
+        <span style="--i:20;"></span>
+        <span style="--i:22;"></span>
+        <span style="--i:25;"></span>
+        <span style="--i:18;"></span>
+        <span style="--i:21;"></span>
+        <span style="--i:13;"></span>
+        <span style="--i:15;"></span>
+        <span style="--i:26;"></span>
+        <span style="--i:17;"></span>
+    </div>
+
+    <div class="container">
+        <!-- Theme toggle switch -->
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+        </label>
+        
+        <h1>Phys Code</h1>
+        
+        <!-- Search bar -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search games...">
+        </div>
+        
+        <div class="button-container">
+            <!-- Button examples with icons and categories -->
+            <button onclick="window.location.href='https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimate.html'; playClickSound();">
+                <i class="fas fa-cube"></i> Cube Game
+                <span class="category game">game</span>
+            </button>
+            <button onclick="window.location.href='https://blygren.github.io/yes/Cube%20Water%20Mug.html'; playClickSound();">
+                <i class="fas fa-flask"></i> phys sim
+                <span class="category physics">physics</span>
+            </button>
+            <button onclick="window.location.href='https://blygren.github.io/yes/Falling%20Sand/Fully%20Done%20Version.html'; playClickSound();">
+                <i class="fas fa-hourglass-half"></i> falling sand
+                <span class="category simulation">sim</span>
+            </button>
+            <button onclick="window.location.href='https://blygren.github.io/yes/Ropes.html'; playClickSound();">
+                <i class="fas fa-link"></i> ropes
+                <span class="category physics">physics</span>
+                <span class="new-tag">NEW</span>
+            </button>
+        </div>
+        
+        <div class="patch-notes">
+            <h2>Patch Notes</h2>
+            <ul>
+                <li>Recently rope game was added</li>
+                <li>Cube game got destruction</li>
+            </ul>
+        </div>
+        
+        <div class="timestamp">
+            Last updated: <span id="lastUpdated"></span>
+        </div>
+        
+        <div class="footer">
+            Created with ❤️ by blygren | Physics Simulations Hub
+        </div>
+    </div>
+    
+    <!-- Settings Button -->
+    <button class="settings-btn" id="settingsBtn">
+        <i class="fas fa-cog"></i>
+    </button>
+    
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <button class="settings-close" id="settingsClose">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <h2>Settings</h2>
+        
+        <div class="settings-section">
+            <h3>Appearance</h3>
+            
+            <div>
+                <label>
+                    <input type="checkbox" id="settingsThemeToggle"> Dark/Light Toggle
+                </label>
+            </div>
+            
+            <h3>Theme Presets</h3>
+            <div class="theme-presets">
+                <div class="theme-preset active" data-theme="dark" title="Dark Theme"></div>
+                <div class="theme-preset" data-theme="light" title="Light Theme"></div>
+                <div class="theme-preset" data-theme="sunset" title="Sunset Theme"></div>
+                <div class="theme-preset" data-theme="ocean" title="Ocean Theme"></div>
+                <div class="theme-preset" data-theme="forest" title="Forest Theme"></div>
+                <div class="theme-preset" data-theme="hacker" title="Hacker Theme"></div>
+                <div class="theme-preset" data-theme="rgb" title="RGB Theme"></div>
+                <div class="theme-preset" data-theme="cyberpunk" title="Cyberpunk Theme"></div>
+                <div class="theme-preset" data-theme="space" title="Space Theme"></div>
+                <div class="theme-preset" data-theme="retro" title="Retro Theme"></div>
+                <div class="theme-preset" data-theme="pastel" title="Pastel Theme"></div>
+                <div class="theme-preset" data-theme="blueprint" title="Blueprint Theme"></div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h3>Beta Testing <span class="beta-badge">Beta</span></h3>
+            <p>Enter a beta code to unlock experimental features and games.</p>
+            
+            <div class="beta-section">
+                <div class="beta-code-input">
+                    <input type="text" id="betaCode" placeholder="Enter beta code...">
+                    <button onclick="checkBetaCode()">Unlock</button>
+                </div>
+                <div class="beta-message" id="betaMessage"></div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h3>Game Format</h3>
+            <p>Choose how you want games to be displayed</p>
+            
+            <div class="format-toggle">
+                <label class="format-option">
+                    <input type="radio" name="gameFormat" value="buttons"> 
+                    <span>Buttons</span>
+                </label>
+                <label class="format-option">
+                    <input type="radio" name="gameFormat" value="tiles" checked> 
+                    <span>Tiles with Thumbnails</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    
+    <!-- Sound effect element -->
+    <audio id="clickSound" src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD4+Pj4+Pj4+Pj4+Pj4+Pj4//////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAYAAAAAAAAAAbA04WKhAAAA/+MYxAANmAKiSAUAAAggCQRjRQOAAAAAkFjWCCQOAGMSPgoAYxI+CgBDE0I/////+QmZIAmZIBERERERERH/4xjEFQuMArRuWBAAERERERERESAJmSAJmSAAAAAAAAAA////////kJmSAJmSERERERERERERERH/4xjEKAyQArRuUBAAERERERERERERIiIiIiIAAAAAAAAA////////IiIiIiIiIiIiIiIiIiIiIiIiIv/jGMQ3DwACumZYEAAiIiIiIiIiIiIiMzMzMzMAAAAAAAAA////////MzMzMzMzMzMzMzMzMzMzMzMzM//jGMRFEDgCtH5QEAAzMzMzMzMzMzMzZmZmZmYAAAAAAAAA////////ZmZmZmZmZmZmZmZmZmZmZmZmZg==" preload="auto"></audio>
+    
+    <script>
+        // Set the last updated date
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleDateString();
+        
+        // Initialize the animated background elements
+        document.addEventListener("DOMContentLoaded", function() {
+            let animation = document.querySelector('.bg-animation');
+            let spans = animation.getElementsByTagName('span');
+            
+            for(let i = 0; i < spans.length; i++) {
+                let duration = Math.random() * 15 + 5;
+                let size = Math.random() * 50 + 10;
+                let left = Math.floor(Math.random() * 100);
+                
+                spans[i].style.width = size + 'px';
+                spans[i].style.height = size + 'px';
+                spans[i].style.left = left + '%';
+                spans[i].style.animationDuration = duration + 's';
+                spans[i].style.animationDelay = (Math.random() * 5) + 's';
+            }
+        });
+        
+        // Add theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+        
+        // Check for saved theme preference
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            themeToggle.checked = true;
+        }
+        
+        // Add search functionality
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('keyup', function() {
+            const filter = searchInput.value.toLowerCase();
+            const buttons = document.querySelectorAll('.button-container button');
+            
+            buttons.forEach(button => {
+                const text = button.textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    button.style.display = "";
+                } else {
+                    button.style.display = "none";
+                }
+            });
+        });
+        
+        // Click sound effect
+        function playClickSound() {
+            const sound = document.getElementById('clickSound');
+            sound.currentTime = 0;
+            sound.play();
+        }
+        
+        // Loading screen
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = 0;
+                setTimeout(function() {
+                    loader.style.display = 'none';
+                }, 500);
+            }, 800);
+        });
+        
+        // Settings panel functionality
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const settingsClose = document.getElementById('settingsClose');
+        const settingsOverlay = document.getElementById('settingsOverlay');
+        const settingsThemeToggle = document.getElementById('settingsThemeToggle');
+        
+        // Sync the theme toggle in settings with the main one
+        settingsThemeToggle.checked = themeToggle.checked;
+        
+        // Toggle settings panel
+        settingsBtn.addEventListener('click', function() {
+            settingsPanel.classList.add('open');
+            settingsOverlay.classList.add('open');
+        });
+        
+        function closeSettings() {
+            settingsPanel.classList.remove('open');
+            settingsOverlay.classList.remove('open');
+        }
+        
+        settingsClose.addEventListener('click', closeSettings);
+        settingsOverlay.addEventListener('click', closeSettings);
+        
+        // Sync theme toggles
+        settingsThemeToggle.addEventListener('change', function() {
+            themeToggle.checked = this.checked;
+            themeToggle.dispatchEvent(new Event('change'));
+        });
+        
+        // Theme presets
+        const themePresets = document.querySelectorAll('.theme-preset');
+        
+        themePresets.forEach(preset => {
+            preset.addEventListener('click', function() {
+                const theme = this.getAttribute('data-theme');
+                
+                // Update active state
+                document.querySelector('.theme-preset.active').classList.remove('active');
+                this.classList.add('active');
+                
+                // Apply theme
+                applyTheme(theme);
+            });
+        });
+        
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            // Update toggle if needed
+            if (theme === 'light' || theme === 'pastel') {
+                themeToggle.checked = true;
+                settingsThemeToggle.checked = true;
+            } else {
+                themeToggle.checked = false;
+                settingsThemeToggle.checked = false;
+            }
+            
+            // Custom themes
+            if (theme === 'sunset') {
+                document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #ff7e5f, #feb47b)');
+                document.documentElement.style.setProperty('--accent-color', 'rgba(255, 126, 95, 0.8)');
+            } else if (theme === 'ocean') {
+                document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #2193b0, #6dd5ed)');
+                document.documentElement.style.setProperty('--accent-color', 'rgba(33, 147, 176, 0.8)');
+            } else if (theme === 'forest') {
+                document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #134e5e, #71b280)');
+                document.documentElement.style.setProperty('--accent-color', 'rgba(113, 178, 128, 0.8)');
+            } else if (theme === 'hacker' || theme === 'retro' || theme === 'cyberpunk' || 
+                       theme === 'space' || theme === 'pastel' || theme === 'blueprint') {
+                // These themes are set in CSS with their own variables
+                document.documentElement.style.removeProperty('--bg-gradient');
+                document.documentElement.style.removeProperty('--accent-color');
+            } else if (theme === 'rgb') {
+                // RGB theme properties are set via animation
+                document.documentElement.style.removeProperty('--bg-gradient');
+                document.documentElement.style.removeProperty('--accent-color');
+            } else {
+                // Reset custom properties for built-in themes
+                document.documentElement.style.removeProperty('--bg-gradient');
+                document.documentElement.style.removeProperty('--accent-color');
+            }
+        }
+        
+        // Beta code functionality
+        function checkBetaCode() {
+            const betaCode = document.getElementById('betaCode').value.trim();
+            const betaMessage = document.getElementById('betaMessage');
+            
+            if (betaCode === 'PHYSBETA2023') {
+                betaMessage.textContent = '✅ Beta features unlocked! Refresh to see new games.';
+                betaMessage.style.color = '#4cd137';
+                localStorage.setItem('betaAccess', 'true');
+                
+                // In a real implementation, you would now show beta content
+                // For now, we'll just simulate it with a message
+            } else {
+                betaMessage.textContent = '❌ Invalid beta code. Please try again.';
+                betaMessage.style.color = '#e84118';
+            }
+        }
+        
+        // Check for saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            // Update the active theme preset
+            document.querySelectorAll('.theme-preset').forEach(preset => {
+                if (preset.getAttribute('data-theme') === savedTheme) {
+                    document.querySelector('.theme-preset.active').classList.remove('active');
+                    preset.classList.add('active');
+                }
+            });
+            
+            // Apply the saved theme
+            applyTheme(savedTheme);
+        }
+        
+        // Game format toggle
+        const formatOptions = document.querySelectorAll('input[name="gameFormat"]');
+        const buttonContainer = document.querySelector('.button-container');
+        
+        // Initialize game data with thumbnails
+        const games = [
+            {
+                title: "Cube Game",
+                url: "https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimate.html",
+                icon: "fas fa-cube",
+                category: "game",
+                isNew: false,
+                thumbnail: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA..."
+            },
+            {
+                title: "phys sim",
+                url: "https://blygren.github.io/yes/Cube%20Water%20Mug.html",
+                icon: "fas fa-flask",
+                category: "physics",
+                isNew: false,
+                thumbnail: "phys.png"
+            },
+            {
+                title: "falling sand",
+                url: "https://blygren.github.io/yes/Falling%20Sand/Fully%20Done%20Version.html",
+                icon: "fas fa-hourglass-half",
+                category: "simulation",
+                isNew: false,
+                thumbnail: "sand.png"
+            },
+            {
+                title: "ropes",
+                url: "https://blygren.github.io/yes/Ropes.html",
+                icon: "fas fa-link",
+                category: "physics",
+                isNew: true,
+                thumbnail: "ropes.png"
+            }
+        ];
+        
+        // Function to update the game format
+        function updateGameFormat(format) {
+            // Clear existing content
+            buttonContainer.innerHTML = '';
+            buttonContainer.className = 'button-container';
+            
+            if (format === 'tiles') {
+                buttonContainer.classList.add('tile-format');
+                
+                // Create tile layout
+                games.forEach(game => {
+                    const tile = document.createElement('div');
+                    tile.className = 'game-tile';
+                    
+                    let categoryClass = '';
+                    switch(game.category) {
+                        case 'game': categoryClass = 'category game'; break;
+                        case 'physics': categoryClass = 'category physics'; break;
+                        case 'simulation': categoryClass = 'category simulation'; break;
+                    }
+                    
+                    let newTag = game.isNew ? `<span class="new-tag">NEW</span>` : '';
+                    
+                    tile.innerHTML = `
+                        <span class="${categoryClass}">${game.category}</span>
+                        ${newTag}
+                        <img src="${game.thumbnail}" alt="${game.title}" class="thumbnail">
+                        <div class="game-info">
+                            <div class="game-title"><i class="${game.icon}"></i> ${game.title}</div>
+                            <button class="play-button" onclick="window.location.href='${game.url}'; playClickSound();">
+                                <i class="fas fa-play"></i> Play
+                            </button>
+                        </div>
+                    `;
+                    
+                    buttonContainer.appendChild(tile);
+                });
+                
+            } else {
+                // Create default button layout (already exists in HTML)
+                games.forEach(game => {
+                    const btn = document.createElement('button');
+                    btn.onclick = function() { 
+                        window.location.href = game.url; 
+                        playClickSound();
+                    };
+                    
+                    let categorySpan = `<span class="category ${game.category}">${game.category}</span>`;
+                    let newTag = game.isNew ? `<span class="new-tag">NEW</span>` : '';
+                    
+                    btn.innerHTML = `
+                        <i class="${game.icon}"></i> ${game.title}
+                        ${categorySpan}
+                        ${newTag}
+                    `;
+                    
+                    buttonContainer.appendChild(btn);
+                });
+            }
+            
+            // Save preference
+            localStorage.setItem('gameFormat', format);
+        }
+        
+        // Handle format option changes
+        formatOptions.forEach(option => {
+            option.addEventListener('change', function() {
+                if (this.checked) {
+                    updateGameFormat(this.value);
+                }
+            });
+        });
+        
+        // Check for saved format preference or default to tiles
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedFormat = localStorage.getItem('gameFormat');
+            if (savedFormat) {
+                document.querySelector(`input[name="gameFormat"][value="${savedFormat}"]`).checked = true;
+                updateGameFormat(savedFormat);
+            } else {
+                // Default to tile view if no preference is saved
+                updateGameFormat('tiles');
+            }
+        });
+    </script>
+</body>
+</html>
