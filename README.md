@@ -16,7 +16,7 @@
 
 [fire](https://blygren.github.io/yes/fire_simulation.html)
 
-[fire](https://blygren.github.io/yes/sound%20generator.html)
+[sound](https://blygren.github.io/yes/sound%20generator.html)
 
-
+[cloth](https://blygren.github.io/yes/cloth_simulation.html)
 
