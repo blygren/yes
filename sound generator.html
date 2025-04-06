@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Random Sound Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --background: #f3f4f6;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --border: #e5e7eb;
+      --collapsible-bg: #f1f5f9;
+      --input-bg: #f9fafb;
+      --secondary: #6b7280;
+      --secondary-hover: #4b5563;
+    }
+    
+    .dark-theme {
+      --primary: #6366f1;
+      --primary-hover: #818cf8;
+      --background: #1f2937;
+      --card-bg: #111827;
+      --text: #f9fafb;
+      --border: #374151;
+      --collapsible-bg: #1f2937;
+      --input-bg: #111827;
+      --secondary: #4b5563;
+      --secondary-hover: #6b7280;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+      overflow: hidden;
+      transition: background-color 0.3s;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    
+    .theme-toggle {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 24px;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    
+    .theme-toggle:hover {
+      background-color: var(--border);
+    }
+    
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    
+    .settings {
+      border: none;
+      padding: 0;
+      margin-bottom: 24px;
+    }
+    
+    .settings legend {
+      font-weight: 600;
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      color: var(--primary);
+      padding: 0;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .input-group {
+      flex: 1 1 calc(50% - 16px);
+      min-width: 200px;
+    }
+    
+    .input-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .input-group input, .input-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 16px;
+      background-color: var(--input-bg);
+      color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
+    }
+    
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+    
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .btn:active {
+      transform: scale(0.98);
+    }
+    
+    .btn.generating {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn.generating:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      100% {
+        left: 100%;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .input-group {
+        flex: 1 1 100%;
+      }
+      
+      body {
+        padding: 10px;
+      }
+      
+      .container {
+        padding: 16px;
+      }
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .button-group .btn {
+      flex: 1;
+    }
+    
+    .btn.secondary {
+      background-color: var(--secondary);
+    }
+    
+    .btn.secondary:hover {
+      background-color: var(--secondary-hover);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .collapsible {
+      background-color: var(--collapsible-bg);
+      color: var(--text);
+      cursor: pointer;
+      padding: 12px;
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: left;
+      outline: none;
+      font-weight: 600;
+      margin-bottom: 8px;
+      position: relative;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    
+    .collapsible:after {
+      content: '\02795'; /* Unicode character for "plus" sign (+) */
+      font-size: 13px;
+      color: var(--text);
+      float: right;
+      margin-left: 5px;
+    }
+    
+    .active:after {
+      content: "\2796"; /* Unicode character for "minus" sign (-) */
+    }
+    
+    .content {
+      padding: 0 12px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+      background-color: var(--card-bg);
+    }
+    
+    .switch-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+      margin-right: 10px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    .range-container {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 16px;
+    }
+    
+    .range-container label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    
+    .range-container label span {
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Sound Generator</h1>
+      <button id="themeToggle" class="theme-toggle" title="Toggle dark mode">☀️</button>
+    </div>
+    
+    <div class="settings">
+      <fieldset class="settings">
+        <legend>Basic Settings</legend>
+        <div class="form-group">
+          <div class="input-group">
+            <label for="freqMin">Frequency Min (Hz)</label>
+            <input type="number" id="freqMin" value="200" />
+          </div>
+          
+          <div class="input-group">
+            <label for="freqMax">Frequency Max (Hz)</label>
+            <input type="number" id="freqMax" value="1000" />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="input-group">
+            <label for="gainMin">Gain Min</label>
+            <input type="number" id="gainMin" step="0.1" value="0.1" />
+          </div>
+          
+          <div class="input-group">
+            <label for="gainMax">Gain Max</label>
+            <input type="number" id="gainMax" step="0.1" value="0.5" />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="input-group">
+            <label for="durMin">Duration Min (s)</label>
+            <input type="number" id="durMin" step="0.1" value="0.2" />
+          </div>
+          
+          <div class="input-group">
+            <label for="durMax">Duration Max (s)</label>
+            <input type="number" id="durMax" step="0.1" value="1" />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="input-group" style="flex: 1 1 100%;">
+            <label for="oscTypes">Oscillator Types (comma separated)</label>
+            <input type="text" id="oscTypes" value="sine,square,triangle,sawtooth" />
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    
+    <button class="collapsible">Multi-Oscillator Settings</button>
+    <div class="content">
+      <div class="form-group">
+        <div class="input-group">
+          <label for="oscCount">Number of Oscillators</label>
+          <input type="number" id="oscCount" value="1" min="1" max="3" />
+        </div>
+      </div>
+      
+      <div class="switch-container">
+        <label class="switch">
+          <input type="checkbox" id="detune" checked>
+          <span class="slider"></span>
+        </label>
+        <label for="detune">Random Detune Between Oscillators</label>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="detuneAmount">Max Detune Amount (cents)</label>
+          <input type="number" id="detuneAmount" value="15" min="0" max="100" />
+        </div>
+      </div>
+    </div>
+    
+    <button class="collapsible">Filter Settings</button>
+    <div class="content">
+      <div class="switch-container">
+        <label class="switch">
+          <input type="checkbox" id="useFilter" checked>
+          <span class="slider"></span>
+        </label>
+        <label for="useFilter">Apply Filter</label>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="filterType">Filter Type</label>
+          <select id="filterType" class="form-control">
+            <option value="lowpass">Low Pass</option>
+            <option value="highpass">High Pass</option>
+            <option value="bandpass">Band Pass</option>
+            <option value="notch">Notch</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="cutoffMin">Min Cutoff Frequency (Hz)</label>
+          <input type="number" id="cutoffMin" value="300" min="20" max="20000" />
+        </div>
+        <div class="input-group">
+          <label for="cutoffMax">Max Cutoff Frequency (Hz)</label>
+          <input type="number" id="cutoffMax" value="5000" min="20" max="20000" />
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="resonanceMin">Min Resonance (Q)</label>
+          <input type="number" id="resonanceMin" value="1" min="0.1" max="20" step="0.1" />
+        </div>
+        <div class="input-group">
+          <label for="resonanceMax">Max Resonance (Q)</label>
+          <input type="number" id="resonanceMax" value="5" min="0.1" max="20" step="0.1" />
+        </div>
+      </div>
+    </div>
+    
+    <button class="collapsible">Envelope Settings</button>
+    <div class="content">
+      <div class="switch-container">
+        <label class="switch">
+          <input type="checkbox" id="useEnvelope" checked>
+          <span class="slider"></span>
+        </label>
+        <label for="useEnvelope">Use ADSR Envelope</label>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="attackMin">Min Attack (s)</label>
+          <input type="number" id="attackMin" value="0.01" min="0.01" max="2" step="0.01" />
+        </div>
+        <div class="input-group">
+          <label for="attackMax">Max Attack (s)</label>
+          <input type="number" id="attackMax" value="0.2" min="0.01" max="2" step="0.01" />
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="releaseMin">Min Release (s)</label>
+          <input type="number" id="releaseMin" value="0.1" min="0.01" max="5" step="0.01" />
+        </div>
+        <div class="input-group">
+          <label for="releaseMax">Max Release (s)</label>
+          <input type="number" id="releaseMax" value="0.5" min="0.01" max="5" step="0.01" />
+        </div>
+      </div>
+    </div>
+    
+    <button class="collapsible">Effects Settings</button>
+    <div class="content">
+      <div class="switch-container">
+        <label class="switch">
+          <input type="checkbox" id="useDelay">
+          <span class="slider"></span>
+        </label>
+        <label for="useDelay">Add Delay Effect</label>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="delayTimeMin">Min Delay Time (s)</label>
+          <input type="number" id="delayTimeMin" value="0.1" min="0.01" max="1" step="0.01" />
+        </div>
+        <div class="input-group">
+          <label for="delayTimeMax">Max Delay Time (s)</label>
+          <input type="number" id="delayTimeMax" value="0.5" min="0.01" max="1" step="0.01" />
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="feedbackMin">Min Feedback</label>
+          <input type="number" id="feedbackMin" value="0.1" min="0" max="0.9" step="0.1" />
+        </div>
+        <div class="input-group">
+          <label for="feedbackMax">Max Feedback</label>
+          <input type="number" id="feedbackMax" value="0.5" min="0" max="0.9" step="0.1" />
+        </div>
+      </div>
+      
+      <div class="switch-container">
+        <label class="switch">
+          <input type="checkbox" id="useLFO">
+          <span class="slider"></span>
+        </label>
+        <label for="useLFO">Add LFO Modulation</label>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="lfoFreqMin">Min LFO Frequency (Hz)</label>
+          <input type="number" id="lfoFreqMin" value="1" min="0.1" max="20" step="0.1" />
+        </div>
+        <div class="input-group">
+          <label for="lfoFreqMax">Max LFO Frequency (Hz)</label>
+          <input type="number" id="lfoFreqMax" value="10" min="0.1" max="20" step="0.1" />
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="input-group">
+          <label for="lfoDepthMin">Min LFO Depth</label>
+          <input type="number" id="lfoDepthMin" value="10" min="1" max="100" />
+        </div>
+        <div class="input-group">
+          <label for="lfoDepthMax">Max LFO Depth</label>
+          <input type="number" id="lfoDepthMax" value="50" min="1" max="100" />
+        </div>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button id="generateBtn" class="btn" onclick="generateSound()">Generate Random Sound</button>
+      <button id="downloadBtn" class="btn secondary" onclick="downloadLastSound()" disabled>Download Sound</button>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    
+    // Check for saved theme preference or use OS preference
+    function getThemePreference() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        return savedTheme;
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    
+    // Set theme on page
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+        themeToggle.textContent = '🌙';
+      } else {
+        document.body.classList.remove('dark-theme');
+        themeToggle.textContent = '☀️';
+      }
+      localStorage.setItem('theme', theme);
+    }
+    
+    // Toggle theme
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    });
+    
+    // Apply saved theme on load
+    applyTheme(getThemePreference());
+    
+    // Initialize collapsible sections
+    const coll = document.getElementsByClassName("collapsible");
+    for (let i = 0; i < coll.length; i++) {
+      coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        const content = this.nextElementSibling;
+        if (content.style.maxHeight) {
+          content.style.maxHeight = null;
+        } else {
+          content.style.maxHeight = content.scrollHeight + "px";
+        }
+      });
+    }
+    
+    let audioChunks = [];
+    let audioBlob = null;
+    let mediaRecorder = null;
+    let audioContext = null;
+    
+    function generateSound() {
+      const btn = document.getElementById("generateBtn");
+      btn.classList.add("generating");
+      btn.textContent = "Generating...";
+      
+      // Create audio context and setup recording
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const destination = audioContext.createMediaStreamDestination();
+      
+      // Get basic settings values
+      const freqMin = parseFloat(document.getElementById("freqMin").value);
+      const freqMax = parseFloat(document.getElementById("freqMax").value);
+      const gainMin = parseFloat(document.getElementById("gainMin").value);
+      const gainMax = parseFloat(document.getElementById("gainMax").value);
+      const durMin = parseFloat(document.getElementById("durMin").value);
+      const durMax = parseFloat(document.getElementById("durMax").value);
+      const oscTypes = document.getElementById("oscTypes").value.split(",").map(type => type.trim()).filter(Boolean);
+      
+      // Get multi-oscillator settings
+      const oscCount = parseInt(document.getElementById("oscCount").value);
+      const useDetune = document.getElementById("detune").checked;
+      const detuneAmount = parseInt(document.getElementById("detuneAmount").value);
+      
+      // Get filter settings
+      const useFilter = document.getElementById("useFilter").checked;
+      const filterType = document.getElementById("filterType").value;
+      const cutoffMin = parseFloat(document.getElementById("cutoffMin").value);
+      const cutoffMax = parseFloat(document.getElementById("cutoffMax").value);
+      const resonanceMin = parseFloat(document.getElementById("resonanceMin").value);
+      const resonanceMax = parseFloat(document.getElementById("resonanceMax").value);
+      
+      // Get envelope settings
+      const useEnvelope = document.getElementById("useEnvelope").checked;
+      const attackMin = parseFloat(document.getElementById("attackMin").value);
+      const attackMax = parseFloat(document.getElementById("attackMax").value);
+      const releaseMin = parseFloat(document.getElementById("releaseMin").value);
+      const releaseMax = parseFloat(document.getElementById("releaseMax").value);
+      
+      // Get effects settings
+      const useDelay = document.getElementById("useDelay").checked;
+      const delayTimeMin = parseFloat(document.getElementById("delayTimeMin").value);
+      const delayTimeMax = parseFloat(document.getElementById("delayTimeMax").value);
+      const feedbackMin = parseFloat(document.getElementById("feedbackMin").value);
+      const feedbackMax = parseFloat(document.getElementById("feedbackMax").value);
+      
+      const useLFO = document.getElementById("useLFO").checked;
+      const lfoFreqMin = parseFloat(document.getElementById("lfoFreqMin").value);
+      const lfoFreqMax = parseFloat(document.getElementById("lfoFreqMax").value);
+      const lfoDepthMin = parseFloat(document.getElementById("lfoDepthMin").value);
+      const lfoDepthMax = parseFloat(document.getElementById("lfoDepthMax").value);
+      
+      // Random duration for this sound
+      const duration = Math.random() * (durMax - durMin) + durMin;
+      
+      // Create master gain node
+      const masterGain = audioContext.createGain();
+      masterGain.gain.value = Math.random() * (gainMax - gainMin) + gainMin;
+      
+      // Create filter if enabled
+      let filterNode = null;
+      if (useFilter) {
+        filterNode = audioContext.createBiquadFilter();
+        filterNode.type = filterType;
+        filterNode.frequency.value = Math.random() * (cutoffMax - cutoffMin) + cutoffMin;
+        filterNode.Q.value = Math.random() * (resonanceMax - resonanceMin) + resonanceMin;
+      }
+      
+      // Create delay if enabled
+      let delayNode = null;
+      let feedbackNode = null;
+      if (useDelay) {
+        delayNode = audioContext.createDelay();
+        delayNode.delayTime.value = Math.random() * (delayTimeMax - delayTimeMin) + delayTimeMin;
+        
+        feedbackNode = audioContext.createGain();
+        feedbackNode.gain.value = Math.random() * (feedbackMax - feedbackMin) + feedbackMin;
+      }
+      
+      // Create LFO if enabled
+      let lfo = null;
+      if (useLFO) {
+        lfo = audioContext.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = Math.random() * (lfoFreqMax - lfoFreqMin) + lfoFreqMin;
+        
+        const lfoGain = audioContext.createGain();
+        const lfoDepth = Math.random() * (lfoDepthMax - lfoDepthMin) + lfoDepthMin;
+        lfoGain.gain.value = lfoDepth;
+        
+        lfo.connect(lfoGain);
+        lfo.start();
+      }
+      
+      // Create oscillators
+      const oscillators = [];
+      for (let i = 0; i < oscCount; i++) {
+        const oscillator = audioContext.createOscillator();
+        
+        // Set random frequency
+        const baseFreq = Math.random() * (freqMax - freqMin) + freqMin;
+        oscillator.frequency.value = baseFreq;
+        
+        // Apply detune if enabled
+        if (useDetune && i > 0) {
+          oscillator.detune.value = (Math.random() * 2 - 1) * detuneAmount;
+        }
+        
+        // Set random oscillator type
+        oscillator.type = oscTypes[Math.floor(Math.random() * oscTypes.length)];
+        
+        // Connect LFO to frequency if enabled
+        if (useLFO && lfo) {
+          const lfoGain = audioContext.createGain();
+          lfoGain.gain.value = oscillator.frequency.value * 0.01;
+          lfo.connect(lfoGain);
+          lfoGain.connect(oscillator.frequency);
+        }
+        
+        // Create individual gain node for this oscillator
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 1 / oscCount; // Distribute volume evenly
+        
+        // Apply envelope if enabled
+        if (useEnvelope) {
+          const attack = Math.random() * (attackMax - attackMin) + attackMin;
+          const release = Math.random() * (releaseMax - releaseMin) + releaseMin;
+          
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(1 / oscCount, audioContext.currentTime + attack);
+          gainNode.gain.setValueAtTime(1 / oscCount, audioContext.currentTime + duration - release);
+          gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
+        }
+        
+        oscillators.push({ osc: oscillator, gain: gainNode });
+      }
+      
+      // Connect everything
+      oscillators.forEach(({ osc, gain }) => {
+        // Oscillator -> Individual Gain
+        osc.connect(gain);
+        
+        // Individual Gain -> Filter or Master Gain
+        if (useFilter && filterNode) {
+          gain.connect(filterNode);
+        } else {
+          gain.connect(masterGain);
+        }
+      });
+      
+      // Connect filter to master gain if used
+      if (useFilter && filterNode) {
+        filterNode.connect(masterGain);
+      }
+      
+      // Connect master gain to destination and delay
+      if (useDelay && delayNode && feedbackNode) {
+        masterGain.connect(delayNode);
+        delayNode.connect(feedbackNode);
+        feedbackNode.connect(delayNode);
+        delayNode.connect(audioContext.destination);
+      }
+      
+      masterGain.connect(audioContext.destination);
+      masterGain.connect(destination);
+      
+      // Setup media recorder for recording
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(destination.stream);
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        document.getElementById("downloadBtn").disabled = false;
+      };
+      
+      // Start everything
+      mediaRecorder.start();
+      oscillators.forEach(({ osc }) => osc.start());
+      
+      // Stop oscillators
+      oscillators.forEach(({ osc }) => {
+        osc.stop(audioContext.currentTime + duration);
+      });
+      
+      // Stop recording slightly after the sound ends
+      setTimeout(() => {
+        if (mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+        }
+      }, duration * 1000 + 500);
+      
+      // Reset button after sound finishes
+      setTimeout(() => {
+        btn.classList.remove("generating");
+        btn.textContent = "Generate Random Sound";
+      }, duration * 1000);
+    }
+    
+    function downloadLastSound() {
+      if (!audioBlob) {
+        alert("No sound available to download.");
+        return;
+      }
+      
+      // Create a download link for the audio blob
+      const url = URL.createObjectURL(audioBlob);
+      const a = document.createElement("a");
+      
+      // Create a timestamp for the filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      
+      a.style.display = "none";
+      a.href = url;
+      a.download = `random-sound-${timestamp}.wav`;
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    }
+  </script>
+</body>
+</html>
