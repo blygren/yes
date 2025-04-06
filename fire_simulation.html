@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>2D Fire Simulation</title>
+	<style>
+		/* ...existing code... */
+		body, html {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			background: black;
+		}
+		canvas {
+			display: block;
+		}
+		 /* Added styles for the control panel and toggle button */
+		#controls {
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			background: rgba(0, 0, 0, 0.7);
+			color: white;
+			padding: 10px;
+			border-radius: 5px;
+			font-family: Arial, sans-serif;
+			z-index: 100;
+		}
+		.control-group {
+			margin-bottom: 8px;
+		}
+		label {
+			display: inline-block;
+			width: 110px;
+		}
+		input, select, button {
+			margin-top: 5px;
+		}
+		#toggleControls {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			z-index: 150;
+			background: #333;
+			color: white;
+			border: none;
+			padding: 8px;
+			border-radius: 3px;
+			cursor: pointer;
+		}
+		/* ...existing code... */
+	</style>
+</head>
+<body>
+	<canvas id="fireCanvas"></canvas>
+	<button id="toggleControls">Show Controls</button>
+	<div id="controls" style="display: none;">
+		<div class="control-group">
+			<label for="windDirection">Wind Direction:</label>
+			<input type="range" id="windDirection" min="-5" max="5" value="0" step="0.1">
+			<span id="windDirectionValue">0</span>
+		</div>
+		<div class="control-group">
+			<label for="fireIntensity">Fire Intensity:</label>
+			<input type="range" id="fireIntensity" min="1" max="10" value="3" step="0.1">
+			<span id="fireIntensityValue">3</span>
+		</div>
+		<div class="control-group">
+			<label for="coolingRate">Cooling Rate:</label>
+			<input type="range" id="coolingRate" min="0.5" max="5" value="1" step="0.1">
+			<span id="coolingRateValue">1</span>
+		</div>
+		<div class="control-group">
+			<label for="resolution">Resolution:</label>
+			<input type="range" id="resolution" min="50" max="300" value="200" step="10">
+			<span id="resolutionValue">200</span>
+		</div>
+		<div class="control-group">
+			<label for="colorMode">Color Mode:</label>
+			<select id="colorMode">
+				<option value="classic">Classic</option>
+				<option value="blue">Blue</option>
+				<option value="green">Green</option>
+				<option value="rainbow">Rainbow</option>
+			</select>
+		</div>
+		<div class="control-group">
+			<button id="toggleParticles">Toggle Particles</button>
+			<button id="resetFire">Reset Fire</button>
+		</div>
+	</div>
+	<script>
+		// ...existing code...
+		const canvas = document.getElementById('fireCanvas');
+		const ctx = canvas.getContext('2d');
+
+		// Set canvas full screen and update on resize
+		function setCanvasSize() {
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+		}
+		setCanvasSize();
+		window.addEventListener('resize', setCanvasSize);
+
+		 // Configuration options
+		const config = {
+			windDirection: 0,
+			fireIntensity: 3,
+			coolingRate: 1,
+			showParticles: false,
+			colorMode: 'classic'
+		};
+
+		// Fire simulation parameters (default resolution)
+		let fireWidth = 200;
+		let fireHeight = 100;
+		let firePixels = new Array(fireWidth * fireHeight).fill(0);
+
+		// Color palettes
+		const colorPalettes = {
+			classic: [
+				"#070707", "#1F0707", "#2F0F07", "#470F07", "#571707", "#671F07", "#771F07", "#8F2707",
+				"#9F2F07", "#AF3F07", "#BF4707", "#C74707", "#DF4F07", "#DF5707", "#DF6707", "#DF7707",
+				"#DF8F07", "#DF9F07", "#DFAF07", "#D7BF07", "#CFBF07", "#C7CF07", "#BFDF07", "#B7DF07",
+				"#AFFF07", "#9FFF07", "#8FFF07", "#7FFF07", "#6FFF07", "#5FFF07", "#4FFF07", "#3FFF07",
+				"#2FFF07", "#1FFF07", "#0FFF07", "#00FFF7", "#00E7FF", "#00D7FF", "#00C7FF", "#00B7FF",
+				"#00A7FF", "#0097FF", "#0087FF", "#0077FF", "#0067FF", "#0057FF", "#0047FF", "#0037FF",
+				"#0027FF", "#0017FF", "#0007FF", "#000FFF", "#000EFF", "#000DFF", "#000CFF", "#000BFF"
+			],
+			blue: [
+				"#000000", "#000022", "#000044", "#000066", "#000088", "#0000AA", "#0000CC", "#0000EE",
+				"#0010FF", "#0020FF", "#0030FF", "#0040FF", "#0050FF", "#0060FF", "#0070FF", "#0080FF",
+				"#0090FF", "#00A0FF", "#00B0FF", "#00C0FF", "#00D0FF", "#00E0FF", "#00F0FF", "#11F0FF",
+				"#22F0FF", "#33F0FF", "#44F0FF", "#55F0FF", "#66F0FF", "#77F0FF", "#88F0FF", "#99F0FF",
+				"#AAF0FF", "#BBF0FF", "#CCF0FF", "#DDF0FF", "#EEF0FF", "#FFFFFF", "#FFFFFF", "#FFFFFF"
+			],
+			green: [
+				"#000000", "#002200", "#004400", "#006600", "#008800", "#00AA00", "#00CC00", "#00EE00",
+				"#10FF00", "#20FF00", "#30FF00", "#40FF00", "#50FF00", "#60FF00", "#70FF00", "#80FF00",
+				"#90FF00", "#A0FF00", "#B0FF00", "#C0FF00", "#D0FF00", "#E0FF00", "#F0FF00", "#F0FF10",
+				"#F0FF20", "#F0FF30", "#F0FF40", "#F0FF50", "#F0FF60", "#F0FF70", "#F0FF80", "#F0FF90",
+				"#F0FFA0", "#F0FFB0", "#F0FFC0", "#F0FFD0", "#F0FFE0", "#FFFFFF", "#FFFFFF", "#FFFFFF"
+			],
+			rainbow: [
+				"#000000", "#3300FF", "#0066FF", "#00CCFF", "#00FFCC", "#00FF66", "#33FF00", "#CCFF00",
+				"#FFCC00", "#FF6600", "#FF0000", "#FF0066", "#FF00CC", "#CC00FF", "#6600FF", "#3300FF",
+				"#0033FF", "#0066FF", "#0099FF", "#00CCFF", "#00FFFF", "#00FFCC", "#00FF99", "#00FF66",
+				"#00FF33", "#00FF00", "#33FF00", "#66FF00", "#99FF00", "#CCFF00", "#FFFF00", "#FFCC00",
+				"#FF9900", "#FF6600", "#FF3300", "#FF0000", "#FF0033", "#FF0066", "#FF0099", "#FF00CC",
+				"#FF00FF", "#CC00FF", "#9900FF", "#6600FF", "#3300FF", "#0000FF", "#0000FF", "#0000FF"
+			]
+		};
+		let currentPalette = colorPalettes[config.colorMode];
+
+		// Particle system
+		const particles = [];
+		class Particle {
+			constructor(x, y) {
+				this.x = x;
+				this.y = y;
+				this.size = Math.random() * 3 + 1;
+				this.speedX = Math.random() * 3 - 1.5 + config.windDirection;
+				this.speedY = Math.random() * -3 - 1;
+				this.color = currentPalette[Math.floor(Math.random() * (currentPalette.length / 4)) + (currentPalette.length * 3 / 4)];
+				this.life = Math.random() * 40 + 40;
+			}
+			update() {
+				this.x += this.speedX;
+				this.y += this.speedY;
+				this.speedX += config.windDirection * 0.01;
+				this.life--;
+				if (this.life < 20) this.size -= 0.05;
+			}
+			draw() {
+				ctx.fillStyle = this.color;
+				ctx.globalAlpha = this.life / 100;
+				ctx.beginPath();
+				ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.globalAlpha = 1;
+			}
+		}
+
+		// Create base of the fire at the bottom of the array
+		function createFireSource() {
+			for (let x = 0; x < fireWidth; x++) {
+				const index = (fireHeight - 1) * fireWidth + x;
+				firePixels[index] = currentPalette.length - 1;
+			}
+		}
+
+		// Function to update fire intensity with wind and cooling effects
+		function updateFire() {
+			for (let x = 0; x < fireWidth; x++) {
+				for (let y = 1; y < fireHeight; y++) {
+					const src = y * fireWidth + x;
+					const decay = Math.floor(Math.random() * 3 * config.coolingRate);
+					// Apply wind effect and incorporate into index shift
+					const windShift = Math.round(config.windDirection);
+					let dst = src - decay + windShift;
+					dst = dst < 0 ? 0 : dst;
+					const newIntensity = firePixels[src] - decay >= 0 ? firePixels[src] - decay : 0;
+					if (dst - fireWidth >= 0 && dst - fireWidth < firePixels.length) {
+						firePixels[dst - fireWidth] = newIntensity;
+					}
+				}
+			}
+		}
+
+		// Function to render fire and generate particles
+		function renderFire() {
+			const cellWidth = canvas.width / fireWidth;
+			const cellHeight = canvas.height / fireHeight;
+			for (let y = 0; y < fireHeight; y++) {
+				for (let x = 0; x < fireWidth; x++) {
+					const idx = y * fireWidth + x;
+					const intensity = Math.min(Math.floor(firePixels[idx] * config.fireIntensity), currentPalette.length - 1);
+					ctx.fillStyle = currentPalette[intensity];
+					ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+					// Emit particles from high intensity cells
+					if (config.showParticles && intensity > currentPalette.length - 10 && Math.random() < 0.02) {
+						const particleX = x * cellWidth + cellWidth/2;
+						const particleY = y * cellHeight + cellHeight/2;
+						particles.push(new Particle(particleX, particleY));
+					}
+				}
+			}
+			// Update and draw particles
+			if (config.showParticles) {
+				for (let i = particles.length - 1; i >= 0; i--) {
+					particles[i].update();
+					particles[i].draw();
+					if (particles[i].life <= 0 || particles[i].size <= 0) {
+						particles.splice(i, 1);
+					}
+				}
+			}
+		}
+
+		// Interactivity: click and drag to ignite fire regions
+		function igniteAt(e, radius) {
+			const rect = canvas.getBoundingClientRect();
+			const x = e.clientX - rect.left;
+			const y = e.clientY - rect.top;
+			const cellWidth = canvas.width / fireWidth;
+			const cellHeight = canvas.height / fireHeight;
+			const cellX = Math.floor(x / cellWidth);
+			const cellY = Math.floor(y / cellHeight);
+			for (let offsetY = -radius; offsetY <= radius; offsetY++) {
+				for (let offsetX = -radius; offsetX <= radius; offsetX++) {
+					const posX = cellX + offsetX;
+					const posY = cellY + offsetY;
+					if (posX >= 0 && posX < fireWidth && posY >= 0 && posY < fireHeight) {
+						const index = posY * fireWidth + posX;
+						firePixels[index] = currentPalette.length - 1;
+					}
+				}
+			}
+		}
+		canvas.addEventListener('click', function(e) {
+			igniteAt(e, 3);
+		});
+		let isMouseDown = false;
+		canvas.addEventListener('mousedown', () => isMouseDown = true);
+		canvas.addEventListener('mouseup', () => isMouseDown = false);
+		canvas.addEventListener('mousemove', function(e) {
+			if (isMouseDown) igniteAt(e, 2);
+		});
+
+		// Animation loop
+		function loop() {
+			updateFire();
+			renderFire();
+			requestAnimationFrame(loop);
+		}
+
+		// Control Panel Handlers
+		const toggleBtn = document.getElementById('toggleControls');
+		const controlsDiv = document.getElementById('controls');
+		toggleBtn.addEventListener('click', () => {
+			controlsDiv.style.display = controlsDiv.style.display === 'none' ? 'block' : 'none';
+		});
+		document.getElementById('windDirection').addEventListener('input', function() {
+			config.windDirection = parseFloat(this.value);
+			document.getElementById('windDirectionValue').innerText = this.value;
+		});
+		document.getElementById('fireIntensity').addEventListener('input', function() {
+			config.fireIntensity = parseFloat(this.value);
+			document.getElementById('fireIntensityValue').innerText = this.value;
+		});
+		document.getElementById('coolingRate').addEventListener('input', function() {
+			config.coolingRate = parseFloat(this.value);
+			document.getElementById('coolingRateValue').innerText = this.value;
+		});
+		document.getElementById('resolution').addEventListener('input', function() {
+			const newRes = parseInt(this.value);
+			document.getElementById('resolutionValue').innerText = this.value;
+			// Update resolution by recreating fire pixel array and adjusting width
+			fireWidth = newRes;
+			fireHeight = Math.floor(newRes/2);
+			firePixels = new Array(fireWidth * fireHeight).fill(0);
+			createFireSource();
+		});
+		document.getElementById('colorMode').addEventListener('change', function() {
+			config.colorMode = this.value;
+			currentPalette = colorPalettes[config.colorMode];
+			createFireSource();
+		});
+		document.getElementById('toggleParticles').addEventListener('click', function() {
+			config.showParticles = !config.showParticles;
+			this.innerText = config.showParticles ? 'Particles On' : 'Particles Off';
+		});
+		document.getElementById('resetFire').addEventListener('click', function() {
+			firePixels.fill(0);
+			createFireSource();
+		});
+
+		createFireSource();
+		loop();
+		// ...existing code...
+	</script>
+</body>
+</html>
