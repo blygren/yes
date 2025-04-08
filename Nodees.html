@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cloth Physics Mobile</title>
+    <style>
+        :root {
+            --primary-color: #4fc3f7;
+            --dark-bg: #212130;
+            --panel-bg: rgba(30, 30, 40, 0.9);
+            --accent-color: #8fe1ff;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            background-color: var(--dark-bg);
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+            width: 100%;
+        }
+        
+        #canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        canvas {
+            background-color: #000;
+            border-radius: 5px;
+            max-width: 100%;
+            max-height: 100%;
+            touch-action: none;
+        }
+        
+        /* Mobile tab bar navigation */
+        .tab-bar {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--panel-bg);
+            padding: 8px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            width: 20%;
+            color: #ccc;
+            font-size: 11px;
+            transition: color 0.2s;
+        }
+        
+        .tab.active {
+            color: var(--accent-color);
+        }
+        
+        .tab-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        /* Settings panel - slides up from bottom */
+        .settings-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 20px;
+            z-index: 100;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-height: 75vh;
+            overflow-y: auto;
+            box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .settings-panel.active {
+            transform: translateY(0);
+        }
+        
+        .panel-handle {
+            width: 50px;
+            height: 5px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            margin: 0 auto 15px;
+        }
+        
+        .setting-group {
+            margin-bottom: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .setting-group h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            font-size: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+        
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .setting-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        label {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-color);
+            height: 20px;
+        }
+        
+        input[type="color"] {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+        }
+        
+        button.preset {
+            background-color: rgba(79, 195, 247, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 0;
+            margin: 5px;
+            cursor: pointer;
+            width: calc(50% - 10px);
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+        
+        button.preset:hover, button.preset:active {
+            background-color: rgba(79, 195, 247, 0.4);
+        }
+        
+        .preset-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        
+        /* Mobile toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 26px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        
+        /* Floating action buttons */
+        .action-button {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            z-index: 5;
+            font-size: 20px;
+            color: white;
+            border: none;
+        }
+        
+        #resetButton {
+            bottom: 80px;
+            right: 20px;
+        }
+        
+        #windButton {
+            bottom: 140px;
+            right: 20px;
+            background-color: rgba(79, 195, 247, 0.8);
+        }
+        
+        /* Status indicators */
+        .status-pill {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: var(--panel-bg);
+            border-radius: 50px;
+            padding: 8px 15px;
+            font-size: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+        }
+        
+        .tilt-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .tilt-active {
+            background-color: #4caf50;
+        }
+        
+        .tilt-inactive {
+            background-color: #f44336;
+        }
+        
+        /* Pop-up tips */
+        .tutorial-tip {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            right: 20px;
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+            transform: translateY(150%);
+            transition: transform 0.3s ease;
+            z-index: 5;
+        }
+        
+        .tutorial-tip.show {
+            transform: translateY(0);
+        }
+        
+        .tutorial-tip button {
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        /* Loader overlay */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--dark-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(79, 195, 247, 0.3);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Select styling */
+        select {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 5px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z' fill='white'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 30px;
+        }
+        
+        /* Pull-up handle for reopening settings - improved styling */
+        .pull-up-handle {
+            position: fixed;
+            bottom: 56px; /* Position just above the tab bar */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 3px;
+            margin: 0 auto;
+            z-index: 99;
+            display: none; /* Hidden by default */
+            transition: all 0.2s;
+            box-shadow: 0 0 5px rgba(143, 225, 255, 0.5);
+        }
+        
+        .pull-up-handle:after {
+            content: '';
+            display: block;
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-45deg);
+            width: 8px;
+            height: 8px;
+            border-left: 2px solid rgba(255, 255, 255, 0.5);
+            border-top: 2px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .pull-up-handle-area {
+            position: fixed;
+            bottom: 56px;
+            left: 0;
+            right: 0;
+            height: 50px; /* Increased touch area */
+            z-index: 98;
+            display: none;
+        }
+        
+        /* Animation to draw attention to the handle */
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); opacity: 0.5; }
+            50% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+            100% { transform: translateX(-50%) scale(1); opacity: 0.5; }
+        }
+        
+        .pull-up-handle.pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* Additional styling for new customization options */
+        .slider-value {
+            min-width: 30px;
+            text-align: right;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-left: 10px;
+        }
+        
+        .multi-select {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        
+        .option-button {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 15px;
+            margin: 3px 0;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .option-button.active {
+            background-color: var(--accent-color);
+            color: #000;
+        }
+        
+        .color-presets {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        
+        .color-preset {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            margin: 3px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .color-preset:hover, .color-preset:active {
+            transform: scale(1.1);
+            border-color: white;
+        }
+        
+        /* Visual feedback for touch interactions */
+        .touch-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+        
+        /* Toast notification for feedback */
+        .toast {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--panel-bg);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        /* Quick access button for tilt toggle */
+        #tiltToggle {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--panel-bg);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            border: none;
+            color: white;
+            font-size: 16px;
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        #tiltToggle:active {
+            opacity: 1;
+        }
+        
+        /* Fullscreen toggle button */
+        #fullscreenToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--panel-bg);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            border: none;
+            color: white;
+            font-size: 16px;
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        #fullscreenToggle:active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Main content -->
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+        
+        <!-- Status indicator -->
+        <div class="status-pill">
+            <span class="tilt-indicator tilt-active" id="tiltStatus"></span>
+            <span id="statusText">Tilt enabled</span>
+        </div>
+        
+        <!-- Quick access buttons -->
+        <button id="tiltToggle">🧭</button>
+        <button id="fullscreenToggle">⛶</button>
+        
+        <!-- Action buttons -->
+        <button class="action-button" id="resetButton">↻</button>
+        <button class="action-button" id="windButton">≋</button>
+        
+        <!-- Toast notification -->
+        <div class="toast" id="toast"></div>
+        
+        <!-- Tutorial tip -->
+        <div class="tutorial-tip" id="tutorialTip">
+            Tilt your device to change gravity direction. Tap and drag to move the cloth.
+            <br>
+            <button id="dismissTip">Got it</button>
+        </div>
+    </div>
+    
+    <!-- Pull-up handle for reopening settings -->
+    <div class="pull-up-handle-area" id="pullUpArea">
+        <div class="pull-up-handle" id="pullUpHandle"></div>
+    </div>
+    
+    <!-- Bottom tab navigation -->
+    <div class="tab-bar">
+        <div class="tab active" data-panel="none" id="homeTab">
+            <div class="tab-icon">🏠</div>
+            <span>Home</span>
+        </div>
+        <div class="tab" data-panel="physics">
+            <div class="tab-icon">⚙️</div>
+            <span>Physics</span>
+        </div>
+        <div class="tab" data-panel="appearance">
+            <div class="tab-icon">🎨</div>
+            <span>Look</span>
+        </div>
+        <div class="tab" data-panel="effects">
+            <div class="tab-icon">✨</div>
+            <span>Effects</span>
+        </div>
+        <div class="tab" data-panel="presets">
+            <div class="tab-icon">⭐</div>
+            <span>Presets</span>
+        </div>
+    </div>
+    
+    <!-- Settings panels -->
+    <div class="settings-panel" id="physicsPanel">
+        <div class="panel-handle"></div>
+        <div class="setting-group">
+            <h3>Physics Settings</h3>
+            <div class="setting-row">
+                <label for="gravity">Gravity</label>
+                <input type="range" id="gravity" min="0" max="0.5" step="0.01" value="0.2">
+                <span class="slider-value" id="gravityValue">0.20</span>
+            </div>
+            <div class="setting-row">
+                <label for="drag">Drag</label>
+                <input type="range" id="drag" min="0.9" max="0.999" step="0.001" value="0.99">
+                <span class="slider-value" id="dragValue">0.990</span>
+            </div>
+            <div class="setting-row">
+                <label for="elasticity">Elasticity</label>
+                <input type="range" id="elasticity" min="0.1" max="1" step="0.01" value="0.9">
+                <span class="slider-value" id="elasticityValue">0.90</span>
+            </div>
+            <div class="setting-row">
+                <label for="iterations">Physics Quality</label>
+                <input type="range" id="iterations" min="1" max="10" step="1" value="5">
+                <span class="slider-value" id="iterationsValue">5</span>
+            </div>
+            <div class="setting-row">
+                <label for="tearThreshold">Tearing Threshold</label>
+                <input type="range" id="tearThreshold" min="0" max="100" step="1" value="0">
+                <span class="slider-value" id="tearThresholdValue">0</span>
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Cloth Behavior</h3>
+            <div class="setting-row">
+                <label for="interactMode">Interaction Mode</label>
+                <select id="interactMode">
+                    <option value="drag" selected>Drag Points</option>
+                    <option value="cut">Cut Links</option>
+                    <option value="pin">Pin/Unpin</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Tilt Control</h3>
+            <div class="setting-row">
+                <label for="enableTilt">Enable Tilt</label>
+                <label class="switch">
+                    <input type="checkbox" id="enableTilt" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="tiltSensitivity">Tilt Sensitivity</label>
+                <input type="range" id="tiltSensitivity" min="0.1" max="1" step="0.1" value="0.5">
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Cloth Setup</h3>
+            <div class="setting-row">
+                <label for="pinOption">Pin Points</label>
+                <select id="pinOption">
+                    <option value="corners">Corners Only</option>
+                    <option value="top" selected>Top Row (Spaced)</option>
+                    <option value="all-top">Entire Top Row</option>
+                    <option value="none">None (Free)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="settings-panel" id="appearancePanel">
+        <div class="panel-handle"></div>
+        <div class="setting-group">
+            <h3>Color & Style</h3>
+            <div class="setting-row">
+                <label for="clothColor">Cloth Color</label>
+                <input type="color" id="clothColor" value="#ffffff">
+            </div>
+            <div class="color-presets">
+                <div class="color-preset" style="background-color: #ffffff" data-color="#ffffff"></div>
+                <div class="color-preset" style="background-color: #ff4081" data-color="#ff4081"></div>
+                <div class="color-preset" style="background-color: #2196f3" data-color="#2196f3"></div>
+                <div class="color-preset" style="background-color: #4caf50" data-color="#4caf50"></div>
+                <div class="color-preset" style="background-color: #ffeb3b" data-color="#ffeb3b"></div>
+                <div class="color-preset" style="background-color: #9c27b0" data-color="#9c27b0"></div>
+            </div>
+            <div class="setting-row">
+                <label for="bgColor">Background Color</label>
+                <input type="color" id="bgColor" value="#000000">
+            </div>
+            <div class="color-presets">
+                <div class="color-preset" style="background-color: #000000" data-color="#000000"></div>
+                <div class="color-preset" style="background-color: #121212" data-color="#121212"></div>
+                <div class="color-preset" style="background-color: #0a192f" data-color="#0a192f"></div>
+                <div class="color-preset" style="background-color: #1a1a2e" data-color="#1a1a2e"></div>
+                <div class="color-preset" style="background-color: #150050" data-color="#150050"></div>
+                <div class="color-preset" style="background-color: #1e0035" data-color="#1e0035"></div>
+            </div>
+            <div class="setting-row">
+                <label for="clothOpacity">Cloth Opacity</label>
+                <input type="range" id="clothOpacity" min="0.1" max="1" step="0.05" value="0.5">
+                <span class="slider-value" id="clothOpacityValue">0.50</span>
+            </div>
+            <div class="setting-row">
+                <label for="clothThickness">Line Thickness</label>
+                <input type="range" id="clothThickness" min="0.5" max="3" step="0.1" value="1">
+                <span class="slider-value" id="clothThicknessValue">1.0</span>
+            </div>
+            <div class="setting-row">
+                <label for="renderMode">Render Mode</label>
+                <select id="renderMode">
+                    <option value="lines" selected>Lines</option>
+                    <option value="dots">Dots Only</option>
+                    <option value="triangles">Filled Triangles</option>
+                    <option value="linesAndDots">Lines & Dots</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="settings-panel" id="effectsPanel">
+        <div class="panel-handle"></div>
+        <div class="setting-group">
+            <h3>Visual Effects</h3>
+            <div class="setting-row">
+                <label for="enableGlow">Glow Effect</label>
+                <label class="switch">
+                    <input type="checkbox" id="enableGlow">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="enableRainbow">Rainbow Mode</label>
+                <label class="switch">
+                    <input type="checkbox" id="enableRainbow">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="showPoints">Show Points</label>
+                <label class="switch">
+                    <input type="checkbox" id="showPoints" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="particleEffects">Particle Effects</label>
+                <label class="switch">
+                    <input type="checkbox" id="particleEffects">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="colorCycle">Color Cycle Speed</label>
+                <input type="range" id="colorCycle" min="0.1" max="2" step="0.1" value="0.5">
+                <span class="slider-value" id="colorCycleValue">0.5</span>
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Device Feedback</h3>
+            <div class="setting-row">
+                <label for="enableVibration">Vibration</label>
+                <label class="switch">
+                    <input type="checkbox" id="enableVibration" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="vibrationIntensity">Vibration Intensity</label>
+                <input type="range" id="vibrationIntensity" min="0.1" max="2" step="0.1" value="1">
+                <span class="slider-value" id="vibrationIntensityValue">1.0</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="settings-panel" id="presetsPanel">
+        <div class="panel-handle"></div>
+        <div class="setting-group">
+            <h3>Quick Presets</h3>
+            <div class="preset-container">
+                <button class="preset" id="presetNormal">Normal</button>
+                <button class="preset" id="presetWater">Water</button>
+                <button class="preset" id="presetSpace">Low Gravity</button>
+                <button class="preset" id="presetElastic">Super Elastic</button>
+                <button class="preset" id="presetJelly">Jelly</button>
+                <button class="preset" id="presetGhost">Ghost</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Mobile detection
+        const isMobile = true; // Force mobile mode
+        
+        // Handle loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loader').style.display = 'none';
+                    // Show tutorial tip
+                    setTimeout(() => {
+                        document.getElementById('tutorialTip').classList.add('show');
+                    }, 1000);
+                }, 500);
+            }, 500);
+        });
+        
+        document.getElementById('dismissTip').addEventListener('click', () => {
+            document.getElementById('tutorialTip').classList.remove('show');
+            // Store in localStorage to not show again
+            localStorage.setItem('tutorialSeen', 'true');
+        });
+        
+        // Only show tutorial if not seen before
+        if (localStorage.getItem('tutorialSeen') === 'true') {
+            document.getElementById('tutorialTip').style.display = 'none';
+        }
+        
+        // Canvas setup - responsive for mobile
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = window.innerWidth;
+            canvas.height = container.clientHeight;
+                
+            // Recreate cloth with new dimensions
+            createCloth(document.getElementById('pinOption').value);
+        }
+        
+        // Initial size
+        setTimeout(resizeCanvas, 100); // Small delay to ensure container is properly sized
+        
+        // Re-size on window resize
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Physics parameters
+        let GRAVITY = 0.2;
+        let DRAG = 0.99;
+        let ELASTICITY = 0.9;
+        let REST_LENGTH = 10;
+        let ITERATIONS = 5;
+        let TEAR_THRESHOLD = 0; // 0 means no tearing
+        let colorCycleSpeed = 0.5;
+        let vibrationIntensity = 1.0;
+        let renderMode = 'lines';
+        let interactMode = 'drag';
+        let enableParticles = false;
+        
+        // Device orientation settings
+        let enableTilt = true;
+        let tiltSensitivity = 0.5;
+        let gravityX = 0;
+        let gravityY = GRAVITY;
+        let enableVibration = true;
+        
+        // Cloth parameters - optimized for mobile
+        let CLOTH_WIDTH, CLOTH_HEIGHT, SPACING;
+        
+        // Adjust cloth parameters based on screen size
+        function updateClothParams() {
+            // Use fewer points on mobile for better performance
+            CLOTH_WIDTH = Math.floor(canvas.width / 18);
+            CLOTH_HEIGHT = Math.floor(canvas.height / 18);
+            SPACING = Math.max(10, Math.min(20, canvas.width / 25));
+            REST_LENGTH = SPACING;
+        }
+        
+        // Visual settings
+        let clothColor = "#ffffff";
+        let clothOpacity = 0.5;
+        let bgColor = "#000000";
+        let lineThickness = 1;
+        let enableGlow = false;
+        let enableRainbow = false;
+        let showPoints = true;
+        
+        // Particles array for effects
+        let particles = [];
+        
+        // Point class for cloth nodes
+        class Point {
+            constructor(x, y, pinned = false) {
+                this.x = x;
+                this.y = y;
+                this.oldX = x;
+                this.oldY = y;
+                this.pinned = pinned;
+            }
+            
+            update() {
+                if (this.pinned) return;
+                
+                // Calculate velocity (Verlet integration)
+                const vx = (this.x - this.oldX) * DRAG;
+                const vy = (this.y - this.oldY) * DRAG;
+                
+                // Save current position
+                this.oldX = this.x;
+                this.oldY = this.y;
+                
+                // Apply velocity and gravity (now with X and Y components)
+                this.x += vx + gravityX;
+                this.y += vy + gravityY;
+                
+                // Boundary constraints
+                if (this.x < 0) this.x = 0;
+                if (this.x > canvas.width) this.x = canvas.width;
+                if (this.y < 0) this.y = 0;
+                if (this.y > canvas.height) this.y = canvas.height;
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2); // Slightly larger points for mobile
+                ctx.fillStyle = this.pinned ? 'red' : 'white';
+                ctx.fill();
+            }
+        }
+        
+        // Link class for constraints between points
+        class Link {
+            constructor(p1, p2) {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.length = REST_LENGTH;
+                this.hue = Math.random() * 360; // For rainbow mode
+                this.broken = false; // For tearing effect
+            }
+            
+            resolve() {
+                if (this.broken) return;
+                
+                // Calculate distance between points
+                const dx = this.p2.x - this.p1.x;
+                const dy = this.p2.y - this.p1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance === 0) return; // Prevent division by zero
+                
+                // Check for tearing if enabled
+                if (TEAR_THRESHOLD > 0 && distance > this.length * (1 + TEAR_THRESHOLD/10)) {
+                    this.broken = true;
+                    
+                    // Create particles for broken link
+                    if (enableParticles) {
+                        const midX = (this.p1.x + this.p2.x) / 2;
+                        const midY = (this.p1.y + this.p2.y) / 2;
+                        for (let i = 0; i < 5; i++) {
+                            createParticle(midX, midY);
+                        }
+                    }
+                    
+                    // Strong vibration for tearing
+                    vibrateDevice([10, 5, 30]);
+                    return;
+                }
+                
+                // Calculate the difference from rest length
+                const difference = (this.length - distance) / distance;
+                
+                // Apply correction based on elasticity
+                const offsetX = dx * difference * 0.5 * ELASTICITY;
+                const offsetY = dy * difference * 0.5 * ELASTICITY;
+                
+                // Move points (unless pinned)
+                if (!this.p1.pinned) {
+                    this.p1.x -= offsetX;
+                    this.p1.y -= offsetY;
+                }
+                
+                if (!this.p2.pinned) {
+                    this.p2.x += offsetX;
+                    this.p2.y += offsetY;
+                }
+            }
+            
+            draw() {
+                if (this.broken) return;
+                
+                // Handle different render modes
+                if (renderMode === 'dots') return;
+                
+                ctx.beginPath();
+                ctx.moveTo(this.p1.x, this.p1.y);
+                ctx.lineTo(this.p2.x, this.p2.y);
+                
+                let color;
+                if (enableRainbow) {
+                    // Update hue based on color cycle speed
+                    this.hue = (this.hue + colorCycleSpeed) % 360;
+                    ctx.strokeStyle = `hsla(${this.hue}, 100%, 60%, ${clothOpacity})`;
+                } else {
+                    color = hexToRgb(clothColor);
+                    ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${clothOpacity})`;
+                }
+                
+                ctx.lineWidth = lineThickness;
+                
+                if (enableGlow) {
+                    if (!color && !enableRainbow) {
+                        color = hexToRgb(clothColor);
+                    }
+                    
+                    if (enableRainbow) {
+                        ctx.shadowBlur = 5;
+                        ctx.shadowColor = `hsla(${this.hue}, 100%, 60%, 0.7)`;
+                    } else {
+                        ctx.shadowBlur = 5;
+                        ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
+                    }
+                } else {
+                    ctx.shadowBlur = 0;
+                    ctx.shadowColor = 'transparent';
+                }
+                
+                ctx.stroke();
+                
+                // Reset shadow
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+            }
+        }
+        
+        // Particle class for effects
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3;
+                this.alpha = 1;
+                this.size = Math.random() * 3 + 1;
+                this.color = clothColor;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha *= 0.95;
+                this.size *= 0.96;
+            }
+            
+            draw() {
+                const color = hexToRgb(this.color);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+        
+        function createParticle(x, y) {
+            if (particles.length > 100) {
+                particles.shift(); // Remove oldest particle if we have too many
+            }
+            particles.push(new Particle(x, y));
+        }
+        
+        // Enhanced vibration function with intensity control
+        function vibrateDevice(pattern) {
+            if (!enableVibration || !('vibrate' in navigator)) return;
+            
+            // Apply intensity to the pattern
+            if (Array.isArray(pattern)) {
+                pattern = pattern.map(time => Math.round(time * vibrationIntensity));
+            } else {
+                pattern = Math.round(pattern * vibrationIntensity);
+            }
+            
+            try {
+                navigator.vibrate(pattern);
+            } catch (e) {
+                console.warn('Vibration failed:', e);
+            }
+        }
+        
+        // Create cloth - with dynamic positioning
+        let points = [];
+        let links = [];
+        
+        function createCloth(pinOption = 'top') {
+            updateClothParams();
+            points = [];
+            links = [];
+            
+            // Calculate starting position to center cloth
+            const startX = (canvas.width - (CLOTH_WIDTH-1) * SPACING) / 2;
+            const startY = canvas.height * 0.1; // Start at 10% from top
+            
+            for (let y = 0; y < CLOTH_HEIGHT; y++) {
+                for (let x = 0; x < CLOTH_WIDTH; x++) {
+                    // Create point with centered positioning
+                    const px = startX + x * SPACING;
+                    const py = startY + y * SPACING;
+                    
+                    // Pin based on selected option
+                    let pinned = false;
+                    
+                    if (pinOption === 'top') {
+                        pinned = y === 0 && (x % Math.max(2, Math.floor(CLOTH_WIDTH/8)) === 0);
+                    } else if (pinOption === 'all-top') {
+                        pinned = y === 0;
+                    } else if (pinOption === 'corners') {
+                        pinned = (y === 0 && x === 0) || 
+                                (y === 0 && x === CLOTH_WIDTH - 1);
+                    }
+                    
+                    points.push(new Point(px, py, pinned));
+                }
+            }
+            
+            // Create horizontal links
+            for (let y = 0; y < CLOTH_HEIGHT; y++) {
+                for (let x = 0; x < CLOTH_WIDTH - 1; x++) {
+                    const i = y * CLOTH_WIDTH + x;
+                    links.push(new Link(points[i], points[i + 1]));
+                }
+            }
+            
+            // Create vertical links
+            for (let y = 0; y < CLOTH_HEIGHT - 1; y++) {
+                for (let x = 0; x < CLOTH_WIDTH; x++) {
+                    const i = y * CLOTH_WIDTH + x;
+                    links.push(new Link(points[i], points[i + CLOTH_WIDTH]));
+                }
+            }
+            
+            // Add vibration feedback for cloth creation - improved pattern
+            vibrateDevice([30, 20, 50]);
+        }
+        
+        // Initialize cloth
+        createCloth('top');
+        
+        // Touch interaction for cloth
+        let selectedPoint = null;
+        let lastTouchTime = 0;
+        
+        // Find the closest point to the given coordinates
+        function findClosestPoint(x, y) {
+            let minDist = Infinity;
+            let closestPoint = null;
+            
+            // Make it easier to grab points on mobile - larger detection radius
+            const detectionRadius = 40 * 40; // Square of radius
+            
+            points.forEach(point => {
+                const dx = point.x - x;
+                const dy = point.y - y;
+                const dist = dx * dx + dy * dy;
+                if (dist < minDist && dist < detectionRadius) {
+                    minDist = dist;
+                    closestPoint = point;
+                }
+            });
+            
+            return closestPoint;
+        }
+        
+        // Improved touch interaction for cloth
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            if (interactMode === 'drag') {
+                selectedPoint = findClosestPoint(touchX, touchY);
+                
+                // Vibration feedback when grabbing a point
+                if (selectedPoint) {
+                    vibrateDevice(20);
+                    if (enableParticles) {
+                        createParticle(selectedPoint.x, selectedPoint.y);
+                    }
+                }
+            } else if (interactMode === 'pin') {
+                const point = findClosestPoint(touchX, touchY);
+                if (point) {
+                    point.pinned = !point.pinned;
+                    vibrateDevice(point.pinned ? [10, 10, 30] : [30, 10, 10]);
+                }
+            } else if (interactMode === 'cut') {
+                // Find closest link to cut
+                cutLinks(touchX, touchY);
+            }
+            
+            // Double tap detection for creating wind
+            const now = new Date().getTime();
+            const timeSince = now - lastTouchTime;
+            
+            if (timeSince < 300 && timeSince > 0) {
+                // Double tap detected - create wind
+                applyWind();
+            }
+            
+            lastTouchTime = now;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            if (interactMode === 'drag' && selectedPoint) {
+                selectedPoint.x = touchX;
+                selectedPoint.y = touchY;
+                selectedPoint.oldX = selectedPoint.x;
+                selectedPoint.oldY = selectedPoint.y;
+                
+                // Create particles while dragging
+                if (enableParticles && Math.random() > 0.7) {
+                    createParticle(selectedPoint.x, selectedPoint.y);
+                }
+            } else if (interactMode === 'cut') {
+                // Continue cutting along the path
+                cutLinks(touchX, touchY);
+            }
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            // Small vibration when releasing in drag mode
+            if (interactMode === 'drag' && selectedPoint) {
+                vibrateDevice(10);
+            }
+            
+            selectedPoint = null;
+        });
+        
+        // Find and cut links near a point
+        function cutLinks(x, y) {
+            const cutDistance = 20; // Distance within which to cut links
+            
+            links.forEach(link => {
+                if (link.broken) return;
+                
+                // Check if point is near this link using line-point distance formula
+                const x1 = link.p1.x, y1 = link.p1.y;
+                const x2 = link.p2.x, y2 = link.p2.y;
+                
+                const A = x - x1;
+                const B = y - y1;
+                const C = x2 - x1;
+                const D = y2 - y1;
+                
+                const dot = A * C + B * D;
+                const len_sq = C * C + D * D;
+                let param = -1;
+                
+                if (len_sq != 0) param = dot / len_sq;
+                
+                let xx, yy;
+                
+                if (param < 0) {
+                    xx = x1;
+                    yy = y1;
+                } else if (param > 1) {
+                    xx = x2;
+                    yy = y2;
+                } else {
+                    xx = x1 + param * C;
+                    yy = y1 + param * D;
+                }
+                
+                const dx = x - xx;
+                const dy = y - yy;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < cutDistance) {
+                    link.broken = true;
+                    
+                    // Create particles for broken link
+                    if (enableParticles) {
+                        const midX = (link.p1.x + link.p2.x) / 2;
+                        const midY = (link.p1.y + link.p2.y) / 2;
+                        for (let i = 0; i < 5; i++) {
+                            createParticle(midX, midY);
+                        }
+                    }
+                    
+                    // Vibration feedback for cutting
+                    vibrateDevice([5, 5, 20]);
+                }
+            });
+        }
+        
+        // Wind button with improved vibration
+        document.getElementById('windButton').addEventListener('click', applyWind);
+        document.getElementById('windButton').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            applyWind();
+        });
+        
+        function applyWind() {
+            // Apply wind force
+            points.forEach(point => {
+                if (!point.pinned) {
+                    point.x += (Math.random() - 0.3) * 5;
+                    
+                    // Add particles for wind effect
+                    if (enableParticles && Math.random() > 0.9) {
+                        createParticle(point.x, point.y);
+                    }
+                }
+            });
+            
+            // Enhanced vibration pattern for wind
+            vibrateDevice([5, 5, 15, 5, 25, 5, 5]);
+            
+            showToast('Wind applied');
+        }
+        
+        // Reset button with improved vibration
+        document.getElementById('resetButton').addEventListener('click', resetCloth);
+        document.getElementById('resetButton').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            resetCloth();
+        });
+        
+        function resetCloth() {
+            createCloth(document.getElementById('pinOption').value);
+            
+            // Clear all particles
+            particles = [];
+            
+            // Enhanced vibration pattern for reset
+            vibrateDevice([20, 10, 40, 10, 20]);
+            
+            showToast('Cloth reset');
+        }
+        
+        // Device orientation (tilt) handling
+        function updateTiltStatus() {
+            const indicator = document.getElementById('tiltStatus');
+            const statusText = document.getElementById('statusText');
+            
+            if (enableTilt) {
+                indicator.className = 'tilt-indicator tilt-active';
+                statusText.textContent = 'Tilt enabled';
+            } else {
+                indicator.className = 'tilt-indicator tilt-inactive';
+                statusText.textContent = 'Tilt disabled';
+                // Reset gravity
+                gravityX = 0;
+                gravityY = GRAVITY;
+            }
+        }
+        
+        updateTiltStatus();
+        
+        // Request permission for device motion (needed for iOS 13+)
+        function requestMotionPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                            enableTilt = true;
+                            document.getElementById('enableTilt').checked = true;
+                        } else {
+                            console.warn('Device orientation permission not granted');
+                            enableTilt = false;
+                            document.getElementById('enableTilt').checked = false;
+                        }
+                        updateTiltStatus();
+                    })
+                    .catch(console.error);
+            } else {
+                // For non-iOS devices
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+        
+        // Request permission on first load
+        requestMotionPermission();
+        
+        function handleOrientation(e) {
+            if (!enableTilt) return;
+            
+            // Get orientation data
+            const beta = e.beta;  // Front-to-back tilt in degrees (-180 to 180)
+            const gamma = e.gamma; // Left-to-right tilt in degrees (-90 to 90)
+            
+            if (beta === null || gamma === null) return;
+            
+            // Convert tilt to gravity components
+            // Apply sensitivity to make the effect more controllable
+            gravityX = (gamma / 90) * GRAVITY * tiltSensitivity;
+            
+            // For Y gravity, we use standard gravity plus tilt effect
+            // We divide by a higher number for beta to make it less sensitive
+            gravityY = GRAVITY + (beta - 45) / 90 * GRAVITY * tiltSensitivity;
+            
+            // Ensure we have reasonable gravity boundaries
+            gravityY = Math.max(-GRAVITY, Math.min(GRAVITY * 2, gravityY));
+            gravityX = Math.max(-GRAVITY, Math.min(GRAVITY, gravityX));
+        }
+        
+        // Device motion for detecting shakes
+        let lastAccel = { x: 0, y: 0, z: 0 };
+        let shakeThreshold = 15;
+        let lastShakeTime = 0;
+        
+        window.addEventListener('devicemotion', (e) => {
+            const now = new Date().getTime();
+            
+            if ((now - lastShakeTime) > 1000) { // Prevent multiple shakes in quick succession
+                const accel = e.accelerationIncludingGravity;
+                
+                if (!accel || accel.x === null) return;
+                
+                const deltaX = Math.abs(lastAccel.x - accel.x);
+                const deltaY = Math.abs(lastAccel.y - accel.y);
+                const deltaZ = Math.abs(lastAccel.z - accel.z);
+                
+                if ((deltaX > shakeThreshold && deltaY > shakeThreshold) || 
+                    (deltaX > shakeThreshold && deltaZ > shakeThreshold) || 
+                    (deltaY > shakeThreshold && deltaZ > shakeThreshold)) {
+                    
+                    // Shake detected - reset cloth
+                    resetCloth();
+                    lastShakeTime = now;
+                }
+                
+                lastAccel = {
+                    x: accel.x,
+                    y: accel.y,
+                    z: accel.z
+                };
+            }
+        });
+        
+        // Animation loop with enhanced rendering
+        function animate() {
+            // Set background color
+            canvas.style.backgroundColor = bgColor;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update physics
+            points.forEach(point => point.update());
+            
+            // Apply constraints multiple times for stability
+            for (let i = 0; i < ITERATIONS; i++) {
+                links.forEach(link => link.resolve());
+            }
+            
+            // Draw cloth based on render mode
+            if (renderMode === 'triangles') {
+                drawTriangles();
+            } else {
+                // Draw links
+                links.forEach(link => link.draw());
+            }
+            
+            // Draw points if enabled or in dots mode
+            if (showPoints || renderMode === 'dots' || renderMode === 'linesAndDots') {
+                points.forEach(point => point.draw());
+            }
+            
+            // Update and draw particles
+            if (enableParticles) {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].draw();
+                    
+                    // Remove faded particles
+                    if (particles[i].alpha < 0.05 || particles[i].size < 0.5) {
+                        particles.splice(i, 1);
+                    }
+                }
+            }
+            
+            // Highlight links when in cut mode
+            if (interactMode === 'cut') {
+                links.forEach(link => {
+                    if (!link.broken) {
+                        ctx.globalAlpha = 0.3;  // Add a subtle highlight
+                        ctx.beginPath();
+                        ctx.moveTo(link.p1.x, link.p1.y);
+                        ctx.lineTo(link.p2.x, link.p2.y);
+                        ctx.lineWidth = lineThickness + 2;
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.stroke();
+                        ctx.globalAlpha = 1.0;
+                    }
+                });
+            }
+            
+            // Continue animation
+            requestAnimationFrame(animate);
+        }
+        
+        // Function to draw filled triangles
+        function drawTriangles() {
+            if (points.length < CLOTH_WIDTH * 3) return;
+            
+            const color = hexToRgb(clothColor);
+            
+            // Create triangles from adjacent points
+            for (let y = 0; y < CLOTH_HEIGHT - 1; y++) {
+                for (let x = 0; x < CLOTH_WIDTH - 1; x++) {
+                    const i = y * CLOTH_WIDTH + x;
+                    const p1 = points[i];
+                    const p2 = points[i + 1];
+                    const p3 = points[i + CLOTH_WIDTH];
+                    const p4 = points[i + CLOTH_WIDTH + 1];
+                    
+                    // Skip triangles with broken links
+                    const hasLink1 = links.some(link => 
+                        !link.broken && 
+                        ((link.p1 === p1 && link.p2 === p2) || (link.p1 === p2 && link.p2 === p1))
+                    );
+                    const hasLink2 = links.some(link => 
+                        !link.broken && 
+                        ((link.p1 === p1 && link.p2 === p3) || (link.p1 === p3 && link.p2 === p1))
+                    );
+                    const hasLink3 = links.some(link => 
+                        !link.broken && 
+                        ((link.p1 === p2 && link.p2 === p4) || (link.p1 === p4 && link.p2 === p2))
+                    );
+                    const hasLink4 = links.some(link => 
+                        !link.broken && 
+                        ((link.p1 === p3 && link.p2 === p4) || (link.p1 === p4 && link.p2 === p3))
+                    );
+                    
+                    if (hasLink1 && hasLink2) {
+                        // First triangle
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.lineTo(p3.x, p3.y);
+                        ctx.closePath();
+                        
+                        if (enableRainbow) {
+                            const hue = (x / CLOTH_WIDTH * 180 + y / CLOTH_HEIGHT * 180 + Date.now() * 0.05 * colorCycleSpeed) % 360;
+                            ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${clothOpacity * 0.7})`;
+                        } else {
+                            ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${clothOpacity * 0.7})`;
+                        }
+                        
+                        ctx.fill();
+                    }
+                    
+                    if (hasLink3 && hasLink4) {
+                        // Second triangle
+                        ctx.beginPath();
+                        ctx.moveTo(p2.x, p2.y);
+                        ctx.lineTo(p4.x, p4.y);
+                        ctx.lineTo(p3.x, p3.y);
+                        ctx.closePath();
+                        
+                        if (enableRainbow) {
+                            const hue = (x / CLOTH_WIDTH * 180 + (y+0.5) / CLOTH_HEIGHT * 180 + Date.now() * 0.05 * colorCycleSpeed) % 360;
+                            ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${clothOpacity * 0.7})`;
+                        } else {
+                            ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${clothOpacity * 0.7})`;
+                        }
+                        
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+        
+        // Helper function to convert hex to RGB
+        function hexToRgb(hex) {
+            // Remove # if present
+            hex = hex.replace('#', '');
+            
+            // Parse r, g, b values
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            
+            return { r, g, b };
+        }
+        
+        // UI Controls - Mobile Tab Navigation
+        const tabs = document.querySelectorAll('.tab');
+        const panels = {
+            'physics': document.getElementById('physicsPanel'),
+            'appearance': document.getElementById('appearancePanel'),
+            'effects': document.getElementById('effectsPanel'),
+            'presets': document.getElementById('presetsPanel')
+        };
+        
+        // Track the last opened panel
+        let lastOpenedPanel = null;
+        const pullUpHandle = document.getElementById('pullUpHandle');
+        const pullUpArea = document.getElementById('pullUpArea');
+        
+        // Function to show the pull-up handle
+        function showPullUpHandle() {
+            if (lastOpenedPanel) {
+                pullUpHandle.style.display = 'block';
+                pullUpArea.style.display = 'block';
+                
+                // Add pulse animation to draw attention
+                setTimeout(() => {
+                    pullUpHandle.classList.add('pulse');
+                }, 500);
+                
+                // Log for debugging
+                console.log('Showing pull-up handle for panel:', lastOpenedPanel);
+            }
+        }
+        
+        // Function to hide the pull-up handle
+        function hidePullUpHandle() {
+            pullUpHandle.style.display = 'none';
+            pullUpArea.style.display = 'none';
+            pullUpHandle.classList.remove('pulse');
+        }
+        
+        // Hide all panels initially
+        Object.values(panels).forEach(panel => {
+            panel.classList.remove('active');
+        });
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Get panel to show
+                const panelName = tab.getAttribute('data-panel');
+                
+                // Hide all panels
+                Object.values(panels).forEach(panel => {
+                    panel.classList.remove('active');
+                });
+                
+                if (panelName === 'none') {
+                    if (lastOpenedPanel) {
+                        showPullUpHandle();
+                    }
+                } else {
+                    hidePullUpHandle();
+                    // Always open the selected panel, overriding previous state
+                    if (panels[panelName]) {
+                        panels[panelName].classList.add('active');
+                        lastOpenedPanel = panelName; // update lastOpenedPanel even if same as before
+                        if (enableVibration && 'vibrate' in navigator) {
+                            vibrateDevice(15);
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Pull-up handle interaction
+        pullUpArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        });
+        
+        pullUpArea.addEventListener('click', (e) => {
+            handlePullUp();
+        });
+        
+        // Function to handle pull-up action
+        function handlePullUp() {
+            if (lastOpenedPanel && panels[lastOpenedPanel]) {
+                // Find and click the appropriate tab
+                const tabToClick = Array.from(tabs).find(tab => 
+                    tab.getAttribute('data-panel') === lastOpenedPanel);
+                
+                if (tabToClick) {
+                    tabToClick.click();
+                    hidePullUpHandle();
+                    
+                    // Vibration feedback
+                    if (enableVibration && 'vibrate' in navigator) {
+                        vibrateDevice(15);
+                    }
+                }
+            }
+        }
+        
+        // Add swipe up gesture to reopen panel
+        let startY;
+        
+        pullUpArea.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+            e.preventDefault();
+        });
+        
+        pullUpArea.addEventListener('touchmove', (e) => {
+            if (!startY) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = startY - currentY;
+            
+            if (deltaY > 20) { // Reduced threshold for more responsive feel
+                handlePullUp();
+            }
+            
+            e.preventDefault();
+        });
+        
+        pullUpArea.addEventListener('touchend', () => {
+            startY = null;
+        });
+        
+        // Panel swipe to dismiss
+        const handlePanels = document.querySelectorAll('.panel-handle');
+        
+        handlePanels.forEach(handle => {
+            let startY, currentPanel;
+            
+            handle.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+                currentPanel = handle.parentElement;
+                e.preventDefault();
+            });
+            
+            handle.addEventListener('touchmove', (e) => {
+                if (!startY) return;
+                
+                const currentY = e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                
+                if (deltaY > 0) { // Only allow downward swipe
+                    currentPanel.style.transform = `translateY(${deltaY}px)`;
+                }
+                
+                e.preventDefault();
+            });
+            
+            handle.addEventListener('touchend', (e) => {
+                if (!startY || !currentPanel) return;
+                
+                const currentY = e.changedTouches[0].clientY;
+                const deltaY = currentY - startY;
+                
+                if (deltaY > 50) { // If swiped down far enough
+                    currentPanel.classList.remove('active');
+                    document.getElementById('homeTab').click();
+                } else {
+                    currentPanel.style.transform = '';
+                }
+                
+                startY = null;
+                e.preventDefault();
+            });
+        });
+        
+        // Add direct reopening for settings by double-tapping bottom of screen
+        let lastTapBottom = 0;
+        
+        document.addEventListener('touchend', (e) => {
+            const bottomThird = window.innerHeight * 0.7;
+            
+            if (e.changedTouches[0].clientY > bottomThird) {
+                const now = new Date().getTime();
+                const timeSince = now - lastTapBottom;
+                
+                if (timeSince < 300 && timeSince > 0 && lastOpenedPanel) {
+                    handlePullUp();
+                }
+                
+                lastTapBottom = now;
+            }
+        });
+        
+        // Expose a global method to reopen the last panel (for debugging)
+        window.reopenLastPanel = handlePullUp;
+        
+        // Connect input controls
+        document.getElementById('gravity').addEventListener('input', (e) => {
+            GRAVITY = parseFloat(e.target.value);
+            document.getElementById('gravityValue').textContent = GRAVITY.toFixed(2);
+            
+            // Update gravity Y component if tilt is not enabled
+            if (!enableTilt) {
+                gravityY = GRAVITY;
+            }
+        });
+        
+        document.getElementById('drag').addEventListener('input', (e) => {
+            DRAG = parseFloat(e.target.value);
+            document.getElementById('dragValue').textContent = DRAG.toFixed(3);
+        });
+        
+        document.getElementById('elasticity').addEventListener('input', (e) => {
+            ELASTICITY = parseFloat(e.target.value);
+            document.getElementById('elasticityValue').textContent = ELASTICITY.toFixed(2);
+        });
+        
+        document.getElementById('iterations').addEventListener('input', (e) => {
+            ITERATIONS = parseInt(e.target.value);
+            document.getElementById('iterationsValue').textContent = ITERATIONS;
+        });
+        
+        document.getElementById('tearThreshold').addEventListener('input', (e) => {
+            TEAR_THRESHOLD = parseInt(e.target.value);
+            document.getElementById('tearThresholdValue').textContent = TEAR_THRESHOLD;
+        });
+        
+        document.getElementById('vibrationIntensity').addEventListener('input', (e) => {
+            vibrationIntensity = parseFloat(e.target.value);
+            document.getElementById('vibrationIntensityValue').textContent = vibrationIntensity.toFixed(1);
+            
+            // Test vibration with new intensity
+            if (enableVibration && 'vibrate' in navigator) {
+                vibrateDevice(20);
+            }
+        });
+        
+        document.getElementById('colorCycle').addEventListener('input', (e) => {
+            colorCycleSpeed = parseFloat(e.target.value);
+            document.getElementById('colorCycleValue').textContent = colorCycleSpeed.toFixed(1);
+        });
+        
+        document.getElementById('particleEffects').addEventListener('change', (e) => {
+            enableParticles = e.target.checked;
+        });
+        
+        document.getElementById('interactMode').addEventListener('change', (e) => {
+            interactMode = e.target.value;
+            
+            // Reset selection when changing modes
+            selectedPoint = null;
+            
+            let message = '';
+            if (interactMode === 'drag') message = 'Drag points mode';
+            else if (interactMode === 'cut') message = 'Cut links mode';
+            else if (interactMode === 'pin') message = 'Pin/unpin points mode';
+            
+            showToast(message);
+        });
+        
+        document.getElementById('renderMode').addEventListener('change', (e) => {
+            renderMode = e.target.value;
+        });
+        
+        // Visual controls
+        document.getElementById('clothColor').addEventListener('input', (e) => {
+            clothColor = e.target.value;
+        });
+        
+        document.getElementById('bgColor').addEventListener('input', (e) => {
+            bgColor = e.target.value;
+        });
+        
+        document.getElementById('clothOpacity').addEventListener('input', (e) => {
+            clothOpacity = parseFloat(e.target.value);
+            document.getElementById('clothOpacityValue').textContent = clothOpacity.toFixed(2);
+        });
+        
+        document.getElementById('clothThickness').addEventListener('input', (e) => {
+            lineThickness = parseFloat(e.target.value);
+            document.getElementById('clothThicknessValue').textContent = lineThickness.toFixed(1);
+        });
+        
+        document.getElementById('enableGlow').addEventListener('change', (e) => {
+            enableGlow = e.target.checked;
+        });
+        
+        document.getElementById('enableRainbow').addEventListener('change', (e) => {
+            enableRainbow = e.target.checked;
+        });
+        
+        document.getElementById('showPoints').addEventListener('change', (e) => {
+            showPoints = e.target.checked;
+        });
+        
+        // Tilt controls
+        document.getElementById('enableTilt').addEventListener('change', (e) => {
+            enableTilt = e.target.checked;
+            updateTiltStatus();
+            
+            if (enableTilt && typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                requestMotionPermission();
+            }
+        });
+        
+        document.getElementById('tiltSensitivity').addEventListener('input', (e) => {
+            tiltSensitivity = parseFloat(e.target.value);
+        });
+        
+        // Vibration toggle
+        document.getElementById('enableVibration').addEventListener('change', (e) => {
+            enableVibration = e.target.checked;
+            
+            // Test vibration
+            if (enableVibration && 'vibrate' in navigator) {
+                navigator.vibrate(20);
+            }
+        });
+        
+        // Pin option
+        document.getElementById('pinOption').addEventListener('change', (e) => {
+            createCloth(e.target.value);
+        });
+        
+        // Presets
+        document.getElementById('presetNormal').addEventListener('click', () => {
+            GRAVITY = 0.2;
+            DRAG = 0.99;
+            ELASTICITY = 0.9;
+            ITERATIONS = 5;
+            enableGlow = false;
+            enableRainbow = false;
+            clothColor = "#ffffff";
+            bgColor = "#000000";
+            
+            updateUIControls();
+            resetCloth();
+        });
+        
+        document.getElementById('presetWater').addEventListener('click', () => {
+            GRAVITY = 0.15;
+            DRAG = 0.98;
+            ELASTICITY = 0.7;
+            ITERATIONS = 8;
+            enableGlow = true;
+            clothColor = "#4fc3f7";
+            bgColor = "#01579b";
+            
+            updateUIControls();
+            resetCloth();
+        });
+        
+        document.getElementById('presetSpace').addEventListener('click', () => {
+            GRAVITY = 0.05;
+            DRAG = 0.995;
+            ELASTICITY = 0.8;
+            ITERATIONS = 3;
+            enableGlow = true;
+            bgColor = "#000020";
+            clothColor = "#f0f0ff";
+            
+            updateUIControls();
+            resetCloth();
+        });
+        
+        document.getElementById('presetElastic').addEventListener('click', () => {
+            GRAVITY = 0.2;
+            DRAG = 0.99;
+            ELASTICITY = 1.0;
+            ITERATIONS = 10;
+            enableRainbow = true;
+            enableGlow = true;
+            clothColor = "#ffffff";
+            lineThickness = 1.5;
+            
+            updateUIControls();
+            resetCloth();
+        });
+        
+        document.getElementById('presetJelly').addEventListener('click', () => {
+            GRAVITY = 0.3;
+            DRAG = 0.97;
+            ELASTICITY = 0.5;
+            ITERATIONS = 8;
+            enableGlow = true;
+            enableRainbow = false;
+            clothColor = "#ff6e9c";
+            bgColor = "#36064e";
+            clothOpacity = 0.7;
+            
+            updateUIControls();
+            resetCloth();
+        });
+        
+        document.getElementById('presetGhost').addEventListener('click', () => {
+            GRAVITY = 0.1;
+            DRAG = 0.999;
+            ELASTICITY = 0.95;
+            ITERATIONS = 3;
+            enableGlow = true;
+            enableRainbow = false;
+            clothColor = "#ffffff";
+            bgColor = "#1a1a2e";
+            clothOpacity = 0.3;
+            
+            updateUIControls();
+            resetCloth();
+        });
+        
+        function updateUIControls() {
+            // Update all UI controls to match the current settings
+            document.getElementById('gravity').value = GRAVITY;
+            document.getElementById('drag').value = DRAG;
+            document.getElementById('elasticity').value = ELASTICITY;
+            document.getElementById('iterations').value = ITERATIONS;
+            document.getElementById('clothColor').value = clothColor;
+            document.getElementById('bgColor').value = bgColor;
+            document.getElementById('clothOpacity').value = clothOpacity;
+            document.getElementById('clothThickness').value = lineThickness;
+            document.getElementById('enableGlow').checked = enableGlow;
+            document.getElementById('enableRainbow').checked = enableRainbow;
+            document.getElementById('showPoints').checked = showPoints;
+            document.getElementById('enableTilt').checked = enableTilt;
+            document.getElementById('tiltSensitivity').value = tiltSensitivity;
+            document.getElementById('enableVibration').checked = enableVibration;
+            document.getElementById('tearThreshold').value = TEAR_THRESHOLD;
+            document.getElementById('tearThresholdValue').textContent = TEAR_THRESHOLD;
+            document.getElementById('vibrationIntensity').value = vibrationIntensity;
+            document.getElementById('vibrationIntensityValue').textContent = vibrationIntensity.toFixed(1);
+            document.getElementById('colorCycle').value = colorCycleSpeed;
+            document.getElementById('colorCycleValue').textContent = colorCycleSpeed.toFixed(1);
+            document.getElementById('particleEffects').checked = enableParticles;
+            document.getElementById('interactMode').value = interactMode;
+            document.getElementById('renderMode').value = renderMode;
+            
+            updateTiltStatus();
+        }
+        
+        // Add color preset functionality
+        document.querySelectorAll('.color-preset').forEach(preset => {
+            preset.addEventListener('click', (e) => {
+                const color = e.target.getAttribute('data-color');
+                if (e.target.parentElement.previousElementSibling.children[0].id === 'clothColor') {
+                    document.getElementById('clothColor').value = color;
+                    clothColor = color;
+                } else {
+                    document.getElementById('bgColor').value = color;
+                    bgColor = color;
+                    canvas.style.backgroundColor = bgColor;
+                }
+            });
+        });
+        
+        // Initialize slider values
+        document.getElementById('gravityValue').textContent = GRAVITY.toFixed(2);
+        document.getElementById('dragValue').textContent = DRAG.toFixed(3);
+        document.getElementById('elasticityValue').textContent = ELASTICITY.toFixed(2);
+        document.getElementById('iterationsValue').textContent = ITERATIONS;
+        document.getElementById('clothOpacityValue').textContent = clothOpacity.toFixed(2);
+        document.getElementById('clothThicknessValue').textContent = lineThickness.toFixed(1);
+        document.getElementById('tearThresholdValue').textContent = TEAR_THRESHOLD;
+        document.getElementById('vibrationIntensityValue').textContent = vibrationIntensity.toFixed(1);
+        document.getElementById('colorCycleValue').textContent = colorCycleSpeed.toFixed(1);
+        
+        // Touch ripple effect for better feedback
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const ripple = document.createElement('span');
+            const rect = button.getBoundingClientRect();
+            
+            const size = Math.max(rect.width, rect.height);
+            const x = event.touches ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
+            const y = event.touches ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
+            
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${x - size/2}px`;
+            ripple.style.top = `${y - size/2}px`;
+            ripple.classList.add('touch-ripple');
+            
+            button.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        }
+        
+        // Add ripple effect to all buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', createRipple);
+            button.addEventListener('mousedown', createRipple);
+        });
+        
+        // Toast notification function
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+        
+        // Quick tilt toggle button
+        document.getElementById('tiltToggle').addEventListener('click', () => {
+            enableTilt = !enableTilt;
+            document.getElementById('enableTilt').checked = enableTilt;
+            updateTiltStatus();
+            showToast(`Tilt ${enableTilt ? 'enabled' : 'disabled'}`);
+            vibrateDevice(10);
+        });
+        
+        // Fullscreen toggle
+        document.getElementById('fullscreenToggle').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast('Fullscreen not available');
+                });
+                showToast('Fullscreen mode');
+            } else {
+                document.exitFullscreen();
+                showToast('Exited fullscreen');
+            }
+            vibrateDevice(10);
+        });
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>
