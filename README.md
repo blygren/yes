@@ -22,8 +22,7 @@
 
 [Art](https://blygren.github.io/yes/Art.html)
 
-[Mobile](https://blygren.github.io/yes/eeee.html
-)
+[Mobile](https://blygren.github.io/yes/eeee.html).
 
 
 ee.html
