@@ -360,14 +360,15 @@
             bottom: 56px; /* Position just above the tab bar */
             left: 50%;
             transform: translateX(-50%);
-            width: 60px;
+            width: 70px;
             height: 6px;
-            background-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.7);
             border-radius: 3px;
             margin: 0 auto;
             z-index: 99;
             display: none; /* Hidden by default */
             transition: all 0.2s;
+            box-shadow: 0 0 5px rgba(143, 225, 255, 0.5);
         }
         
         .pull-up-handle:after {
@@ -457,6 +458,94 @@
             transform: scale(1.1);
             border-color: white;
         }
+        
+        /* Visual feedback for touch interactions */
+        .touch-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+        
+        /* Toast notification for feedback */
+        .toast {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--panel-bg);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        /* Quick access button for tilt toggle */
+        #tiltToggle {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--panel-bg);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            border: none;
+            color: white;
+            font-size: 16px;
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        #tiltToggle:active {
+            opacity: 1;
+        }
+        
+        /* Fullscreen toggle button */
+        #fullscreenToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--panel-bg);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            border: none;
+            color: white;
+            font-size: 16px;
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        #fullscreenToggle:active {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -475,9 +564,16 @@
             <span id="statusText">Tilt enabled</span>
         </div>
         
+        <!-- Quick access buttons -->
+        <button id="tiltToggle">🧭</button>
+        <button id="fullscreenToggle">⛶</button>
+        
         <!-- Action buttons -->
         <button class="action-button" id="resetButton">↻</button>
         <button class="action-button" id="windButton">≋</button>
+        
+        <!-- Toast notification -->
+        <div class="toast" id="toast"></div>
         
         <!-- Tutorial tip -->
         <div class="tutorial-tip" id="tutorialTip">
@@ -1238,6 +1334,8 @@
             
             // Enhanced vibration pattern for wind
             vibrateDevice([5, 5, 15, 5, 25, 5, 5]);
+            
+            showToast('Wind applied');
         }
         
         // Reset button with improved vibration
@@ -1255,6 +1353,8 @@
             
             // Enhanced vibration pattern for reset
             vibrateDevice([20, 10, 40, 10, 20]);
+            
+            showToast('Cloth reset');
         }
         
         // Device orientation (tilt) handling
@@ -1398,6 +1498,22 @@
                         particles.splice(i, 1);
                     }
                 }
+            }
+            
+            // Highlight links when in cut mode
+            if (interactMode === 'cut') {
+                links.forEach(link => {
+                    if (!link.broken) {
+                        ctx.globalAlpha = 0.3;  // Add a subtle highlight
+                        ctx.beginPath();
+                        ctx.moveTo(link.p1.x, link.p1.y);
+                        ctx.lineTo(link.p2.x, link.p2.y);
+                        ctx.lineWidth = lineThickness + 2;
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.stroke();
+                        ctx.globalAlpha = 1.0;
+                    }
+                });
             }
             
             // Continue animation
@@ -1737,6 +1853,13 @@
             
             // Reset selection when changing modes
             selectedPoint = null;
+            
+            let message = '';
+            if (interactMode === 'drag') message = 'Drag points mode';
+            else if (interactMode === 'cut') message = 'Cut links mode';
+            else if (interactMode === 'pin') message = 'Pin/unpin points mode';
+            
+            showToast(message);
         });
         
         document.getElementById('renderMode').addEventListener('change', (e) => {
@@ -1943,6 +2066,68 @@
         document.getElementById('tearThresholdValue').textContent = TEAR_THRESHOLD;
         document.getElementById('vibrationIntensityValue').textContent = vibrationIntensity.toFixed(1);
         document.getElementById('colorCycleValue').textContent = colorCycleSpeed.toFixed(1);
+        
+        // Touch ripple effect for better feedback
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const ripple = document.createElement('span');
+            const rect = button.getBoundingClientRect();
+            
+            const size = Math.max(rect.width, rect.height);
+            const x = event.touches ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
+            const y = event.touches ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
+            
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${x - size/2}px`;
+            ripple.style.top = `${y - size/2}px`;
+            ripple.classList.add('touch-ripple');
+            
+            button.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        }
+        
+        // Add ripple effect to all buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', createRipple);
+            button.addEventListener('mousedown', createRipple);
+        });
+        
+        // Toast notification function
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+        
+        // Quick tilt toggle button
+        document.getElementById('tiltToggle').addEventListener('click', () => {
+            enableTilt = !enableTilt;
+            document.getElementById('enableTilt').checked = enableTilt;
+            updateTiltStatus();
+            showToast(`Tilt ${enableTilt ? 'enabled' : 'disabled'}`);
+            vibrateDevice(10);
+        });
+        
+        // Fullscreen toggle
+        document.getElementById('fullscreenToggle').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast('Fullscreen not available');
+                });
+                showToast('Fullscreen mode');
+            } else {
+                document.exitFullscreen();
+                showToast('Exited fullscreen');
+            }
+            vibrateDevice(10);
+        });
         
         // Start animation
         animate();
