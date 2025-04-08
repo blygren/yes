@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2D Cloth Physics Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #111;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            touch-action: none; /* Prevent default touch actions */
+        }
+        canvas {
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            max-width: 100%;
+            max-height: 100vh;
+        }
+        .settings-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(30, 30, 40, 0.85);
+            border-radius: 10px;
+            padding: 15px;
+            width: 280px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        @media (max-width: 600px) {
+            .settings-panel {
+                width: 85%;
+                max-width: 300px;
+                right: 10px;
+                top: 10px;
+                max-height: 85vh;
+            }
+        }
+        .settings-panel.collapsed {
+            transform: translateX(290px);
+            opacity: 0.2;
+        }
+        @media (max-width: 600px) {
+            .settings-panel.collapsed {
+                transform: translateX(100%);
+            }
+        }
+        .toggle-settings {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(30, 30, 40, 0.85);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 101;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #8fe1ff;
+            font-size: 18px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+        }
+        .setting-group {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        label {
+            flex: 1;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: #8fe1ff;
+        }
+        input[type="color"] {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="number"] {
+            width: 50px;
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 3px;
+            padding: 3px;
+        }
+        button.preset {
+            background-color: #2a3a4a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button.preset:hover {
+            background-color: #3a5a7a;
+        }
+        .preset-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #8fe1ff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .info-box {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(30, 30, 40, 0.85);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        @media (max-width: 600px) {
+            .info-box {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                text-align: center;
+                font-size: 12px;
+            }
+        }
+        .info-box kbd {
+            background-color: #333;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <button class="toggle-settings" id="toggleSettings">⚙️</button>
+    
+    <div class="settings-panel" id="settingsPanel">
+        <h2>Cloth Simulation Settings</h2>
+        
+        <div class="setting-group">
+            <h3>Physics</h3>
+            <div class="setting-row">
+                <label for="gravity">Gravity</label>
+                <input type="range" id="gravity" min="0" max="0.5" step="0.01" value="0.2">
+                <input type="number" id="gravityValue" min="0" max="1" step="0.01" value="0.2">
+            </div>
+            <div class="setting-row">
+                <label for="drag">Drag</label>
+                <input type="range" id="drag" min="0.9" max="0.999" step="0.001" value="0.99">
+                <input type="number" id="dragValue" min="0.9" max="0.999" step="0.001" value="0.99">
+            </div>
+            <div class="setting-row">
+                <label for="elasticity">Elasticity</label>
+                <input type="range" id="elasticity" min="0.1" max="1" step="0.01" value="0.9">
+                <input type="number" id="elasticityValue" min="0.1" max="1" step="0.01" value="0.9">
+            </div>
+            <div class="setting-row">
+                <label for="iterations">Constraint Iterations</label>
+                <input type="range" id="iterations" min="1" max="10" step="1" value="5">
+                <input type="number" id="iterationsValue" min="1" max="10" step="1" value="5">
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Appearance</h3>
+            <div class="setting-row">
+                <label for="clothColor">Cloth Color</label>
+                <input type="color" id="clothColor" value="#ffffff">
+            </div>
+            <div class="setting-row">
+                <label for="bgColor">Background Color</label>
+                <input type="color" id="bgColor" value="#000000">
+            </div>
+            <div class="setting-row">
+                <label for="clothOpacity">Cloth Opacity</label>
+                <input type="range" id="clothOpacity" min="0.1" max="1" step="0.05" value="0.5">
+            </div>
+            <div class="setting-row">
+                <label for="clothThickness">Line Thickness</label>
+                <input type="range" id="clothThickness" min="0.5" max="3" step="0.1" value="1">
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Effects</h3>
+            <div class="setting-row">
+                <label for="enableGlow">Glow Effect</label>
+                <label class="switch">
+                    <input type="checkbox" id="enableGlow">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="enableRainbow">Rainbow Mode</label>
+                <label class="switch">
+                    <input type="checkbox" id="enableRainbow">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="showPoints">Show Points</label>
+                <label class="switch">
+                    <input type="checkbox" id="showPoints" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="enableTilt">Device Tilt Control</label>
+                <label class="switch">
+                    <input type="checkbox" id="enableTilt">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="tiltSensitivity">Tilt Sensitivity</label>
+                <input type="range" id="tiltSensitivity" min="0.1" max="1" step="0.1" value="0.5">
+                <input type="number" id="tiltSensitivityValue" min="0.1" max="1" step="0.1" value="0.5">
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Presets</h3>
+            <div class="preset-container">
+                <button class="preset" id="presetNormal">Normal</button>
+                <button class="preset" id="presetWater">Water</button>
+                <button class="preset" id="presetSpace">Low Gravity</button>
+                <button class="preset" id="presetElastic">Super Elastic</button>
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3>Cloth</h3>
+            <div class="setting-row">
+                <label for="resetCloth">Reset Cloth</label>
+                <button class="preset" id="resetCloth">Reset</button>
+            </div>
+            <div class="setting-row">
+                <label for="pinOption">Pin Points</label>
+                <select id="pinOption">
+                    <option value="corners">Corners Only</option>
+                    <option value="top" selected>Top Row (Spaced)</option>
+                    <option value="all-top">Entire Top Row</option>
+                    <option value="none">None (Free)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-box">
+        <p id="controlsInfo">Drag cloth with mouse | <kbd>Space</kbd> for wind | <kbd>R</kbd> to reset</p>
+    </div>
+    
+    <script>
+        // Canvas setup - now responsive
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let isMobile = window.innerWidth <= 800;
+        
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            isMobile = window.innerWidth <= 800;
+            
+            if (isMobile) {
+                canvas.width = window.innerWidth * 0.95;
+                canvas.height = window.innerHeight * 0.7;
+            } else {
+                canvas.width = Math.min(800, window.innerWidth * 0.8);
+                canvas.height = Math.min(600, window.innerHeight * 0.8);
+            }
+            
+            // Update info text for mobile
+            document.getElementById('controlsInfo').innerHTML = isMobile ? 
+                "Drag cloth with finger | Tilt device for gravity" : 
+                "Drag cloth with mouse | <kbd>Space</kbd> for wind | <kbd>R</kbd> to reset";
+                
+            // Recreate cloth with new dimensions
+            createCloth(document.getElementById('pinOption').value);
+        }
+        
+        // Initial size
+        resizeCanvas();
+        
+        // Re-size on window resize
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Physics parameters
+        let GRAVITY = 0.2;
+        let DRAG = 0.99;
+        let ELASTICITY = 0.9;
+        let REST_LENGTH = 10;
+        let ITERATIONS = 5;
+        
+        // Device orientation settings
+        let enableTilt = false;
+        let tiltSensitivity = 0.5;
+        let gravityX = 0;
+        let gravityY = GRAVITY;
+        
+        // Cloth parameters - now dynamically calculated
+        let CLOTH_WIDTH, CLOTH_HEIGHT, SPACING;
+        
+        // Adjust cloth parameters based on screen size
+        function updateClothParams() {
+            if (isMobile) {
+                CLOTH_WIDTH = Math.floor(canvas.width / 14);
+                CLOTH_HEIGHT = Math.floor(canvas.height / 14);
+                SPACING = Math.max(8, Math.min(14, canvas.width / 30));
+                REST_LENGTH = SPACING;
+            } else {
+                CLOTH_WIDTH = 40;
+                CLOTH_HEIGHT = 30;
+                SPACING = 10;
+                REST_LENGTH = 10;
+            }
+        }
+        
+        // Visual settings
+        let clothColor = "#ffffff";
+        let clothOpacity = 0.5;
+        let bgColor = "#000000";
+        let lineThickness = 1;
+        let enableGlow = false;
+        let enableRainbow = false;
+        let showPoints = true;
+        
+        // Point class for cloth nodes
+        class Point {
+            constructor(x, y, pinned = false) {
+                this.x = x;
+                this.y = y;
+                this.oldX = x;
+                this.oldY = y;
+                this.pinned = pinned;
+            }
+            
+            update() {
+                if (this.pinned) return;
+                
+                // Calculate velocity (Verlet integration)
+                const vx = (this.x - this.oldX) * DRAG;
+                const vy = (this.y - this.oldY) * DRAG;
+                
+                // Save current position
+                this.oldX = this.x;
+                this.oldY = this.y;
+                
+                // Apply velocity and gravity (now with X and Y components)
+                this.x += vx + gravityX;
+                this.y += vy + gravityY;
+                
+                // Boundary constraints
+                if (this.x < 0) this.x = 0;
+                if (this.x > canvas.width) this.x = canvas.width;
+                if (this.y < 0) this.y = 0;
+                if (this.y > canvas.height) this.y = canvas.height;
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = this.pinned ? 'red' : 'white';
+                ctx.fill();
+            }
+        }
+        
+        // Link class for constraints between points
+        class Link {
+            constructor(p1, p2) {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.length = REST_LENGTH;
+                this.hue = Math.random() * 360; // For rainbow mode
+            }
+            
+            resolve() {
+                // Calculate distance between points
+                const dx = this.p2.x - this.p1.x;
+                const dy = this.p2.y - this.p1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance === 0) return; // Prevent division by zero
+                
+                // Calculate the difference from rest length
+                const difference = (this.length - distance) / distance;
+                
+                // Apply correction based on elasticity
+                const offsetX = dx * difference * 0.5 * ELASTICITY;
+                const offsetY = dy * difference * 0.5 * ELASTICITY;
+                
+                // Move points (unless pinned)
+                if (!this.p1.pinned) {
+                    this.p1.x -= offsetX;
+                    this.p1.y -= offsetY;
+                }
+                
+                if (!this.p2.pinned) {
+                    this.p2.x += offsetX;
+                    this.p2.y += offsetY;
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.p1.x, this.p1.y);
+                ctx.lineTo(this.p2.x, this.p2.y);
+                
+                let color;
+                if (enableRainbow) {
+                    // Update hue at a faster rate for more visible color changes
+                    this.hue = (this.hue + 0.5) % 360;
+                    // Use HSL directly for more vibrant colors
+                    ctx.strokeStyle = `hsla(${this.hue}, 100%, 60%, ${clothOpacity})`;
+                } else {
+                    color = hexToRgb(clothColor);
+                    ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${clothOpacity})`;
+                }
+                
+                ctx.lineWidth = lineThickness;
+                
+                if (enableGlow) {
+                    if (!color && !enableRainbow) {
+                        color = hexToRgb(clothColor);
+                    }
+                    
+                    // For rainbow mode with glow, use a matching glow color
+                    if (enableRainbow) {
+                        ctx.shadowBlur = 5;
+                        ctx.shadowColor = `hsla(${this.hue}, 100%, 60%, 0.7)`;
+                    } else {
+                        ctx.shadowBlur = 5;
+                        ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
+                    }
+                } else {
+                    ctx.shadowBlur = 0;
+                    ctx.shadowColor = 'transparent';
+                }
+                
+                ctx.stroke();
+                
+                // Reset shadow to prevent affecting other drawings
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+            }
+        }
+        
+        // Create cloth - now with dynamic positioning
+        function createCloth(pinOption = 'top') {
+            updateClothParams();
+            points = [];
+            links = [];
+            
+            // Calculate starting position to center cloth
+            const startX = (canvas.width - (CLOTH_WIDTH-1) * SPACING) / 2;
+            const startY = canvas.height * 0.1; // Start at 10% from top
+            
+            for (let y = 0; y < CLOTH_HEIGHT; y++) {
+                for (let x = 0; x < CLOTH_WIDTH; x++) {
+                    // Create point with centered positioning
+                    const px = startX + x * SPACING;
+                    const py = startY + y * SPACING;
+                    
+                    // Pin based on selected option
+                    let pinned = false;
+                    
+                    if (pinOption === 'top') {
+                        pinned = y === 0 && (x % Math.max(2, Math.floor(CLOTH_WIDTH/8)) === 0);
+                    } else if (pinOption === 'all-top') {
+                        pinned = y === 0;
+                    } else if (pinOption === 'corners') {
+                        pinned = (y === 0 && x === 0) || 
+                                (y === 0 && x === CLOTH_WIDTH - 1);
+                    }
+                    
+                    points.push(new Point(px, py, pinned));
+                }
+            }
+            
+            // Create horizontal links
+            for (let y = 0; y < CLOTH_HEIGHT; y++) {
+                for (let x = 0; x < CLOTH_WIDTH - 1; x++) {
+                    const i = y * CLOTH_WIDTH + x;
+                    links.push(new Link(points[i], points[i + 1]));
+                }
+            }
+            
+            // Create vertical links
+            for (let y = 0; y < CLOTH_HEIGHT - 1; y++) {
+                for (let x = 0; x < CLOTH_WIDTH; x++) {
+                    const i = y * CLOTH_WIDTH + x;
+                    links.push(new Link(points[i], points[i + CLOTH_WIDTH]));
+                }
+            }
+        }
+        
+        // Initialize cloth
+        createCloth('top');
+        
+        // Mouse interaction
+        let mouseDown = false;
+        let selectedPoint = null;
+        
+        // Find the closest point to the given coordinates
+        function findClosestPoint(x, y) {
+            let minDist = Infinity;
+            let closestPoint = null;
+            
+            points.forEach(point => {
+                const dx = point.x - x;
+                const dy = point.y - y;
+                const dist = dx * dx + dy * dy;
+                if (dist < minDist && dist < 200) {
+                    minDist = dist;
+                    closestPoint = point;
+                }
+            });
+            
+            return closestPoint;
+        }
+        
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            selectedPoint = findClosestPoint(mouseX, mouseY);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (mouseDown && selectedPoint) {
+                const rect = canvas.getBoundingClientRect();
+                selectedPoint.x = e.clientX - rect.left;
+                selectedPoint.y = e.clientY - rect.top;
+                selectedPoint.oldX = selectedPoint.x;
+                selectedPoint.oldY = selectedPoint.y;
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+            selectedPoint = null;
+        });
+        
+        // Touch support for mobile devices (more responsive now)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent scrolling
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            selectedPoint = findClosestPoint(touchX, touchY);
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Prevent scrolling
+            if (selectedPoint) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                selectedPoint.x = touch.clientX - rect.left;
+                selectedPoint.y = touch.clientY - rect.top;
+                selectedPoint.oldX = selectedPoint.x;
+                selectedPoint.oldY = selectedPoint.y;
+            }
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            selectedPoint = null;
+        });
+        
+        // Device orientation (tilt) handling - auto-enable on mobile
+        if (isMobile) {
+            enableTilt = true;
+            document.getElementById('enableTilt').checked = true;
+        }
+        
+        window.addEventListener('deviceorientation', (e) => {
+            if (!enableTilt) return;
+            
+            // Get orientation data
+            const beta = e.beta;  // Front-to-back tilt in degrees (-180 to 180)
+            const gamma = e.gamma; // Left-to-right tilt in degrees (-90 to 90)
+            
+            // Convert tilt to gravity components
+            // Apply sensitivity to make the effect more controllable
+            gravityX = (gamma / 90) * GRAVITY * tiltSensitivity;
+            
+            // For Y gravity, we use standard gravity plus tilt effect
+            // We divide by a higher number for beta to make it less sensitive
+            gravityY = GRAVITY + (beta - 45) / 90 * GRAVITY * tiltSensitivity;
+            
+            // Ensure we have reasonable gravity boundaries
+            gravityY = Math.max(-GRAVITY, Math.min(GRAVITY * 2, gravityY));
+            gravityX = Math.max(-GRAVITY, Math.min(GRAVITY, gravityX));
+        });
+        
+        // Animation loop
+        function animate() {
+            // Set background color
+            canvas.style.backgroundColor = bgColor;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update physics
+            points.forEach(point => point.update());
+            
+            // Apply constraints multiple times for stability
+            for (let i = 0; i < ITERATIONS; i++) {
+                links.forEach(link => link.resolve());
+            }
+            
+            // Draw cloth
+            links.forEach(link => link.draw());
+            
+            if (showPoints) {
+                points.forEach(point => point.draw());
+            }
+            
+            // Continue animation
+            requestAnimationFrame(animate);
+        }
+        
+        // Start animation
+        animate();
+        
+        // Add wind effect
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                // Apply wind force
+                points.forEach(point => {
+                    if (!point.pinned) {
+                        point.x += (Math.random() - 0.3) * 3;
+                    }
+                });
+            }
+            
+            if (e.code === 'KeyR') {
+                createCloth(document.getElementById('pinOption').value);
+            }
+        });
+        
+        // Helper function to convert hex to RGB
+        function hexToRgb(hex) {
+            // Remove # if present
+            hex = hex.replace('#', '');
+            
+            // Parse r, g, b values
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            
+            return { r, g, b };
+        }
+        
+        // UI Controls
+        const settingsPanel = document.getElementById('settingsPanel');
+        const toggleSettings = document.getElementById('toggleSettings');
+        
+        toggleSettings.addEventListener('click', () => {
+            settingsPanel.classList.toggle('collapsed');
+        });
+        
+        // Connect input controls
+        document.getElementById('gravity').addEventListener('input', (e) => {
+            GRAVITY = parseFloat(e.target.value);
+            document.getElementById('gravityValue').value = GRAVITY;
+            
+            // Update gravity Y component if tilt is not enabled
+            if (!enableTilt) {
+                gravityY = GRAVITY;
+            }
+        });
+        
+        document.getElementById('gravityValue').addEventListener('input', (e) => {
+            GRAVITY = parseFloat(e.target.value);
+            document.getElementById('gravity').value = GRAVITY;
+            
+            // Update gravity Y component if tilt is not enabled
+            if (!enableTilt) {
+                gravityY = GRAVITY;
+            }
+        });
+        
+        document.getElementById('drag').addEventListener('input', (e) => {
+            DRAG = parseFloat(e.target.value);
+            document.getElementById('dragValue').value = DRAG;
+        });
+        
+        document.getElementById('dragValue').addEventListener('input', (e) => {
+            DRAG = parseFloat(e.target.value);
+            document.getElementById('drag').value = DRAG;
+        });
+        
+        document.getElementById('elasticity').addEventListener('input', (e) => {
+            ELASTICITY = parseFloat(e.target.value);
+            document.getElementById('elasticityValue').value = ELASTICITY;
+        });
+        
+        document.getElementById('elasticityValue').addEventListener('input', (e) => {
+            ELASTICITY = parseFloat(e.target.value);
+            document.getElementById('elasticity').value = ELASTICITY;
+        });
+        
+        document.getElementById('iterations').addEventListener('input', (e) => {
+            ITERATIONS = parseInt(e.target.value);
+            document.getElementById('iterationsValue').value = ITERATIONS;
+        });
+        
+        document.getElementById('iterationsValue').addEventListener('input', (e) => {
+            ITERATIONS = parseInt(e.target.value);
+            document.getElementById('iterations').value = ITERATIONS;
+        });
+        
+        // Visual controls
+        document.getElementById('clothColor').addEventListener('input', (e) => {
+            clothColor = e.target.value;
+        });
+        
+        document.getElementById('bgColor').addEventListener('input', (e) => {
+            bgColor = e.target.value;
+        });
+        
+        document.getElementById('clothOpacity').addEventListener('input', (e) => {
+            clothOpacity = parseFloat(e.target.value);
+        });
+        
+        document.getElementById('clothThickness').addEventListener('input', (e) => {
+            lineThickness = parseFloat(e.target.value);
+        });
+        
+        document.getElementById('enableGlow').addEventListener('change', (e) => {
+            enableGlow = e.target.checked;
+        });
+        
+        document.getElementById('enableRainbow').addEventListener('change', (e) => {
+            enableRainbow = e.target.checked;
+        });
+        
+        document.getElementById('showPoints').addEventListener('change', (e) => {
+            showPoints = e.target.checked;
+        });
+        
+        // Tilt controls
+        document.getElementById('enableTilt').addEventListener('change', (e) => {
+            enableTilt = e.target.checked;
+            
+            if (!enableTilt) {
+                // Reset gravity to default when tilt is disabled
+                gravityX = 0;
+                gravityY = GRAVITY;
+            }
+            
+            // Request device orientation permission if needed (iOS 13+)
+            if (enableTilt && typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response !== 'granted') {
+                            console.warn('Device orientation permission not granted');
+                            enableTilt = false;
+                            document.getElementById('enableTilt').checked = false;
+                        }
+                    })
+                    .catch(console.error);
+            }
+        });
+        
+        document.getElementById('tiltSensitivity').addEventListener('input', (e) => {
+            tiltSensitivity = parseFloat(e.target.value);
+            document.getElementById('tiltSensitivityValue').value = tiltSensitivity;
+        });
+        
+        document.getElementById('tiltSensitivityValue').addEventListener('input', (e) => {
+            tiltSensitivity = parseFloat(e.target.value);
+            document.getElementById('tiltSensitivity').value = tiltSensitivity;
+        });
+        
+        // Presets
+        document.getElementById('presetNormal').addEventListener('click', () => {
+            GRAVITY = 0.2;
+            DRAG = 0.99;
+            ELASTICITY = 0.9;
+            ITERATIONS = 5;
+            enableGlow = false;
+            enableRainbow = false;
+            clothColor = "#ffffff";
+            bgColor = "#000000";
+            
+            updateUIControls();
+        });
+        
+        document.getElementById('presetWater').addEventListener('click', () => {
+            GRAVITY = 0.15;
+            DRAG = 0.98;
+            ELASTICITY = 0.7;
+            ITERATIONS = 8;
+            enableGlow = true;
+            clothColor = "#4fc3f7";
+            bgColor = "#01579b";
+            
+            updateUIControls();
+        });
+        
+        document.getElementById('presetSpace').addEventListener('click', () => {
+            GRAVITY = 0.05;
+            DRAG = 0.995;
+            ELASTICITY = 0.8;
+            ITERATIONS = 3;
+            enableGlow = true;
+            bgColor = "#000020";
+            clothColor = "#f0f0ff";
+            
+            updateUIControls();
+        });
+        
+        document.getElementById('presetElastic').addEventListener('click', () => {
+            GRAVITY = 0.2;
+            DRAG = 0.99;
+            ELASTICITY = 1.0;
+            ITERATIONS = 10;
+            enableRainbow = true;
+            enableGlow = true;
+            clothColor = "#ffffff"; // Add default color
+            lineThickness = 1.5;    // Slightly thicker lines for better rainbow visibility
+            
+            updateUIControls();
+            
+            // Ensure UI is properly updated for checkbox controls
+            document.getElementById('enableRainbow').checked = true;
+            document.getElementById('enableGlow').checked = true;
+            document.getElementById('clothThickness').value = lineThickness;
+        });
+        
+        function updateUIControls() {
+            // Update all UI controls to match the current settings
+            document.getElementById('gravity').value = GRAVITY;
+            document.getElementById('gravityValue').value = GRAVITY;
+            document.getElementById('drag').value = DRAG;
+            document.getElementById('dragValue').value = DRAG;
+            document.getElementById('elasticity').value = ELASTICITY;
+            document.getElementById('elasticityValue').value = ELASTICITY;
+            document.getElementById('iterations').value = ITERATIONS;
+            document.getElementById('iterationsValue').value = ITERATIONS;
+            document.getElementById('clothColor').value = clothColor;
+            document.getElementById('bgColor').value = bgColor;
+            document.getElementById('enableGlow').checked = enableGlow;
+            document.getElementById('enableRainbow').checked = enableRainbow;
+            document.getElementById('showPoints').checked = showPoints;
+            document.getElementById('clothThickness').value = lineThickness;
+            document.getElementById('enableTilt').checked = enableTilt;
+            document.getElementById('tiltSensitivity').value = tiltSensitivity;
+            document.getElementById('tiltSensitivityValue').value = tiltSensitivity;
+        }
+        
+        // Reset cloth
+        document.getElementById('resetCloth').addEventListener('click', () => {
+            createCloth(document.getElementById('pinOption').value);
+        });
+        
+        // Pin option
+        document.getElementById('pinOption').addEventListener('change', (e) => {
+            createCloth(e.target.value);
+        });
+    </script>
+</body>
+</html>
