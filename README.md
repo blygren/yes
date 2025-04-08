@@ -20,4 +20,7 @@
 
 [cloth](https://blygren.github.io/yes/cloth_simulation.html)
 
-[art](https://blygren.github.io/yes/Art.html)
+[cloth](https://blygren.github.io/yes/blob/main/Art.html
+)
+
+
