@@ -354,20 +354,20 @@
             padding-right: 30px;
         }
         
-        /* Pull-up handle for reopening settings */
+        /* Pull-up handle for reopening settings - improved styling */
         .pull-up-handle {
             position: fixed;
             bottom: 56px; /* Position just above the tab bar */
             left: 50%;
             transform: translateX(-50%);
-            width: 50px;
-            height: 5px;
-            background-color: rgba(255, 255, 255, 0.3);
+            width: 60px;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.5);
             border-radius: 3px;
             margin: 0 auto;
             z-index: 99;
             display: none; /* Hidden by default */
-            transition: background-color 0.2s;
+            transition: all 0.2s;
         }
         
         .pull-up-handle:after {
@@ -376,12 +376,11 @@
             position: absolute;
             bottom: 8px;
             left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-bottom: 5px solid rgba(255, 255, 255, 0.3);
+            transform: translateX(-50%) rotate(-45deg);
+            width: 8px;
+            height: 8px;
+            border-left: 2px solid rgba(255, 255, 255, 0.5);
+            border-top: 2px solid rgba(255, 255, 255, 0.5);
         }
         
         .pull-up-handle-area {
@@ -389,9 +388,20 @@
             bottom: 56px;
             left: 0;
             right: 0;
-            height: 40px;
+            height: 50px; /* Increased touch area */
             z-index: 98;
             display: none;
+        }
+        
+        /* Animation to draw attention to the handle */
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); opacity: 0.5; }
+            50% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+            100% { transform: translateX(-50%) scale(1); opacity: 0.5; }
+        }
+        
+        .pull-up-handle.pulse {
+            animation: pulse 1.5s infinite;
         }
         
         /* Additional styling for new customization options */
@@ -1498,6 +1508,14 @@
             if (lastOpenedPanel) {
                 pullUpHandle.style.display = 'block';
                 pullUpArea.style.display = 'block';
+                
+                // Add pulse animation to draw attention
+                setTimeout(() => {
+                    pullUpHandle.classList.add('pulse');
+                }, 500);
+                
+                // Log for debugging
+                console.log('Showing pull-up handle for panel:', lastOpenedPanel);
             }
         }
         
@@ -1505,6 +1523,7 @@
         function hidePullUpHandle() {
             pullUpHandle.style.display = 'none';
             pullUpArea.style.display = 'none';
+            pullUpHandle.classList.remove('pulse');
         }
         
         // Hide all panels initially
@@ -1526,17 +1545,21 @@
                     panel.classList.remove('active');
                 });
                 
-                // Hide pull-up handle when any tab is clicked
-                hidePullUpHandle();
-                
-                // Show selected panel if not 'none'
-                if (panelName !== 'none' && panels[panelName]) {
-                    panels[panelName].classList.add('active');
-                    lastOpenedPanel = panelName;
+                // If clicking home tab and a panel was previously open, show pull-up handle
+                if (panelName === 'none' && lastOpenedPanel) {
+                    showPullUpHandle();
+                } else {
+                    hidePullUpHandle();
                     
-                    // Vibration feedback when opening panel
-                    if (enableVibration && 'vibrate' in navigator) {
-                        navigator.vibrate(15);
+                    // Show selected panel if not 'none'
+                    if (panelName !== 'none' && panels[panelName]) {
+                        panels[panelName].classList.add('active');
+                        lastOpenedPanel = panelName;
+                        
+                        // Vibration feedback when opening panel
+                        if (enableVibration && 'vibrate' in navigator) {
+                            vibrateDevice(15);
+                        }
                     }
                 }
             });
@@ -1548,6 +1571,11 @@
         });
         
         pullUpArea.addEventListener('click', (e) => {
+            handlePullUp();
+        });
+        
+        // Function to handle pull-up action
+        function handlePullUp() {
             if (lastOpenedPanel && panels[lastOpenedPanel]) {
                 // Find and click the appropriate tab
                 const tabToClick = Array.from(tabs).find(tab => 
@@ -1556,14 +1584,14 @@
                 if (tabToClick) {
                     tabToClick.click();
                     hidePullUpHandle();
-                }
-                
-                // Vibration feedback
-                if (enableVibration && 'vibrate' in navigator) {
-                    navigator.vibrate(15);
+                    
+                    // Vibration feedback
+                    if (enableVibration && 'vibrate' in navigator) {
+                        vibrateDevice(15);
+                    }
                 }
             }
-        });
+        }
         
         // Add swipe up gesture to reopen panel
         let startY;
@@ -1579,18 +1607,8 @@
             const currentY = e.touches[0].clientY;
             const deltaY = startY - currentY;
             
-            if (deltaY > 30) { // If swiped up far enough
-                if (lastOpenedPanel && panels[lastOpenedPanel]) {
-                    // Find and click the appropriate tab
-                    const tabToClick = Array.from(tabs).find(tab => 
-                        tab.getAttribute('data-panel') === lastOpenedPanel);
-                    
-                    if (tabToClick) {
-                        tabToClick.click();
-                        hidePullUpHandle();
-                        startY = null;
-                    }
-                }
+            if (deltaY > 20) { // Reduced threshold for more responsive feel
+                handlePullUp();
             }
             
             e.preventDefault();
@@ -1634,8 +1652,6 @@
                 if (deltaY > 50) { // If swiped down far enough
                     currentPanel.classList.remove('active');
                     document.getElementById('homeTab').click();
-                    // Show the pull-up handle after dismissing the panel
-                    showPullUpHandle();
                 } else {
                     currentPanel.style.transform = '';
                 }
@@ -1644,6 +1660,27 @@
                 e.preventDefault();
             });
         });
+        
+        // Add direct reopening for settings by double-tapping bottom of screen
+        let lastTapBottom = 0;
+        
+        document.addEventListener('touchend', (e) => {
+            const bottomThird = window.innerHeight * 0.7;
+            
+            if (e.changedTouches[0].clientY > bottomThird) {
+                const now = new Date().getTime();
+                const timeSince = now - lastTapBottom;
+                
+                if (timeSince < 300 && timeSince > 0 && lastOpenedPanel) {
+                    handlePullUp();
+                }
+                
+                lastTapBottom = now;
+            }
+        });
+        
+        // Expose a global method to reopen the last panel (for debugging)
+        window.reopenLastPanel = handlePullUp;
         
         // Connect input controls
         document.getElementById('gravity').addEventListener('input', (e) => {
