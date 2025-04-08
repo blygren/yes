@@ -24,8 +24,10 @@
 
 [Mobile](https://blygren.github.io/yes/Nodees.html).
 
-blob/main/
 
+[bd](https://blygren.github.io/yes/Nodees.html
+)
+****
 
 
 Bee.html
