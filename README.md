@@ -22,7 +22,7 @@
 
 [Art](https://blygren.github.io/yes/Art.html)
 
-[Mobile](https://blygren.github.io/yes/Nodes.html).
+[Mobile](https://blygren.github.io/yes/Nodees.htmll).
 
 blob/main/
 
