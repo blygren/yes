@@ -22,7 +22,7 @@
 
 [Art](https://blygren.github.io/yes/Art.html)
 
-[Mobile](https://blygren.github.io/yes/Nodees.html).
+[Mobile](https://blygren.github.io/yes/d.html).
 
 
 [bd](https://blygren.github.io/yes/Nodees.html
