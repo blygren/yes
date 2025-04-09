@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Sand Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid #666;
+            background-color: black;
+        }
+        .controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .element-btn {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: 2px solid #666;
+            border-radius: 4px;
+        }
+        .element-btn.selected {
+            border-color: white;
+            box-shadow: 0 0 5px white;
+        }
+        #sandBtn {
+            background-color: #d4be8d;
+            color: black;
+        }
+        #waterBtn {
+            background-color: #4287f5;
+        }
+        #stoneBtn {
+            background-color: #888888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Falling Sand Game</h1>
+    <canvas id="sandCanvas" width="800" height="600"></canvas>
+    <div class="controls">
+        <button id="sandBtn" class="element-btn selected">Sand</button>
+        <button id="waterBtn" class="element-btn">Water</button>
+        <button id="stoneBtn" class="element-btn">Stone</button>
+        <button id="clearBtn">Clear Canvas</button>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('sandCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Pixel size (determines resolution of the simulation)
+        const pixelSize = 4;
+        const cols = Math.floor(width / pixelSize);
+        const rows = Math.floor(height / pixelSize);
+        
+        // Grid to track particles
+        let grid = new Array(cols).fill().map(() => new Array(rows).fill(0));
+        
+        // Particle types
+        const EMPTY = 0;
+        const SAND = 1;
+        const WATER = 2;
+        const STONE = 3;
+        
+        // Current selected element
+        let currentElement = SAND;
+        
+        // Mouse tracking
+        let isMouseDown = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        // Update mouse position
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = Math.floor((e.clientX - rect.left) / pixelSize);
+            mouseY = Math.floor((e.clientY - rect.top) / pixelSize);
+            
+            if (isMouseDown) {
+                placeElement();
+            }
+        });
+        
+        // Handle mouse events
+        canvas.addEventListener('mousedown', () => {
+            isMouseDown = true;
+            placeElement();
+        });
+        canvas.addEventListener('mouseup', () => isMouseDown = false);
+        canvas.addEventListener('mouseleave', () => isMouseDown = false);
+        
+        // Element selection buttons
+        document.getElementById('sandBtn').addEventListener('click', () => selectElement(SAND, 'sandBtn'));
+        document.getElementById('waterBtn').addEventListener('click', () => selectElement(WATER, 'waterBtn'));
+        document.getElementById('stoneBtn').addEventListener('click', () => selectElement(STONE, 'stoneBtn'));
+        
+        function selectElement(element, btnId) {
+            currentElement = element;
+            
+            // Update selected button styles
+            document.querySelectorAll('.element-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById(btnId).classList.add('selected');
+        }
+        
+        // Clear button functionality
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            grid = new Array(cols).fill().map(() => new Array(rows).fill(0));
+        });
+        
+        function placeElement() {
+            // Create a small brush of particles
+            const brushSize = currentElement === STONE ? 3 : 2;
+            for (let i = -brushSize; i <= brushSize; i++) {
+                for (let j = -brushSize; j <= brushSize; j++) {
+                    const x = mouseX + i;
+                    const y = mouseY + j;
+                    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                        // Different scatter patterns based on element type
+                        if (currentElement === SAND && Math.random() > 0.3) {
+                            grid[x][y] = SAND;
+                        } else if (currentElement === WATER && Math.random() > 0.2) {
+                            grid[x][y] = WATER;
+                        } else if (currentElement === STONE) {
+                            if (i*i + j*j <= brushSize*brushSize) { // circular brush for stone
+                                grid[x][y] = STONE;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Main game loop
+        function update() {
+            // Update particles (bottom to top to avoid double-movement)
+            for (let y = rows - 1; y >= 0; y--) {
+                // For water, sometimes iterate left to right, sometimes right to left
+                // This makes water flow more naturally in both directions
+                const startX = Math.random() > 0.5 ? 0 : cols - 1;
+                const endX = startX === 0 ? cols : -1;
+                const stepX = startX === 0 ? 1 : -1;
+                
+                for (let x = startX; x !== endX; x += stepX) {
+                    if (grid[x][y] === SAND) {
+                        updateSand(x, y);
+                    } else if (grid[x][y] === WATER) {
+                        updateWater(x, y);
+                    }
+                    // Stone doesn't move, so no update needed
+                }
+            }
+            
+            // Render
+            ctx.clearRect(0, 0, width, height);
+            for (let x = 0; x < cols; x++) {
+                for (let y = 0; y < rows; y++) {
+                    if (grid[x][y] === SAND) {
+                        // Slightly randomize sand color for visual interest
+                        const r = 220 + Math.floor(Math.random() * 20);
+                        const g = 190 + Math.floor(Math.random() * 20);
+                        const b = 140 + Math.floor(Math.random() * 20);
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === WATER) {
+                        // Slightly randomize water color
+                        const r = 30 + Math.floor(Math.random() * 20);
+                        const g = 100 + Math.floor(Math.random() * 30);
+                        const b = 200 + Math.floor(Math.random() * 55);
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else if (grid[x][y] === STONE) {
+                        // Slightly randomize stone color
+                        const shade = 120 + Math.floor(Math.random() * 40);
+                        ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    }
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+        
+        function updateSand(x, y) {
+            // Try to move down
+            if (y < rows - 1 && (grid[x][y + 1] === EMPTY || grid[x][y + 1] === WATER)) {
+                // If falling into water, swap positions (sand sinks in water)
+                if (grid[x][y + 1] === WATER) {
+                    grid[x][y] = WATER;
+                    grid[x][y + 1] = SAND;
+                } else {
+                    grid[x][y] = EMPTY;
+                    grid[x][y + 1] = SAND;
+                }
+            }
+            // Try to move down-left or down-right
+            else if (y < rows - 1) {
+                // Randomly decide left or right first
+                const goLeftFirst = Math.random() > 0.5;
+                
+                if (goLeftFirst) {
+                    if (x > 0 && (grid[x - 1][y + 1] === EMPTY || grid[x - 1][y + 1] === WATER)) {
+                        if (grid[x - 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x - 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x - 1][y + 1] = SAND;
+                        }
+                    } else if (x < cols - 1 && (grid[x + 1][y + 1] === EMPTY || grid[x + 1][y + 1] === WATER)) {
+                        if (grid[x + 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x + 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x + 1][y + 1] = SAND;
+                        }
+                    }
+                } else {
+                    if (x < cols - 1 && (grid[x + 1][y + 1] === EMPTY || grid[x + 1][y + 1] === WATER)) {
+                        if (grid[x + 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x + 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x + 1][y + 1] = SAND;
+                        }
+                    } else if (x > 0 && (grid[x - 1][y + 1] === EMPTY || grid[x - 1][y + 1] === WATER)) {
+                        if (grid[x - 1][y + 1] === WATER) {
+                            grid[x][y] = WATER;
+                            grid[x - 1][y + 1] = SAND;
+                        } else {
+                            grid[x][y] = EMPTY;
+                            grid[x - 1][y + 1] = SAND;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function updateWater(x, y) {
+            // Try to move down
+            if (y < rows - 1 && grid[x][y + 1] === EMPTY) {
+                grid[x][y] = EMPTY;
+                grid[x][y + 1] = WATER;
+                return;
+            }
+            // Try to move diagonally down if available
+            if (y < rows - 1) {
+                if (x > 0 && grid[x - 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y + 1] = WATER;
+                    return;
+                } else if (x < cols - 1 && grid[x + 1][y + 1] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y + 1] = WATER;
+                    return;
+                }
+            }
+            // Equalize: try to flow horizontally to empty spaces
+            let leftEmpty = (x > 0 && grid[x - 1][y] === EMPTY);
+            let rightEmpty = (x < cols - 1 && grid[x + 1][y] === EMPTY);
+            if (leftEmpty && rightEmpty) {
+                // Move to a random side if both are empty
+                if (Math.random() > 0.5) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y] = WATER;
+                } else {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y] = WATER;
+                }
+            } else if (leftEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x - 1][y] = WATER;
+            } else if (rightEmpty) {
+                grid[x][y] = EMPTY;
+                grid[x + 1][y] = WATER;
+            }
+            // Optional extra horizontal move chance to enhance fluidity
+            else if (Math.random() < 0.1) {
+                if (x > 0 && grid[x - 1][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x - 1][y] = WATER;
+                } else if (x < cols - 1 && grid[x + 1][y] === EMPTY) {
+                    grid[x][y] = EMPTY;
+                    grid[x + 1][y] = WATER;
+                }
+            }
+        }
+        
+        // Start the simulation
+        update();
+    </script>
+</body>
+</html>
