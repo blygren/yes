@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Place</title>
+    <style>
+        :root {
+            --primary-color: #ff2a6d;
+            --secondary-color: #05d9e8;
+            --tertiary-color: #d65bca;
+            --accent-color: #01ffc3;
+            --dark-bg: #0f0e17;
+            --card-bg: rgba(20, 20, 35, 0.7);
+            --neon-shadow: 0 0 10px var(--secondary-color), 0 0 20px rgba(5, 217, 232, 0.3);
+            --card-shadow: 0 8px 32px rgba(2, 4, 24, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+            background: var(--dark-bg);
+            color: white;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            z-index: 1;
+            position: relative;
+        }
+
+        header {
+            padding: 2rem 0;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px var(--primary-color);
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            0% {
+                text-shadow: 0 0 10px var(--primary-color);
+            }
+            100% {
+                text-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--primary-color);
+            }
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+
+        /* Navigation categories */
+        .categories {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .category {
+            padding: 10px 20px;
+            border-radius: 50px;
+            background: var(--card-bg);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .category.active {
+            background: linear-gradient(45deg, var(--primary-color), var(--tertiary-color));
+            box-shadow: var(--neon-shadow);
+        }
+
+        /* Search bar */
+        .search-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 50px 12px 20px;
+            border-radius: 50px;
+            border: none;
+            background: var(--card-bg);
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-input:focus {
+            outline: none;
+            box-shadow: var(--neon-shadow);
+            border-color: var(--secondary-color);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+        }
+
+        /* Game grid with cards instead of buttons */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .game-card {
+            position: relative;
+            height: 200px;
+            border-radius: 15px;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--card-bg), rgba(30, 30, 60, 0.7));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px) rotateX(5deg);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border-color: var(--secondary-color);
+            background: linear-gradient(135deg, rgba(var(--primary-color), 0.1), rgba(var(--secondary-color), 0.1));
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, 
+                        rgba(255, 42, 109, 0.1) 0%, 
+                        rgba(5, 217, 232, 0.1) 100%);
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .game-card:hover::before {
+            opacity: 1;
+        }
+
+        .game-info {
+            position: relative;
+            z-index: 2;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: white;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-desc {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .play-button {
+            background: linear-gradient(45deg, var(--primary-color), var(--tertiary-color));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transform: translateZ(20px);
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .play-button:hover {
+            box-shadow: 0 0 15px var(--primary-color);
+            transform: translateZ(30px) scale(1.05);
+        }
+
+        /* Badge styling for different types */
+        .new-badge,
+        .trending-badge,
+        .satisfying-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 10px;
+            z-index: 3;
+            animation: pulse 2s infinite;
+        }
+        
+        .new-badge {
+            background: linear-gradient(45deg, var(--accent-color), var(--secondary-color));
+            color: #000;
+            box-shadow: 0 0 10px rgba(1, 255, 195, 0.5);
+        }
+        
+        .trending-badge {
+            background: linear-gradient(45deg, #ff7700, var(--primary-color));
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 119, 0, 0.5);
+        }
+        
+        .satisfying-badge {
+            background: linear-gradient(45deg, var(--tertiary-color), #9400d3);
+            color: white;
+            box-shadow: 0 0 10px rgba(212, 91, 202, 0.5);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* View counter styling */
+        .view-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.7rem;
+            background: rgba(0, 0, 0, 0.6);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 3px 8px;
+            border-radius: 10px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .view-counter .icon {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        
+        .view-counter .count {
+            font-weight: bold;
+        }
+        
+        /* Highlight animation for when count increments */
+        @keyframes count-highlight {
+            0% { color: var(--accent-color); }
+            100% { color: rgba(255, 255, 255, 0.9); }
+        }
+
+        /* Site stats styling */
+        .site-stats {
+            background: linear-gradient(135deg, rgba(30, 30, 60, 0.7), var(--card-bg));
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 0 15px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+        
+        /* Recently played section */
+        .recent-games {
+            margin: 20px auto;
+            max-width: 800px;
+        }
+        
+        .recent-title {
+            text-align: left;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .recent-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 5px 0 15px 0;
+        }
+        
+        .recent-item {
+            min-width: 120px;
+            height: 70px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .recent-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--secondary-color);
+        }
+        
+        .recent-name {
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .recent-time {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Tooltip styling */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.7rem;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Background effects */
+        .bg-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .bg-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(18, 16, 30, 0.8) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 16, 30, 0.8) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.2;
+        }
+
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+        }
+
+        .circle-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--primary-color);
+            top: -200px;
+            left: -100px;
+            animation: float 15s infinite alternate;
+        }
+
+        .circle-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--secondary-color);
+            bottom: -200px;
+            right: -100px;
+            animation: float 18s infinite alternate-reverse;
+        }
+
+        .circle-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--tertiary-color);
+            top: 40%;
+            left: 30%;
+            animation: float 12s infinite alternate;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(100px, 50px);
+            }
+        }
+
+        /* Particles */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background-color: white;
+            pointer-events: none;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding: 2rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .game-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            .categories {
+                gap: 10px;
+            }
+            
+            .category {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .game-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Settings panel styles */
+        .settings-icon {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease;
+        }
+        
+        .settings-icon:hover {
+            transform: rotate(45deg);
+            box-shadow: var(--neon-shadow);
+        }
+        
+        .settings-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+        
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 350px;
+            height: 100vh;
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            z-index: 99;
+            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+            padding: 80px 30px 30px;
+            transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow-y: auto;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .settings-panel.active {
+            right: 0;
+        }
+        
+        .setting-section {
+            margin-bottom: 30px;
+        }
+        
+        .setting-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        
+        .theme-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .theme-option {
+            height: 60px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            overflow: hidden;
+        }
+        
+        .theme-option.active {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(1, 255, 195, 0.5);
+        }
+        
+        .cyberpunk-theme {
+            background: linear-gradient(45deg, #ff2a6d, #05d9e8);
+        }
+        
+        .midnight-theme {
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+        }
+        
+        .neon-theme {
+            background: linear-gradient(45deg, #0d0221, #541690);
+        }
+        
+        .ocean-theme {
+            background: linear-gradient(45deg, #1d2b64, #0082c8);
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--accent-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            z-index: 98;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .apply-button {
+            background: linear-gradient(45deg, var(--primary-color), var(--tertiary-color));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .apply-button:hover {
+            box-shadow: 0 0 15px var(--primary-color);
+            transform: translateY(-3px);
+        }
+        
+        /* News tab styles */
+        .news-tab {
+            background: linear-gradient(135deg, var(--primary-color), var(--tertiary-color));
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 800px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .news-tab::before {
+            content: 'NEWS';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        .news-content {
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            padding-top: 10px;
+        }
+        
+        /* Style alterations for toggle settings */
+        body.no-hover-effects .game-card:hover {
+            transform: none;
+            box-shadow: var(--card-shadow);
+            background: linear-gradient(135deg, var(--card-bg), rgba(30, 30, 60, 0.7));
+        }
+        
+        body.no-hover-effects .play-button:hover {
+            transform: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.no-glow-effects h1 {
+            text-shadow: none;
+            animation: none;
+        }
+        
+        body.no-glow-effects .new-badge {
+            animation: none;
+            box-shadow: none;
+        }
+        
+        body.reduced-motion * {
+            transition: none !important;
+            animation: none !important;
+        }
+        
+        body.high-contrast {
+            --primary-color: #ff0000;
+            --secondary-color: #00ff00;
+            --tertiary-color: #ff00ff;
+            --accent-color: #ffff00;
+            --dark-bg: #000000;
+            --card-bg: rgba(10, 10, 10, 0.9);
+        }
+        
+        body.high-contrast .game-card {
+            border: 2px solid white;
+        }
+        
+        body.high-contrast .game-title,
+        body.high-contrast .game-desc {
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-effects">
+        <div class="bg-grid"></div>
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+        <div class="particles" id="particles"></div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>PHYSICS PLACE</h1>
+            <p class="subtitle">Your ultimate physics simulation hub</p>
+        </header>
+        
+        <div class="categories">
+            <div class="category active">All Games</div>
+            <div class="category">Sandbox</div>
+            <div class="category">Simulation</div>
+            <div class="category">Destruction</div>
+            <div class="category">Satisfying</div>
+        </div>
+        
+        <!-- News tab updated with new content -->
+        <div class="news-tab">
+            <div class="news-content">I have added softbody simulation</div>
+        </div>
+        
+        <!-- Site statistics section -->
+        <div class="site-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="totalPlays">0</div>
+                <div class="stat-label">Total Plays</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="popularGame">-</div>
+                <div class="stat-label">Most Popular</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="activeToday">0</div>
+                <div class="stat-label">Active Today</div>
+            </div>
+        </div>
+        
+        <!-- Recently played games section -->
+        <div class="recent-games">
+            <div class="recent-title">Recently Played</div>
+            <div class="recent-list" id="recentGames">
+                <!-- Recent games will be added here dynamically -->
+                <div class="recent-item tooltip">
+                    <span class="tooltiptext">No games played yet</span>
+                    <div class="recent-name">-</div>
+                    <div class="recent-time">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search games...">
+            <div class="search-icon">🔍</div>
+        </div>
+        
+        <div class="game-grid" id="gameGrid">
+            <!-- Game cards with category data attributes -->
+            <div class="game-card" data-game-url="https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimate.html" data-category="simulation,sandbox" data-game-id="cube-game">
+                <span class="trending-badge">TRENDING</span>
+                <div class="game-info">
+                    <div class="game-title">Cube Game</div>
+                    <div class="game-desc">Endless physics madness</div>
+                    <button class="play-button">PLAY NOW</button>
+                </div>
+                <div class="view-counter"><span class="icon">👁️</span> <span class="count">0</span></div>
+            </div>
+            
+            <div class="game-card" data-game-url="https://blygren.github.io/yes/Cube%20Water%20Mug.html" data-category="simulation,satisfying" data-game-id="fluid-place">
+                <div class="game-info">
+                    <div class="game-title">Fluid Place</div>
+                    <div class="game-desc">Manipulate fluid elements</div>
+                    <button class="play-button">PLAY NOW</button>
+                </div>
+                <div class="view-counter"><span class="icon">👁️</span> <span class="count">0</span></div>
+            </div>
+            
+            <div class="game-card" data-game-url="https://blygren.github.io/yes/cloth_simulation.html" data-category="satisfying,simulation" data-game-id="softbody">
+                <span class="new-badge">NEW</span>
+                <div class="game-info">
+                    <div class="game-title">Softbody</div>
+                    <div class="game-desc">Satisfying nets</div>
+                    <button class="play-button">PLAY NOW</button>
+                </div>
+                <div class="view-counter"><span class="icon">👁️</span> <span class="count">0</span></div>
+            </div>
+            
+            <div class="game-card" data-game-url="https://blygren.github.io/yes/Ropes.html" data-category="simulation,sandbox" data-game-id="ropes">
+                <div class="game-info">
+                    <div class="game-title">Ropes</div>
+                    <div class="game-desc">Stretch and experiment</div>
+                    <button class="play-button">PLAY NOW</button>
+                </div>
+                <div class="view-counter"><span class="icon">👁️</span> <span class="count">0</span></div>
+            </div>
+            
+            <div class="game-card" data-game-url="https://blygren.github.io/yes/Falling%20Sand/basic%20Version.html" data-category="sandbox,destruction" data-game-id="falling-sand">
+                <div class="game-info">
+                    <div class="game-title">Falling Sand Game</div>
+                    <div class="game-desc">Experiment and play</div>
+                    <button class="play-button">PLAY NOW</button>
+                </div>
+                <div class="view-counter"><span class="icon">👁️</span> <span class="count">0</span></div>
+            </div>
+            
+            <div class="game-card" data-game-url="https://blygren.github.io/yes/d.html" data-category="simulation,satisfying" data-game-id="particle-sim">
+                <span class="satisfying-badge">SATISFYING</span>
+                <div class="game-info">
+                    <div class="game-title">Particle Simulation</div>
+                    <div class="game-desc">watch cool particles</div>
+                    <button class="play-button">PLAY NOW</button>
+                </div>
+                <div class="view-counter"><span class="icon">👁️</span> <span class="count">0</span></div>
+            </div>
+        </div>
+        
+        <footer>
+            &copy; 2023 PHYSICS PLACE | All Rights Reserved
+        </footer>
+    </div>
+
+    <!-- Settings Icon -->
+    <div class="settings-icon" id="settingsIcon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37-0.29,0.59-0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+        </svg>
+    </div>
+    
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="setting-section">
+            <h3 class="setting-title">Theme Options</h3>
+            <div class="theme-options">
+                <div class="theme-option cyberpunk-theme active" data-theme="cyberpunk"></div>
+                <div class="theme-option midnight-theme" data-theme="midnight"></div>
+                <div class="theme-option neon-theme" data-theme="neon"></div>
+                <div class="theme-option ocean-theme" data-theme="ocean"></div>
+            </div>
+        </div>
+        
+        <div class="setting-section">
+            <h3 class="setting-title">Animation Settings</h3>
+            <div class="toggle-container">
+                <span>Background Particles</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="particlesToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-container">
+                <span>Hover Effects</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="hoverEffectsToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-container">
+                <span>Background Glow</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="glowEffectsToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="setting-section">
+            <h3 class="setting-title">Display Settings</h3>
+            <div class="toggle-container">
+                <span>Reduced Motion</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="reducedMotionToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-container">
+                <span>High Contrast</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="highContrastToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <button class="apply-button" id="applySettings">Apply Settings</button>
+    </div>
+    
+    <!-- Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <script>
+        // Generate animated stars/particles
+        document.addEventListener('DOMContentLoaded', function() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 100;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size between 1-3px
+                const size = Math.random() * 2 + 1;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.left = `${Math.random() * 100}%`;
+                
+                // Random opacity
+                particle.style.opacity = Math.random() * 0.5 + 0.3;
+                
+                // Random animation delay
+                const animationDelay = Math.random() * 5;
+                particle.style.animation = `twinkle ${Math.random() * 3 + 2}s ease-in-out ${animationDelay}s infinite alternate`;
+                
+                particlesContainer.appendChild(particle);
+            }
+            
+            // Add keyframe animation for twinkling stars
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes twinkle {
+                    0% { opacity: 0.3; }
+                    100% { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+
+        // Handle game card clicks
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.classList.contains('play-button')) {
+                    const gameUrl = this.getAttribute('data-game-url');
+                    if (gameUrl) {
+                        window.location.href = gameUrl;
+                    } else {
+                        alert('Game link not set yet. Please add your game URL.');
+                    }
+                }
+            });
+        });
+
+        // Updated category filter functionality
+        document.querySelectorAll('.category').forEach(category => {
+            category.addEventListener('click', function() {
+                // Remove active class from all categories
+                document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
+                // Add active class to clicked category
+                this.classList.add('active');
+                
+                const selectedCategory = this.textContent.toLowerCase();
+                const gameCards = document.querySelectorAll('.game-card');
+                
+                gameCards.forEach(card => {
+                    // First make all cards semi-transparent for the animation effect
+                    card.style.opacity = '0.3';
+                    
+                    // Get the categories this game belongs to
+                    const cardCategories = card.getAttribute('data-category');
+                    
+                    // Show all games if "All Games" is selected, otherwise filter by category
+                    const shouldShow = selectedCategory === 'all games' || 
+                                      (cardCategories && cardCategories.toLowerCase().includes(selectedCategory));
+                    
+                    // Set display style and animate back to full opacity for visible games
+                    setTimeout(() => {
+                        card.style.display = shouldShow ? 'flex' : 'none';
+                        if (shouldShow) {
+                            card.style.opacity = '1';
+                        }
+                    }, 300);
+                });
+            });
+        });
+
+        // Simple search functionality
+        const searchInput = document.querySelector('.search-input');
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const gameCards = document.querySelectorAll('.game-card');
+            
+            gameCards.forEach(card => {
+                const title = card.querySelector('.game-title').textContent.toLowerCase();
+                const desc = card.querySelector('.game-desc').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || desc.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Settings Panel Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const settingsIcon = document.getElementById('settingsIcon');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('overlay');
+            const themeOptions = document.querySelectorAll('.theme-option');
+            const applyButton = document.getElementById('applySettings');
+            
+            // Toggle settings panel
+            settingsIcon.addEventListener('click', function() {
+                settingsPanel.classList.toggle('active');
+                overlay.classList.toggle('active');
+            });
+            
+            // Close settings panel when clicking outside
+            overlay.addEventListener('click', function() {
+                settingsPanel.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+            
+            // Theme switching
+            themeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const theme = this.getAttribute('data-theme');
+                    
+                    // Remove active class from all options
+                    themeOptions.forEach(opt => opt.classList.remove('active'));
+                    
+                    // Add active class to selected theme
+                    this.classList.add('active');
+                    
+                    // Save theme preference but don't apply until Apply button is clicked
+                    sessionStorage.setItem('pendingTheme', theme);
+                });
+            });
+            
+            // Toggle settings
+            const particlesToggle = document.getElementById('particlesToggle');
+            const hoverEffectsToggle = document.getElementById('hoverEffectsToggle');
+            const glowEffectsToggle = document.getElementById('glowEffectsToggle');
+            const reducedMotionToggle = document.getElementById('reducedMotionToggle');
+            const highContrastToggle = document.getElementById('highContrastToggle');
+            
+            // Store toggle changes in session storage until applied
+            const toggles = [
+                { id: 'particlesToggle', handler: function(checked) {
+                    sessionStorage.setItem('pendingParticles', checked);
+                }},
+                { id: 'hoverEffectsToggle', handler: function(checked) {
+                    sessionStorage.setItem('pendingHoverEffects', checked);
+                }},
+                { id: 'glowEffectsToggle', handler: function(checked) {
+                    sessionStorage.setItem('pendingGlowEffects', checked);
+                }},
+                { id: 'reducedMotionToggle', handler: function(checked) {
+                    sessionStorage.setItem('pendingReducedMotion', checked);
+                }},
+                { id: 'highContrastToggle', handler: function(checked) {
+                    sessionStorage.setItem('pendingHighContrast', checked);
+                }}
+            ];
+            
+            toggles.forEach(toggle => {
+                const element = document.getElementById(toggle.id);
+                element.addEventListener('change', function() {
+                    toggle.handler(this.checked);
+                });
+            });
+            
+            // Apply settings button functionality
+            applyButton.addEventListener('click', function() {
+                // Apply theme if changed
+                const pendingTheme = sessionStorage.getItem('pendingTheme');
+                if (pendingTheme) {
+                    applyTheme(pendingTheme);
+                    localStorage.setItem('physicsPlaceTheme', pendingTheme);
+                    sessionStorage.removeItem('pendingTheme');
+                }
+                
+                // Apply background particles toggle
+                const pendingParticles = sessionStorage.getItem('pendingParticles');
+                if (pendingParticles !== null) {
+                    const particles = document.getElementById('particles');
+                    particles.style.opacity = pendingParticles === 'true' ? '1' : '0';
+                    localStorage.setItem('particlesEnabled', pendingParticles);
+                    sessionStorage.removeItem('pendingParticles');
+                }
+                
+                // Apply hover effects toggle
+                const pendingHoverEffects = sessionStorage.getItem('pendingHoverEffects');
+                if (pendingHoverEffects !== null) {
+                    document.body.classList.toggle('no-hover-effects', pendingHoverEffects !== 'true');
+                    localStorage.setItem('hoverEffectsEnabled', pendingHoverEffects);
+                    sessionStorage.removeItem('pendingHoverEffects');
+                }
+                
+                // Apply glow effects toggle
+                const pendingGlowEffects = sessionStorage.getItem('pendingGlowEffects');
+                if (pendingGlowEffects !== null) {
+                    document.body.classList.toggle('no-glow-effects', pendingGlowEffects !== 'true');
+                    localStorage.setItem('glowEffectsEnabled', pendingGlowEffects);
+                    sessionStorage.removeItem('pendingGlowEffects');
+                }
+                
+                // Apply reduced motion toggle
+                const pendingReducedMotion = sessionStorage.getItem('pendingReducedMotion');
+                if (pendingReducedMotion !== null) {
+                    document.body.classList.toggle('reduced-motion', pendingReducedMotion === 'true');
+                    localStorage.setItem('reducedMotion', pendingReducedMotion);
+                    sessionStorage.removeItem('pendingReducedMotion');
+                }
+                
+                // Apply high contrast toggle
+                const pendingHighContrast = sessionStorage.getItem('pendingHighContrast');
+                if (pendingHighContrast !== null) {
+                    document.body.classList.toggle('high-contrast', pendingHighContrast === 'true');
+                    localStorage.setItem('highContrast', pendingHighContrast);
+                    sessionStorage.removeItem('pendingHighContrast');
+                }
+                
+                // Show confirmation message
+                const confirmation = document.createElement('div');
+                confirmation.textContent = 'Settings Applied!';
+                confirmation.style.position = 'fixed';
+                confirmation.style.bottom = '20px';
+                confirmation.style.left = '50%';
+                confirmation.style.transform = 'translateX(-50%)';
+                confirmation.style.background = 'var(--accent-color)';
+                confirmation.style.color = '#000';
+                confirmation.style.padding = '10px 20px';
+                confirmation.style.borderRadius = '50px';
+                confirmation.style.fontWeight = 'bold';
+                confirmation.style.zIndex = '1000';
+                document.body.appendChild(confirmation);
+                
+                setTimeout(() => {
+                    confirmation.style.opacity = '0';
+                    setTimeout(() => confirmation.remove(), 300);
+                }, 2000);
+                
+                // Close settings panel
+                settingsPanel.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+            
+            // Apply theme function
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                
+                // Reset to default theme
+                const defaultTheme = {
+                    primary: '#ff2a6d',
+                    secondary: '#05d9e8',
+                    tertiary: '#d65bca',
+                    accent: '#01ffc3',
+                    darkBg: '#0f0e17'
+                };
+                
+                // Theme variations
+                const themes = {
+                    cyberpunk: defaultTheme,
+                    midnight: {
+                        primary: '#ff7700',
+                        secondary: '#0072ff',
+                        tertiary: '#9400d3',
+                        accent: '#00ff9f',
+                        darkBg: '#0a0a1a'
+                    },
+                    neon: {
+                        primary: '#fe00fe',
+                        secondary: '#00feca',
+                        tertiary: '#bc13fe',
+                        accent: '#fbff12',
+                        darkBg: '#0d0221'
+                    },
+                    ocean: {
+                        primary: '#00a8ff',
+                        secondary: '#00fff0',
+                        tertiary: '#0057ff',
+                        accent: '#73fffe',
+                        darkBg: '#051923'
+                    }
+                };
+                
+                const selectedTheme = themes[theme] || defaultTheme;
+                
+                // Apply theme colors
+                root.style.setProperty('--primary-color', selectedTheme.primary);
+                root.style.setProperty('--secondary-color', selectedTheme.secondary);
+                root.style.setProperty('--tertiary-color', selectedTheme.tertiary);
+                root.style.setProperty('--accent-color', selectedTheme.accent);
+                root.style.setProperty('--dark-bg', selectedTheme.darkBg);
+                
+                // Update circles with theme colors
+                const circle1 = document.querySelector('.circle-1');
+                const circle2 = document.querySelector('.circle-2');
+                const circle3 = document.querySelector('.circle-3');
+                
+                if (circle1 && circle2 && circle3) {
+                    circle1.style.background = selectedTheme.primary;
+                    circle2.style.background = selectedTheme.secondary;
+                    circle3.style.background = selectedTheme.tertiary;
+                }
+            }
+            
+            // Load saved preferences
+            function loadSavedPreferences() {
+                // Load theme
+                const savedTheme = localStorage.getItem('physicsPlaceTheme');
+                if (savedTheme) {
+                    applyTheme(savedTheme);
+                    themeOptions.forEach(option => {
+                        if (option.getAttribute('data-theme') === savedTheme) {
+                            option.classList.add('active');
+                        } else {
+                            option.classList.remove('active');
+                        }
+                    });
+                }
+                
+                // Load toggle settings
+                const settings = [
+                    { id: 'particlesEnabled', element: particlesToggle, applyFunction: function(checked) {
+                        const particles = document.getElementById('particles');
+                        particles.style.opacity = checked ? '1' : '0';
+                    }},
+                    { id: 'hoverEffectsEnabled', element: hoverEffectsToggle, applyFunction: function(checked) {
+                        document.body.classList.toggle('no-hover-effects', !checked);
+                    }},
+                    { id: 'glowEffectsEnabled', element: glowEffectsToggle, applyFunction: function(checked) {
+                        document.body.classList.toggle('no-glow-effects', !checked);
+                    }},
+                    { id: 'reducedMotion', element: reducedMotionToggle, applyFunction: function(checked) {
+                        document.body.classList.toggle('reduced-motion', checked);
+                    }},
+                    { id: 'highContrast', element: highContrastToggle, applyFunction: function(checked) {
+                        document.body.classList.toggle('high-contrast', checked);
+                    }}
+                ];
+                
+                settings.forEach(setting => {
+                    const value = localStorage.getItem(setting.id);
+                    if (value !== null) {
+                        const boolValue = value === 'true';
+                        setting.element.checked = boolValue;
+                        
+                        // Apply the setting
+                        setting.applyFunction(boolValue);
+                    }
+                });
+            }
+            
+            // Load saved preferences on startup
+            loadSavedPreferences();
+        });
+
+        // View counter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load view counts from localStorage
+            const viewCounts = JSON.parse(localStorage.getItem('gameViewCounts')) || {};
+            
+            // Initialize mock data if first time
+            if (Object.keys(viewCounts).length === 0) {
+                viewCounts['cube-game'] = 1420;
+                viewCounts['fluid-place'] = 863;
+                viewCounts['softbody'] = 214;
+                viewCounts['ropes'] = 952;
+                viewCounts['falling-sand'] = 736;
+                viewCounts['particle-sim'] = 389;
+                localStorage.setItem('gameViewCounts', JSON.stringify(viewCounts));
+            }
+            
+            // Update view counters in the UI
+            updateViewCounters(viewCounts);
+            
+            // Update site statistics
+            updateSiteStatistics(viewCounts);
+            
+            // Load recently played games
+            loadRecentGames();
+            
+            // Handle game clicks to increment view counter and update recents
+            document.querySelectorAll('.game-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('play-button')) {
+                        const gameId = this.getAttribute('data-game-id');
+                        const gameUrl = this.getAttribute('data-game-url');
+                        const gameTitle = this.querySelector('.game-title').textContent;
+                        
+                        if (gameId && gameUrl) {
+                            // Increment view count
+                            viewCounts[gameId] = (viewCounts[gameId] || 0) + 1;
+                            localStorage.setItem('gameViewCounts', JSON.stringify(viewCounts));
+                            
+                            // Update counter with animation
+                            const counter = this.querySelector('.view-counter .count');
+                            counter.textContent = viewCounts[gameId].toLocaleString();
+                            counter.style.animation = 'count-highlight 1.5s';
+                            
+                            // Remove animation after it completes
+                            setTimeout(() => {
+                                counter.style.animation = '';
+                            }, 1500);
+                            
+                            // Add to recently played games
+                            addToRecentGames(gameId, gameTitle, gameUrl);
+                            
+                            // Update site statistics
+                            updateSiteStatistics(viewCounts);
+                            
+                            // Navigate to the game
+                            window.location.href = gameUrl;
+                        }
+                    }
+                });
+            });
+        });
+        
+        // Function to update view counters in the UI
+        function updateViewCounters(viewCounts) {
+            document.querySelectorAll('.game-card').forEach(card => {
+                const gameId = card.getAttribute('data-game-id');
+                if (gameId && viewCounts[gameId]) {
+                    const counter = card.querySelector('.view-counter .count');
+                    counter.textContent = viewCounts[gameId].toLocaleString();
+                }
+            });
+        }
+        
+        // Function to update site statistics
+        function updateSiteStatistics(viewCounts) {
+            // Calculate total plays
+            const totalPlays = Object.values(viewCounts).reduce((sum, count) => sum + count, 0);
+            document.getElementById('totalPlays').textContent = totalPlays.toLocaleString();
+            
+            // Find most popular game
+            let mostPlayed = { id: '', count: 0 };
+            Object.entries(viewCounts).forEach(([id, count]) => {
+                if (count > mostPlayed.count) {
+                    mostPlayed = { id, count };
+                }
+            });
+            
+            // Display most popular game
+            if (mostPlayed.id) {
+                const gameCard = document.querySelector(`[data-game-id="${mostPlayed.id}"]`);
+                if (gameCard) {
+                    document.getElementById('popularGame').textContent = gameCard.querySelector('.game-title').textContent;
+                }
+            }
+            
+            // Generate random number for active today
+            const activeToday = Math.floor(Math.random() * 100) + 50;
+            document.getElementById('activeToday').textContent = activeToday.toLocaleString();
+        }
+        
+        // Function to add a game to recently played
+        function addToRecentGames(gameId, gameTitle, gameUrl) {
+            // Get existing recent games or initialize empty array
+            const recentGames = JSON.parse(localStorage.getItem('recentGames')) || [];
+            
+            // Remove this game if it's already in the list
+            const filteredGames = recentGames.filter(game => game.id !== gameId);
+            
+            // Add game to the beginning of the list
+            filteredGames.unshift({
+                id: gameId,
+                title: gameTitle,
+                url: gameUrl,
+                time: new Date().toISOString()
+            });
+            
+            // Keep only the most recent 5 games
+            const updatedGames = filteredGames.slice(0, 5);
+            
+            // Save to localStorage
+            localStorage.setItem('recentGames', JSON.stringify(updatedGames));
+            
+            // Update UI (not needed here since we're navigating away, but useful for other cases)
+            loadRecentGames();
+        }
+        
+        // Function to load recently played games
+        function loadRecentGames() {
+            const recentGames = JSON.parse(localStorage.getItem('recentGames')) || [];
+            const recentList = document.getElementById('recentGames');
+            
+            // Clear existing content
+            recentList.innerHTML = '';
+            
+            if (recentGames.length === 0) {
+                // Show placeholder if no games
+                const placeholder = document.createElement('div');
+                placeholder.className = 'recent-item tooltip';
+                placeholder.innerHTML = `
+                    <span class="tooltiptext">No games played yet</span>
+                    <div class="recent-name">No Recent Games</div>
+                    <div class="recent-time">-</div>
+                `;
+                recentList.appendChild(placeholder);
+            } else {
+                // Add recent games
+                recentGames.forEach(game => {
+                    const item = document.createElement('div');
+                    item.className = 'recent-item tooltip';
+                    
+                    // Calculate time ago
+                    const timeAgo = getTimeAgo(new Date(game.time));
+                    
+                    item.innerHTML = `
+                        <span class="tooltiptext">Click to play</span>
+                        <div class="recent-name">${game.title}</div>
+                        <div class="recent-time">${timeAgo}</div>
+                    `;
+                    
+                    item.addEventListener('click', function() {
+                        window.location.href = game.url;
+                    });
+                    
+                    recentList.appendChild(item);
+                });
+            }
+        }
+        
+        // Helper function to format time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSeconds = Math.floor(diffMs / 1000);
+            const diffMinutes = Math.floor(diffSeconds / 60);
+            const diffHours = Math.floor(diffMinutes / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffDays > 0) {
+                return `${diffDays}d ago`;
+            } else if (diffHours > 0) {
+                return `${diffHours}h ago`;
+            } else if (diffMinutes > 0) {
+                return `${diffMinutes}m ago`;
+            } else {
+                return 'Just now';
+            }
+        }
+    </script>
+</body>
+</html>
