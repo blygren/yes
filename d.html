@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Fluid Particle Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            user-select: none;
+            pointer-events: none;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            width: 250px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        #controls h3 {
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 3px;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .slider-value {
+            display: inline-block;
+            width: 30px;
+            text-align: right;
+        }
+        button {
+            background: #4a4a4a;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 3px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #6a6a6a;
+        }
+        button.active {
+            background: #1e90ff;
+        }
+        #toggle-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #stats {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-family: monospace;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="info">
+        <p>Move your mouse to interact with particles</p>
+        <p>Click to create a force burst</p>
+    </div>
+    
+    <button id="toggle-controls">≡</button>
+    
+    <div id="controls">
+        <h2>Particle Controls</h2>
+        
+        <div class="control-group">
+            <h3>Particles</h3>
+            <label>Count: <span id="particle-count-value" class="slider-value">500</span>
+                <input type="range" id="particle-count" min="100" max="2000" value="500">
+            </label>
+            <label>Size: <span id="particle-size-value" class="slider-value">3</span>
+                <input type="range" id="particle-size" min="1" max="10" value="3" step="0.5">
+            </label>
+            <label>Speed: <span id="particle-speed-value" class="slider-value">1</span>
+                <input type="range" id="particle-speed" min="0.2" max="3" value="1" step="0.1">
+            </label>
+        </div>
+        
+        <div class="control-group">
+            <h3>Interaction</h3>
+            <label>Radius: <span id="interaction-radius-value" class="slider-value">100</span>
+                <input type="range" id="interaction-radius" min="50" max="300" value="100">
+            </label>
+            <label>Force: <span id="interaction-force-value" class="slider-value">1</span>
+                <input type="range" id="interaction-force" min="0.2" max="3" value="1" step="0.1">
+            </label>
+            <div>
+                <h4>Mode:</h4>
+                <button id="mode-repel" class="active">Repel</button>
+                <button id="mode-attract">Attract</button>
+                <button id="mode-vortex">Vortex</button>
+                <button id="mode-chaos">Chaos</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Visuals</h3>
+            <label>Trail Length: <span id="trail-length-value" class="slider-value">0.05</span>
+                <input type="range" id="trail-length" min="0.01" max="0.2" value="0.05" step="0.01">
+            </label>
+            <div>
+                <h4>Color Theme:</h4>
+                <button id="theme-rainbow" class="active">Rainbow</button>
+                <button id="theme-neon">Neon</button>
+                <button id="theme-ocean">Ocean</button>
+                <button id="theme-fire">Fire</button>
+            </div>
+            <label>
+                <input type="checkbox" id="glow-effect"> Glow Effect
+            </label>
+            <label>
+                <input type="checkbox" id="show-trails"> Show Trails
+            </label>
+        </div>
+        
+        <div class="control-group">
+            <h3>Physics</h3>
+            <label>Fluid Force: <span id="fluid-force-value" class="slider-value">0.05</span>
+                <input type="range" id="fluid-force" min="0" max="0.2" value="0.05" step="0.01">
+            </label>
+            <label>Fluid Radius: <span id="fluid-radius-value" class="slider-value">50</span>
+                <input type="range" id="fluid-radius" min="20" max="150" value="50">
+            </label>
+            <label>
+                <input type="checkbox" id="gravity"> Gravity
+            </label>
+        </div>
+        
+        <div class="control-group">
+            <h3>Enhancements</h3>
+            <label>
+                <input type="checkbox" id="audio-reactivity"> Voice Reactivity
+                <span style="font-size: 0.8em; display: block; margin-left: 20px; color: #aaa;">
+                    (Requires microphone permission)
+                </span>
+            </label>
+            <label>
+                <input type="checkbox" id="particle-explosion"> Particle Explosion
+            </label>
+            <label>
+                <input type="checkbox" id="gradient-bg"> Gradient Background
+            </label>
+            <label>
+                <input type="checkbox" id="collision"> Enable Collisions
+                <span style="font-size: 0.8em; display: block; margin-left: 20px; color: #aaa;">
+                    (Unchecked = no collisions)
+                </span>
+            </label>
+            <div>
+                <h4>Preset Scenes:</h4>
+                <button id="preset-galaxy">Galaxy</button>
+                <button id="preset-waterfall">Waterfall</button>
+                <button id="preset-fireworks">Fireworks</button>
+                <button id="preset-voice">Voice Waves</button>
+            </div>
+            <button id="screenshot">Capture Screenshot</button>
+        </div>
+        
+        <button id="reset-particles">Reset Particles</button>
+        <button id="reset-settings">Default Settings</button>
+    </div>
+    
+    <div id="stats">FPS: 0 | Particles: 500</div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to window size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Settings with default values
+        const settings = {
+            particleCount: 500,
+            particleSize: 3,
+            particleSpeed: 1,
+            interactionRadius: 100,
+            interactionForce: 1,
+            interactionMode: 'repel',
+            trailLength: 0.05,
+            colorTheme: 'rainbow',
+            glowEffect: false,
+            showTrails: false,
+            fluidForce: 0.05,
+            fluidRadius: 50,
+            gravity: false,
+            audioReactivity: false,
+            particleExplosion: false,
+            gradientBG: false,
+            collision: false
+        };
+        
+        // Color themes
+        const colorThemes = {
+            rainbow: () => `hsl(${Math.random() * 360}, 80%, 60%)`,
+            neon: () => {
+                const neonColors = ['#ff00ff', '#00ffff', '#ffff00', '#00ff00', '#ff9900'];
+                return neonColors[Math.floor(Math.random() * neonColors.length)];
+            },
+            ocean: () => `hsl(${180 + Math.random() * 60}, 80%, 60%)`,
+            fire: () => `hsl(${Math.random() * 60}, 80%, ${50 + Math.random() * 30}%)`
+        };
+        
+        // Mouse position tracking
+        let mouse = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            down: false,
+            prevX: canvas.width / 2,
+            prevY: canvas.height / 2
+        };
+        
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.prevX = mouse.x;
+            mouse.prevY = mouse.y;
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        
+        canvas.addEventListener('mousedown', () => {
+            mouse.down = true;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouse.down = false;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            mouse.prevX = mouse.x;
+            mouse.prevY = mouse.y;
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+        }, { passive: false });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            mouse.down = true;
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+            mouse.prevX = mouse.x;
+            mouse.prevY = mouse.y;
+        });
+        
+        canvas.addEventListener('touchend', () => {
+            mouse.down = false;
+        });
+        
+        // Toggle controls visibility
+        document.getElementById('toggle-controls').addEventListener('click', () => {
+            const controls = document.getElementById('controls');
+            if (controls.style.display === 'none') {
+                controls.style.display = 'block';
+                document.getElementById('toggle-controls').textContent = '≡';
+            } else {
+                controls.style.display = 'none';
+                document.getElementById('toggle-controls').textContent = '≡ Show';
+            }
+        });
+        
+        // Particle class with enhanced capabilities
+        class Particle {
+            constructor() {
+                this.reset();
+                this.trail = [];
+                this.maxTrail = 10;
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = 0;
+                this.vy = 0;
+                this.baseSize = 2 + Math.random() * 3;
+                this.size = this.baseSize * settings.particleSize;
+                this.color = colorThemes[settings.colorTheme]();
+                this.opacity = 0.7 + Math.random() * 0.3;
+                this.life = 1;
+                this.trail = [];
+            }
+            
+            update() {
+                // Store position for trail
+                if (settings.showTrails && Math.random() > 0.5) {
+                    this.trail.push({ x: this.x, y: this.y, size: this.size * 0.7 });
+                    if (this.trail.length > this.maxTrail) {
+                        this.trail.shift();
+                    }
+                } else {
+                    this.trail = [];
+                }
+                
+                // Apply friction to slow down particles
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                
+                // Add some random movement
+                this.vx += (Math.random() - 0.5) * 0.2 * settings.particleSpeed;
+                this.vy += (Math.random() - 0.5) * 0.2 * settings.particleSpeed;
+                
+                // Apply gravity if enabled
+                if (settings.gravity) {
+                    this.vy += 0.05;
+                }
+                
+                // Mouse interaction
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < settings.interactionRadius) {
+                    const force = (settings.interactionRadius - distance) / settings.interactionRadius * settings.interactionForce;
+                    
+                    switch (settings.interactionMode) {
+                        case 'repel':
+                            this.vx += (dx / distance) * force * (mouse.down ? 2 : 0.5);
+                            this.vy += (dy / distance) * force * (mouse.down ? 2 : 0.5);
+                            break;
+                        case 'attract':
+                            this.vx -= (dx / distance) * force * (mouse.down ? 2 : 0.5);
+                            this.vy -= (dy / distance) * force * (mouse.down ? 2 : 0.5);
+                            break;
+                        case 'vortex':
+                            this.vx += (dy / distance) * force * (mouse.down ? 2 : 0.5);
+                            this.vy -= (dx / distance) * force * (mouse.down ? 2 : 0.5);
+                            break;
+                        case 'chaos':
+                            this.vx += Math.sin(this.y * 0.01) * force * (mouse.down ? 2 : 0.5);
+                            this.vy += Math.cos(this.x * 0.01) * force * (mouse.down ? 2 : 0.5);
+                            break;
+                    }
+                }
+                
+                // Update size based on settings
+                this.size = this.baseSize * settings.particleSize;
+                
+                // Apply velocity
+                this.x += this.vx * settings.particleSpeed;
+                this.y += this.vy * settings.particleSpeed;
+                
+                // Boundary checking - wrap around the screen
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+                
+                // Color effect based on velocity
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > 2 && Math.random() > 0.9) {
+                    this.color = colorThemes[settings.colorTheme]();
+                }
+            }
+            
+            draw() {
+                // Draw trail
+                if (settings.showTrails && this.trail.length > 0) {
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const t = this.trail[i];
+                        const alpha = i / this.trail.length * 0.3;
+                        ctx.globalAlpha = alpha;
+                        ctx.fillStyle = this.color;
+                        ctx.beginPath();
+                        ctx.arc(t.x, t.y, t.size * (i / this.trail.length), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                // Draw particle
+                ctx.globalAlpha = this.opacity * this.life;
+                ctx.fillStyle = this.color;
+                
+                // Add glow effect
+                if (settings.glowEffect) {
+                    ctx.shadowBlur = this.size * 2;
+                    ctx.shadowColor = this.color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Reset shadow
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+        }
+        
+        // Create particles
+        let particles = [];
+        
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < settings.particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+        
+        initParticles();
+        
+        // Fluid simulation helpers
+        function applyFluidDynamics() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    if (Math.random() > 0.1) continue;
+                    
+                    const p1 = particles[i];
+                    const p2 = particles[j];
+                    
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < settings.fluidRadius && distance > 0) {
+                        const force = (Math.sin(distance / settings.fluidRadius * Math.PI) * settings.fluidForce) / distance;
+                        const fx = dx * force;
+                        const fy = dy * force;
+                        
+                        p1.vx -= fx;
+                        p1.vy -= fy;
+                        p2.vx += fx;
+                        p2.vy += fy;
+                    }
+                    
+                    if (settings.collision && distance < (p1.size + p2.size)) {
+                        const overlap = (p1.size + p2.size - distance) / distance;
+                        p1.vx -= dx * overlap * 0.05;
+                        p1.vy -= dy * overlap * 0.05;
+                        p2.vx += dx * overlap * 0.05;
+                        p2.vy += dy * overlap * 0.05;
+                    }
+                }
+            }
+        }
+        
+        // FPS counter
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+        
+        function updateFPS() {
+            const now = performance.now();
+            frameCount++;
+            
+            if (now - lastTime >= 1000) {
+                fps = Math.round(frameCount * 1000 / (now - lastTime));
+                frameCount = 0;
+                lastTime = now;
+                
+                document.getElementById('stats').textContent = `FPS: ${fps} | Particles: ${particles.length}`;
+            }
+        }
+        
+        // Audio reactivity: setup Web Audio API with voice frequency focus
+        let audioContext, analyser, audioData;
+        function startAudio() {
+            if (!audioContext) {
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 1024; // Increased for better frequency resolution
+                    audioData = new Uint8Array(analyser.frequencyBinCount);
+                    
+                    // Add band-pass filter to focus on voice frequencies (approximately 85-255 Hz)
+                    const voiceFilter = audioContext.createBiquadFilter();
+                    voiceFilter.type = "bandpass";
+                    voiceFilter.frequency.value = 170; // Center frequency
+                    voiceFilter.Q.value = 0.5; // Wider Q for voice range
+                    
+                    source.connect(voiceFilter);
+                    voiceFilter.connect(analyser);
+                    
+                    // Show voice reactivity is active
+                    alert("Voice reactivity enabled! Try speaking into your microphone.");
+                }).catch(err => {
+                    console.error('Audio error:', err);
+                    alert("Could not access microphone. Voice reactivity disabled.");
+                    document.getElementById('audio-reactivity').checked = false;
+                    settings.audioReactivity = false;
+                });
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            // Background effect: use gradient if enabled
+            if (settings.gradientBG) {
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#000428');
+                gradient.addColorStop(1, '#004e92');
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = `rgba(0, 0, 0, ${settings.trailLength})`;
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Audio reactivity: compute voice amplitude with more sensitivity
+            let audioLevel = 0;
+            if (settings.audioReactivity && analyser) {
+                analyser.getByteFrequencyData(audioData);
+                
+                // Focus on frequencies typical for human voice (85-255 Hz)
+                // These indices correspond roughly to that range in a 1024 FFT
+                const voiceStartIdx = Math.floor(85 * analyser.frequencyBinCount / (audioContext.sampleRate/2));
+                const voiceEndIdx = Math.floor(255 * analyser.frequencyBinCount / (audioContext.sampleRate/2));
+                
+                let sum = 0;
+                let count = 0;
+                for (let i = voiceStartIdx; i <= voiceEndIdx; i++) {
+                    sum += audioData[i];
+                    count++;
+                }
+                
+                // Make voice reactivity more pronounced
+                audioLevel = (sum / count / 255) * 2;
+                
+                // Update stats to show voice level
+                document.getElementById('stats').textContent = 
+                    `FPS: ${fps} | Particles: ${particles.length} | Voice: ${Math.round(audioLevel * 100)}%`;
+            }
+            
+            // Apply fluid dynamics without collisions by default
+            applyFluidDynamics();
+            
+            // Update and draw particles with voice reactivity
+            particles.forEach(particle => {
+                if (settings.audioReactivity && audioLevel > 0.1) {
+                    // Make particles respond more dramatically to voice
+                    particle.vx += (Math.random() - 0.5) * audioLevel * 2;
+                    particle.vy += (Math.random() - 0.5) * audioLevel * 2;
+                    
+                    // Add pulsing effect with voice
+                    particle.size = particle.baseSize * settings.particleSize * (1 + audioLevel * 0.5);
+                    
+                    // Change color with strong voice input
+                    if (audioLevel > 0.4 && Math.random() > 0.7) {
+                        particle.color = colorThemes[settings.colorTheme]();
+                    }
+                }
+                
+                particle.update();
+                particle.draw();
+            });
+            
+            // Add new particles on click/touch
+            if (mouse.down && Math.random() > 0.7) {
+                const randomAngle = Math.random() * Math.PI * 2;
+                const randomDistance = Math.random() * 20;
+                const particle = new Particle();
+                particle.x = mouse.x + Math.cos(randomAngle) * randomDistance;
+                particle.y = mouse.y + Math.sin(randomAngle) * randomDistance;
+                particle.vx = Math.cos(randomAngle) * (1 + Math.random() * 2) * settings.particleSpeed;
+                particle.vy = Math.sin(randomAngle) * (1 + Math.random() * 2) * settings.particleSpeed;
+                if (particles.length < settings.particleCount) {
+                    particles.push(particle);
+                } else {
+                    const index = Math.floor(Math.random() * particles.length);
+                    particles[index] = particle;
+                }
+            }
+            
+            updateFPS();
+            
+            if (particles.length < settings.particleCount) {
+                for (let i = particles.length; i < settings.particleCount; i++) {
+                    particles.push(new Particle());
+                }
+            } else if (particles.length > settings.particleCount) {
+                particles = particles.slice(0, settings.particleCount);
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Initialize UI values
+        function initUI() {
+            document.getElementById('particle-count').value = settings.particleCount;
+            document.getElementById('particle-count-value').textContent = settings.particleCount;
+            
+            document.getElementById('particle-size').value = settings.particleSize;
+            document.getElementById('particle-size-value').textContent = settings.particleSize;
+            
+            document.getElementById('particle-speed').value = settings.particleSpeed;
+            document.getElementById('particle-speed-value').textContent = settings.particleSpeed;
+            
+            document.getElementById('interaction-radius').value = settings.interactionRadius;
+            document.getElementById('interaction-radius-value').textContent = settings.interactionRadius;
+            
+            document.getElementById('interaction-force').value = settings.interactionForce;
+            document.getElementById('interaction-force-value').textContent = settings.interactionForce;
+            
+            document.getElementById('trail-length').value = settings.trailLength;
+            document.getElementById('trail-length-value').textContent = settings.trailLength;
+            
+            document.getElementById('fluid-force').value = settings.fluidForce;
+            document.getElementById('fluid-force-value').textContent = settings.fluidForce;
+            
+            document.getElementById('fluid-radius').value = settings.fluidRadius;
+            document.getElementById('fluid-radius-value').textContent = settings.fluidRadius;
+            
+            document.getElementById('glow-effect').checked = settings.glowEffect;
+            document.getElementById('show-trails').checked = settings.showTrails;
+            document.getElementById('gravity').checked = settings.gravity;
+            
+            document.getElementById('audio-reactivity').checked = settings.audioReactivity;
+            document.getElementById('particle-explosion').checked = settings.particleExplosion;
+            document.getElementById('gradient-bg').checked = settings.gradientBG;
+            document.getElementById('collision').checked = settings.collision;
+        }
+        
+        // Connect UI events
+        function connectUIEvents() {
+            document.getElementById('particle-count').addEventListener('input', function() {
+                settings.particleCount = parseInt(this.value);
+                document.getElementById('particle-count-value').textContent = settings.particleCount;
+            });
+            
+            document.getElementById('particle-size').addEventListener('input', function() {
+                settings.particleSize = parseFloat(this.value);
+                document.getElementById('particle-size-value').textContent = settings.particleSize;
+            });
+            
+            document.getElementById('particle-speed').addEventListener('input', function() {
+                settings.particleSpeed = parseFloat(this.value);
+                document.getElementById('particle-speed-value').textContent = settings.particleSpeed;
+            });
+            
+            document.getElementById('interaction-radius').addEventListener('input', function() {
+                settings.interactionRadius = parseInt(this.value);
+                document.getElementById('interaction-radius-value').textContent = settings.interactionRadius;
+            });
+            
+            document.getElementById('interaction-force').addEventListener('input', function() {
+                settings.interactionForce = parseFloat(this.value);
+                document.getElementById('interaction-force-value').textContent = settings.interactionForce;
+            });
+            
+            document.getElementById('trail-length').addEventListener('input', function() {
+                settings.trailLength = parseFloat(this.value);
+                document.getElementById('trail-length-value').textContent = settings.trailLength;
+            });
+            
+            document.getElementById('fluid-force').addEventListener('input', function() {
+                settings.fluidForce = parseFloat(this.value);
+                document.getElementById('fluid-force-value').textContent = settings.fluidForce;
+            });
+            
+            document.getElementById('fluid-radius').addEventListener('input', function() {
+                settings.fluidRadius = parseInt(this.value);
+                document.getElementById('fluid-radius-value').textContent = settings.fluidRadius;
+            });
+            
+            document.getElementById('glow-effect').addEventListener('change', function() {
+                settings.glowEffect = this.checked;
+            });
+            
+            document.getElementById('show-trails').addEventListener('change', function() {
+                settings.showTrails = this.checked;
+            });
+            
+            document.getElementById('gravity').addEventListener('change', function() {
+                settings.gravity = this.checked;
+            });
+            
+            document.getElementById('audio-reactivity').addEventListener('change', function() {
+                settings.audioReactivity = this.checked;
+                if (settings.audioReactivity) startAudio();
+            });
+            
+            document.getElementById('particle-explosion').addEventListener('change', function() {
+                settings.particleExplosion = this.checked;
+            });
+            
+            document.getElementById('gradient-bg').addEventListener('change', function() {
+                settings.gradientBG = this.checked;
+            });
+            
+            document.getElementById('collision').addEventListener('change', function() {
+                settings.collision = this.checked;
+            });
+            
+            const modeButtons = document.querySelectorAll('button[id^="mode-"]');
+            modeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    modeButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    settings.interactionMode = this.id.replace('mode-', '');
+                });
+            });
+            
+            const themeButtons = document.querySelectorAll('button[id^="theme-"]');
+            themeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    themeButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    settings.colorTheme = this.id.replace('theme-', '');
+                });
+            });
+            
+            document.getElementById('preset-galaxy').addEventListener('click', function() {
+                settings.particleSpeed = 0.5;
+                settings.particleCount = 1000;
+                settings.colorTheme = 'ocean';
+                settings.gradientBG = true;
+                settings.gravity = false;
+                initUI();
+                initParticles();
+            });
+            
+            document.getElementById('preset-waterfall').addEventListener('click', function() {
+                settings.particleSpeed = 1.5;
+                settings.gravity = true;
+                settings.interactionForce = 1.5;
+                settings.colorTheme = 'fire';
+                initUI();
+                initParticles();
+            });
+            
+            document.getElementById('preset-fireworks').addEventListener('click', function() {
+                settings.particleExplosion = true;
+                settings.particleSpeed = 2;
+                settings.interactionForce = 2;
+                settings.colorTheme = 'rainbow';
+                initUI();
+                initParticles();
+            });
+            
+            document.getElementById('preset-voice').addEventListener('click', function() {
+                settings.audioReactivity = true;
+                settings.particleCount = 800;
+                settings.particleSpeed = 0.8;
+                settings.fluidForce = 0.1;
+                settings.trailLength = 0.1;
+                settings.showTrails = true;
+                settings.glowEffect = true;
+                settings.colorTheme = 'neon';
+                settings.collision = false; // Ensure no collisions
+                startAudio();
+                initUI();
+                initParticles();
+            });
+            
+            document.getElementById('screenshot').addEventListener('click', function() {
+                const dataURL = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = 'screenshot.png';
+                link.href = dataURL;
+                link.click();
+            });
+            
+            document.getElementById('reset-particles').addEventListener('click', function() {
+                initParticles();
+            });
+            
+            document.getElementById('reset-settings').addEventListener('click', function() {
+                settings.particleCount = 500;
+                settings.particleSize = 3;
+                settings.particleSpeed = 1;
+                settings.interactionRadius = 100;
+                settings.interactionForce = 1;
+                settings.interactionMode = 'repel';
+                settings.trailLength = 0.05;
+                settings.colorTheme = 'rainbow';
+                settings.glowEffect = false;
+                settings.showTrails = false;
+                settings.fluidForce = 0.05;
+                settings.fluidRadius = 50;
+                settings.gravity = false;
+                settings.audioReactivity = false;
+                settings.particleExplosion = false;
+                settings.gradientBG = false;
+                settings.collision = false;
+                
+                initUI();
+                
+                modeButtons.forEach(btn => btn.classList.remove('active'));
+                document.getElementById('mode-repel').classList.add('active');
+                
+                themeButtons.forEach(btn => btn.classList.remove('active'));
+                document.getElementById('theme-rainbow').classList.add('active');
+                
+                initParticles();
+            });
+        }
+        
+        initUI();
+        connectUIEvents();
+        
+        animate();
+    </script>
+</body>
+</html>
