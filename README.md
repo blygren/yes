@@ -38,6 +38,6 @@ eae.html
 
 [Art](https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimeete.html)
 
+Cube%20Game%206.0%20Ultimeete.html
 
-
-[mug game](https://blygren.github.io/yes/eae.html)
+[mug game](https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimeete.html)
