@@ -36,8 +36,7 @@ eae.html
 
 
 
-[bd](https://blygren.github.io/yes/game_hub.html
-)
+[bd](https://blygren.github.io/yes/game_hub.html)
 ****
 
 
