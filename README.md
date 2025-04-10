@@ -36,10 +36,5 @@ eae.html
 
 eae.html
 
-[uplive](https://blygren.github.io/yes/eae.html).
 
-[bd](https://blygren.github.io/yes/game_hub.html)
-****
-
-
-Bee.html
+[mug game](https://blygren.github.io/yes/eae.html)
