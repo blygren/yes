@@ -12,7 +12,6 @@
 
 [ropes](https://blygren.github.io/yes/Ropes.html)
 
-[main](https://blygren.github.io/yes/hub.html)
 
 [fire](https://blygren.github.io/yes/fire_simulation.html)
 
