@@ -19,7 +19,7 @@
 
 [Mobile](https://blygren.github.io/yes/d.html).
 
-[The Cube Game Faces](https://blygren.github.io/yes/game_hub.html).
+[Main hub](https://blygren.github.io/yes/game_hub.html).
 
 [Art](https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimeete.html)
 
