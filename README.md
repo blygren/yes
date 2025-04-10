@@ -34,7 +34,9 @@
 
 eae.html
 
+eae.html
 
+[uplive](https://blygren.github.io/yes/deae.html).
 
 [bd](https://blygren.github.io/yes/game_hub.html)
 ****
