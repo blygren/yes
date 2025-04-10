@@ -24,11 +24,9 @@
 [Mobile](https://blygren.github.io/yes/d.html).
 
 
-[face](https://blygren.github.io/yes/eae.html
-).
 
 
-[Mobile](https://blygren.github.io/yes/game_hub.html).
+[The Cube Game Faces](https://blygren.github.io/yes/game_hub.html).
 
 
 eae.html
