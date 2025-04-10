@@ -17,7 +17,7 @@
 
 [Art](https://blygren.github.io/yes/Art.html)
 
-[Mobile](https://blygren.github.io/yes/d.html).
+[Particles](https://blygren.github.io/yes/d.html).
 
 [Main hub](https://blygren.github.io/yes/game_hub.html).
 
