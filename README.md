@@ -36,8 +36,7 @@ eae.html
 
 eae.html
 
-[Art](https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimate.html
-)
+[Art](https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimeete.html)
 
 
 
