@@ -33,4 +33,7 @@ Smaller Experiments
 
 [Plasma Physics](https://blygren.github.io/yes/plasma-physics.html)
 
+[image mod](https://blygren.github.io/yes/image%20pixeliser.html)
+
+
 
