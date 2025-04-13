@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Jelly Physics</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #bb86fc;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            background-color: #1e1e1e;
+            box-shadow: 0 0 20px rgba(187, 134, 252, 0.3);
+            border-radius: 8px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider-container {
+            width: 300px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        button {
+            background-color: #bb86fc;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: #121212;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #d7aefb;
+            transform: translateY(-2px);
+        }
+
+        input[type="range"] {
+            width: 200px;
+        }
+
+        .info {
+            margin-top: 10px;
+            font-style: italic;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Jelly Physics</h1>
+        <div class="canvas-container">
+            <canvas id="jellySim"></canvas>
+        </div>
+        <div class="controls">
+            <button id="resetBtn">Reset Jelly</button>
+            <div class="slider-container">
+                <label for="stiffness">Stiffness: </label>
+                <input type="range" id="stiffness" min="0.01" max="0.5" step="0.01" value="0.2">
+            </div>
+            <div class="slider-container">
+                <label for="gravity">Gravity: </label>
+                <input type="range" id="gravity" min="0" max="2" step="0.1" value="0.8">
+            </div>
+            <div class="info">
+                <p>Click and drag to play with the jelly!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Particle class
+        class Particle {
+            constructor(x, y, mass = 1) {
+                this.pos = { x, y };
+                this.oldPos = { x, y };
+                this.velocity = { x: 0, y: 0 };
+                this.acceleration = { x: 0, y: 0 };
+                this.mass = mass;
+                this.isFixed = false;
+                this.radius = 4;
+                this.color = '#bb86fc';
+                this.isGrabbed = false;
+            }
+
+            update(dt, gravity) {
+                if (this.isFixed || this.isGrabbed) return;
+                
+                // Store old position for verlet integration
+                const oldX = this.pos.x;
+                const oldY = this.pos.y;
+                
+                // Apply gravity
+                this.acceleration.y = gravity;
+                
+                // Verlet integration
+                this.pos.x = 2 * this.pos.x - this.oldPos.x + this.acceleration.x * dt * dt;
+                this.pos.y = 2 * this.pos.y - this.oldPos.y + this.acceleration.y * dt * dt;
+                
+                // Save old position
+                this.oldPos.x = oldX;
+                this.oldPos.y = oldY;
+                
+                // Calculate velocity (for external use/visualization)
+                this.velocity.x = (this.pos.x - this.oldPos.x) / dt;
+                this.velocity.y = (this.pos.y - this.oldPos.y) / dt;
+                
+                // Reset acceleration
+                this.acceleration.x = 0;
+            }
+
+            applyForce(force) {
+                this.acceleration.x += force.x / this.mass;
+                this.acceleration.y += force.y / this.mass;
+            }
+
+            constrain(width, height, bounce = 0.7) {
+                if (this.isFixed) return;
+                
+                // Constrain to canvas bounds with bounce
+                if (this.pos.x < this.radius) {
+                    this.pos.x = this.radius;
+                    this.oldPos.x = this.pos.x + (this.pos.x - this.oldPos.x) * bounce;
+                } else if (this.pos.x > width - this.radius) {
+                    this.pos.x = width - this.radius;
+                    this.oldPos.x = this.pos.x + (this.pos.x - this.oldPos.x) * bounce;
+                }
+                
+                if (this.pos.y < this.radius) {
+                    this.pos.y = this.radius;
+                    this.oldPos.y = this.pos.y + (this.pos.y - this.oldPos.y) * bounce;
+                } else if (this.pos.y > height - this.radius) {
+                    this.pos.y = height - this.radius;
+                    this.oldPos.y = this.pos.y + (this.pos.y - this.oldPos.y) * bounce;
+                }
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.isGrabbed ? '#03dac6' : this.color;
+                ctx.fill();
+            }
+        }
+
+        // SpringConstraint class
+        class SpringConstraint {
+            constructor(particleA, particleB, stiffness = 0.2, restLength = null) {
+                this.particleA = particleA;
+                this.particleB = particleB;
+                this.stiffness = stiffness;
+                
+                // If no rest length specified, use current distance
+                const dx = particleB.pos.x - particleA.pos.x;
+                const dy = particleB.pos.y - particleA.pos.y;
+                this.restLength = restLength || Math.sqrt(dx * dx + dy * dy);
+                
+                this.visible = true;
+            }
+            
+            update() {
+                // Calculate distance between particles
+                const dx = this.particleB.pos.x - this.particleA.pos.x;
+                const dy = this.particleB.pos.y - this.particleA.pos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Skip if particles are at the same position
+                if (distance === 0) return;
+                
+                // Calculate displacement from rest length
+                const displacement = this.restLength - distance;
+                
+                // Calculate direction vector
+                const dirX = dx / distance;
+                const dirY = dy / distance;
+                
+                // Calculate the force to apply (proportional to displacement and stiffness)
+                const force = displacement * this.stiffness;
+                
+                // Apply forces to both particles if they're not fixed
+                if (!this.particleA.isFixed && !this.particleA.isGrabbed) {
+                    this.particleA.pos.x -= dirX * force * 0.5;
+                    this.particleA.pos.y -= dirY * force * 0.5;
+                }
+                
+                if (!this.particleB.isFixed && !this.particleB.isGrabbed) {
+                    this.particleB.pos.x += dirX * force * 0.5;
+                    this.particleB.pos.y += dirY * force * 0.5;
+                }
+            }
+            
+            draw(ctx) {
+                if (!this.visible) return;
+                
+                ctx.beginPath();
+                ctx.moveTo(this.particleA.pos.x, this.particleA.pos.y);
+                ctx.lineTo(this.particleB.pos.x, this.particleB.pos.y);
+                
+                // Visualization: color based on stretch/compression
+                const dx = this.particleB.pos.x - this.particleA.pos.x;
+                const dy = this.particleB.pos.y - this.particleA.pos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const strain = Math.abs(distance - this.restLength) / this.restLength;
+                
+                // Gradient from blue (compressed) to green (rest) to red (stretched)
+                let color;
+                if (distance < this.restLength) {
+                    // Compressed: blue to green
+                    const t = distance / this.restLength;
+                    color = `rgba(0, ${Math.floor(255 * t)}, ${Math.floor(255 * (1 - t))}, 0.3)`;
+                } else {
+                    // Stretched: green to red
+                    const t = Math.min(1, (distance - this.restLength) / this.restLength);
+                    color = `rgba(${Math.floor(255 * t)}, ${Math.floor(255 * (1 - t))}, 0, 0.3)`;
+                }
+                
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2 - strain * 1.5;  // Thinner when stretched
+                ctx.stroke();
+            }
+        }
+
+        // Jelly class
+        class Jelly {
+            constructor(centerX, centerY, width = 100, height = 100, particlesX = 8, particlesY = 8) {
+                this.center = { x: centerX, y: centerY };
+                this.width = width;
+                this.height = height;
+                this.particlesX = particlesX;
+                this.particlesY = particlesY;
+                
+                this.particles = [];
+                this.springs = [];
+                
+                // Internal spring parameters
+                this.stiffness = 0.2;
+                this.damping = 0.03;
+                
+                this.init();
+            }
+            
+            init() {
+                // Clear any existing particles and springs
+                this.particles = [];
+                this.springs = [];
+                
+                // Create particles in a grid
+                const startX = this.center.x - this.width / 2;
+                const startY = this.center.y - this.height / 2;
+                const stepX = this.width / (this.particlesX - 1);
+                const stepY = this.height / (this.particlesY - 1);
+                
+                // Create particles
+                for (let y = 0; y < this.particlesY; y++) {
+                    for (let x = 0; x < this.particlesX; x++) {
+                        const px = startX + x * stepX;
+                        const py = startY + y * stepY;
+                        
+                        const particle = new Particle(px, py);
+                        
+                        // Particles on the edge have smaller radius
+                        if (x === 0 || x === this.particlesX - 1 || y === 0 || y === this.particlesY - 1) {
+                            particle.radius = 3;
+                        }
+                        
+                        // Add some random variation to make it look more organic
+                        particle.pos.x += (Math.random() - 0.5) * 5;
+                        particle.pos.y += (Math.random() - 0.5) * 5;
+                        
+                        // Copy to old position for consistent starting state
+                        particle.oldPos.x = particle.pos.x;
+                        particle.oldPos.y = particle.pos.y;
+                        
+                        this.particles.push(particle);
+                    }
+                }
+                
+                // Create springs between adjacent particles
+                for (let y = 0; y < this.particlesY; y++) {
+                    for (let x = 0; x < this.particlesX; x++) {
+                        const i = y * this.particlesX + x;
+                        
+                        // Connect to right neighbor
+                        if (x < this.particlesX - 1) {
+                            const rightNeighbor = y * this.particlesX + (x + 1);
+                            this.springs.push(new SpringConstraint(
+                                this.particles[i], 
+                                this.particles[rightNeighbor], 
+                                this.stiffness
+                            ));
+                        }
+                        
+                        // Connect to bottom neighbor
+                        if (y < this.particlesY - 1) {
+                            const bottomNeighbor = (y + 1) * this.particlesX + x;
+                            this.springs.push(new SpringConstraint(
+                                this.particles[i], 
+                                this.particles[bottomNeighbor],
+                                this.stiffness
+                            ));
+                        }
+                        
+                        // Add diagonal connections for stability
+                        if (x < this.particlesX - 1 && y < this.particlesY - 1) {
+                            // Diagonal: bottom-right
+                            const diagonalNeighbor = (y + 1) * this.particlesX + (x + 1);
+                            this.springs.push(new SpringConstraint(
+                                this.particles[i], 
+                                this.particles[diagonalNeighbor],
+                                this.stiffness * 0.8,
+                                null
+                            ));
+                            
+                            // Anti-diagonal: bottom-left (if not at left edge)
+                            if (x > 0) {
+                                const antiDiagonalNeighbor = (y + 1) * this.particlesX + (x - 1);
+                                this.springs.push(new SpringConstraint(
+                                    this.particles[i], 
+                                    this.particles[antiDiagonalNeighbor],
+                                    this.stiffness * 0.8,
+                                    null
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+            
+            update(dt, gravity) {
+                // Update constraints multiple times for stability
+                const iterations = 3;
+                for (let i = 0; i < iterations; i++) {
+                    for (const spring of this.springs) {
+                        spring.update();
+                    }
+                }
+                
+                // Update particles
+                for (const particle of this.particles) {
+                    particle.update(dt, gravity);
+                }
+            }
+            
+            constrain(width, height) {
+                for (const particle of this.particles) {
+                    particle.constrain(width, height);
+                }
+            }
+            
+            setStiffness(stiffness) {
+                this.stiffness = stiffness;
+                for (const spring of this.springs) {
+                    spring.stiffness = stiffness;
+                }
+            }
+            
+            draw(ctx, showSprings = false) {
+                // Draw springs if enabled
+                if (showSprings) {
+                    for (const spring of this.springs) {
+                        spring.draw(ctx);
+                    }
+                }
+                
+                // Draw jellyfish body
+                this.drawJellyBody(ctx);
+                
+                // Draw particles for debugging
+                if (showSprings) {
+                    for (const particle of this.particles) {
+                        particle.draw(ctx);
+                    }
+                }
+            }
+            
+            drawJellyBody(ctx) {
+                // Get outer particles for the body shape
+                const points = [];
+                
+                // Add the outer particles in order to form the shape
+                // Top row
+                for (let x = 0; x < this.particlesX; x++) {
+                    points.push(this.particles[x]);
+                }
+                
+                // Right column (excluding top and bottom corners)
+                for (let y = 1; y < this.particlesY - 1; y++) {
+                    points.push(this.particles[y * this.particlesX + this.particlesX - 1]);
+                }
+                
+                // Bottom row (right to left)
+                for (let x = this.particlesX - 1; x >= 0; x--) {
+                    points.push(this.particles[(this.particlesY - 1) * this.particlesX + x]);
+                }
+                
+                // Left column (excluding bottom and top corners)
+                for (let y = this.particlesY - 2; y > 0; y--) {
+                    points.push(this.particles[y * this.particlesX]);
+                }
+                
+                // Draw the shape with gradient fill
+                ctx.beginPath();
+                ctx.moveTo(points[0].pos.x, points[0].pos.y);
+                
+                for (let i = 0; i < points.length; i++) {
+                    const current = points[i];
+                    const next = points[(i + 1) % points.length];
+                    
+                    // Use midpoint for control points for a smoother curve
+                    const midX = (current.pos.x + next.pos.x) / 2;
+                    const midY = (current.pos.y + next.pos.y) / 2;
+                    
+                    ctx.quadraticCurveTo(current.pos.x, current.pos.y, midX, midY);
+                }
+                
+                ctx.closePath();
+                
+                // Create gradient fill
+                const centerX = this.center.x;
+                const centerY = this.center.y;
+                const gradient = ctx.createRadialGradient(
+                    centerX, centerY, 0,
+                    centerX, centerY, this.width / 1.5
+                );
+                gradient.addColorStop(0, 'rgba(255, 180, 255, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(187, 134, 252, 0.7)');
+                gradient.addColorStop(1, 'rgba(103, 58, 183, 0.6)');
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Add a subtle glow effect
+                ctx.shadowColor = '#bb86fc';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = 'rgba(187, 134, 252, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            
+            getClosestParticle(x, y) {
+                let closest = null;
+                let minDist = Number.MAX_VALUE;
+                
+                for (const particle of this.particles) {
+                    const dx = particle.pos.x - x;
+                    const dy = particle.pos.y - y;
+                    const distSq = dx * dx + dy * dy;
+                    
+                    if (distSq < minDist) {
+                        minDist = distSq;
+                        closest = particle;
+                    }
+                }
+                
+                // Check if within a reasonable range
+                if (Math.sqrt(minDist) > 30) return null;
+                
+                return closest;
+            }
+        }
+
+        // Main application code
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('jellySim');
+            const ctx = canvas.getContext('2d');
+            
+            // Canvas setup
+            canvas.width = 800;
+            canvas.height = 600;
+            
+            // Settings
+            let gravity = 0.8;
+            let showDebug = false;
+            let grabbing = false;
+            let grabbedParticle = null;
+            let lastMousePos = { x: 0, y: 0 };
+            let stiffness = 0.2;
+            
+            // Create jelly
+            let jelly = new Jelly(canvas.width / 2, canvas.height / 2, 150, 150, 10, 10);
+            
+            // UI controls
+            const stiffnessSlider = document.getElementById('stiffness');
+            stiffnessSlider.addEventListener('input', (e) => {
+                stiffness = parseFloat(e.target.value);
+                jelly.setStiffness(stiffness);
+            });
+            
+            const gravitySlider = document.getElementById('gravity');
+            gravitySlider.addEventListener('input', (e) => {
+                gravity = parseFloat(e.target.value);
+            });
+            
+            const resetBtn = document.getElementById('resetBtn');
+            resetBtn.addEventListener('click', () => {
+                jelly = new Jelly(canvas.width / 2, canvas.height / 2, 150, 150, 10, 10);
+                jelly.setStiffness(stiffness);
+            });
+            
+            // Mouse interaction
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                // Find closest particle to mouse position
+                grabbedParticle = jelly.getClosestParticle(mouseX, mouseY);
+                
+                if (grabbedParticle) {
+                    grabbing = true;
+                    grabbedParticle.isGrabbed = true;
+                    lastMousePos = { x: mouseX, y: mouseY };
+                }
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                if (grabbing && grabbedParticle) {
+                    // Update particle position based on mouse movement
+                    grabbedParticle.pos.x = mouseX;
+                    grabbedParticle.pos.y = mouseY;
+                    
+                    // Calculate velocity for realistic throwing
+                    grabbedParticle.velocity.x = mouseX - lastMousePos.x;
+                    grabbedParticle.velocity.y = mouseY - lastMousePos.y;
+                    
+                    lastMousePos = { x: mouseX, y: mouseY };
+                }
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                if (grabbedParticle) {
+                    // Apply the current velocity to the particle's old position for momentum
+                    grabbedParticle.oldPos.x = grabbedParticle.pos.x - grabbedParticle.velocity.x;
+                    grabbedParticle.oldPos.y = grabbedParticle.pos.y - grabbedParticle.velocity.y;
+                    grabbedParticle.isGrabbed = false;
+                }
+                
+                grabbing = false;
+                grabbedParticle = null;
+            });
+            
+            // Touch support
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+                
+                grabbedParticle = jelly.getClosestParticle(touchX, touchY);
+                
+                if (grabbedParticle) {
+                    grabbing = true;
+                    grabbedParticle.isGrabbed = true;
+                    lastMousePos = { x: touchX, y: touchY };
+                }
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+                
+                if (grabbing && grabbedParticle) {
+                    grabbedParticle.pos.x = touchX;
+                    grabbedParticle.pos.y = touchY;
+                    
+                    grabbedParticle.velocity.x = touchX - lastMousePos.x;
+                    grabbedParticle.velocity.y = touchY - lastMousePos.y;
+                    
+                    lastMousePos = { x: touchX, y: touchY };
+                }
+            });
+            
+            canvas.addEventListener('touchend', () => {
+                if (grabbedParticle) {
+                    grabbedParticle.oldPos.x = grabbedParticle.pos.x - grabbedParticle.velocity.x;
+                    grabbedParticle.oldPos.y = grabbedParticle.pos.y - grabbedParticle.velocity.y;
+                    grabbedParticle.isGrabbed = false;
+                }
+                
+                grabbing = false;
+                grabbedParticle = null;
+            });
+            
+            // Debug mode toggle with 'D' key
+            document.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'd') {
+                    showDebug = !showDebug;
+                }
+            });
+            
+            // Animation loop
+            let lastTime = 0;
+            function animate(timestamp) {
+                const dt = timestamp - lastTime;
+                lastTime = timestamp;
+                
+                // Process physics only if a reasonable amount of time has passed
+                // and limit dt to prevent instability with large gaps
+                const frameTime = Math.min(dt, 30) / 1000;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update simulation
+                jelly.update(frameTime, gravity);
+                jelly.constrain(canvas.width, canvas.height);
+                
+                // Draw jelly
+                jelly.draw(ctx, showDebug);
+                
+                // Debug info
+                if (showDebug) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = '14px Arial';
+                    ctx.fillText(`Particles: ${jelly.particles.length}`, 10, 20);
+                    ctx.fillText(`Springs: ${jelly.springs.length}`, 10, 40);
+                    ctx.fillText(`FPS: ${Math.round(1000 / dt)}`, 10, 60);
+                    ctx.fillText(`Press 'D' to toggle debug view`, 10, 80);
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        });
+    </script>
+</body>
+</html>
