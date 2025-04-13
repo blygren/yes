@@ -1,0 +1,774 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Image Pixelator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --primary: #6c5ce7;
+        --accent: #00cec9;
+        --dark: #2d3436;
+        --light: #f5f6fa;
+        --card: #2f3542;
+      }
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        background-color: var(--dark);
+        color: var(--light);
+        font-family: 'Poppins', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+      
+      header {
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(45deg, var(--primary), var(--accent));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      
+      .container {
+        width: 100%;
+        max-width: 1000px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      
+      .controls {
+        background: var(--card);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+        transition: transform 0.3s ease;
+      }
+      
+      .controls:hover {
+        transform: translateY(-5px);
+      }
+      
+      .file-input-container {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      
+      #imageInput {
+        display: block;
+        margin: 10px auto;
+      }
+      
+      .file-label {
+        display: inline-block;
+        padding: 12px 24px;
+        background: linear-gradient(45deg, var(--primary), var(--accent));
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .file-label:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+      }
+      
+      label {
+        font-weight: 500;
+      }
+      
+      input[type="number"] {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 8px;
+        padding: 10px 15px;
+        width: 100px;
+      }
+      
+      button {
+        background: linear-gradient(45deg, var(--primary), var(--accent));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+      }
+      
+      button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+      }
+      
+      .canvas-container {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        background: var(--card);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      }
+      
+      canvas {
+        image-rendering: pixelated;
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+      
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        width: 100%;
+      }
+      
+      .setting-group {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      
+      .setting-group h3 {
+        margin-bottom: 10px;
+        font-size: 1rem;
+        color: var(--accent);
+      }
+      
+      .range-container {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+      
+      .range-container label {
+        display: flex;
+        justify-content: space-between;
+      }
+      
+      .range-container span {
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+      
+      input[type="range"] {
+        width: 100%;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+      }
+      
+      select {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 8px;
+        padding: 10px 15px;
+        width: 100%;
+        cursor: pointer;
+      }
+      
+      .action-row {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 15px;
+      }
+      
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--light);
+      }
+      
+      .btn-apply {
+        background: linear-gradient(45deg, #16a085, #2ecc71);
+      }
+      
+      /* Loading spinner */
+      .processing {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        z-index: 10;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      
+      .processing.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+      
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--accent);
+        animation: spin 1s ease-in-out infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        margin-left: 5px;
+        cursor: help;
+      }
+      
+      .tooltip::after {
+        content: "?";
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        font-size: 12px;
+      }
+      
+      .tooltip-text {
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--dark);
+        color: var(--light);
+        padding: 10px;
+        border-radius: 5px;
+        width: 200px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s;
+        z-index: 100;
+      }
+      
+      .tooltip:hover .tooltip-text {
+        opacity: 1;
+      }
+
+      /* New styles for extra effects */
+      .setting-group.extra {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .setting-group.extra h3 {
+        margin-bottom: 10px;
+        font-size: 1rem;
+        color: var(--accent);
+      }
+
+      /* New styles for Advanced Effects group */
+      .setting-group.advanced {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .setting-group.advanced h3 {
+        margin-bottom: 10px;
+        font-size: 1rem;
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Pixel Perfect</h1>
+      <p>Transform your images into pixel art</p>
+    </header>
+    
+    <div class="container">
+      <div class="controls">
+        <!-- Re-added file input container -->
+        <div class="file-input-container">
+          <input type="file" id="imageInput" accept="image/*" />
+          <label for="imageInput" class="file-label">Choose Image</label>
+        </div>
+        
+        <div class="settings-grid">
+          <div class="setting-group">
+            <h3>Pixelation</h3>
+            <div class="range-container">
+              <label for="pixelSizeInput">Pixel Size <span id="pixelSizeValue">10</span></label>
+              <input type="range" id="pixelSizeInput" value="10" min="1" max="50" />
+            </div>
+            
+            <div class="range-container">
+              <label for="sharpnessInput">Sharpness <span id="sharpnessValue">0</span></label>
+              <input type="range" id="sharpnessInput" value="0" min="0" max="10" />
+            </div>
+          </div>
+          
+          <div class="setting-group">
+            <h3>Color</h3>
+            <div class="range-container">
+              <label for="colorReduction">Color Reduction <span id="colorReductionValue">0</span></label>
+              <input type="range" id="colorReduction" value="0" min="0" max="8" />
+            </div>
+            
+            <div>
+              <label for="colorMode">Color Mode</label>
+              <select id="colorMode">
+                <option value="normal">Normal</option>
+                <option value="grayscale">Grayscale</option>
+                <option value="sepia">Sepia</option>
+                <option value="gameboy">GameBoy</option>
+                <option value="crt">CRT</option>
+                <!-- New pop art option -->
+                <option value="popart">Pop Art</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="setting-group">
+            <h3>Adjustments</h3>
+            <div class="range-container">
+              <label for="brightnessInput">Brightness <span id="brightnessValue">0</span></label>
+              <input type="range" id="brightnessInput" value="0" min="-100" max="100" />
+            </div>
+            
+            <div class="range-container">
+              <label for="contrastInput">Contrast <span id="contrastValue">0</span></label>
+              <input type="range" id="contrastInput" value="0" min="-100" max="100" />
+            </div>
+          </div>
+          
+          <div class="setting-group">
+            <h3>Effects</h3>
+            <div>
+              <label for="dither">Dithering</label>
+              <select id="dither">
+                <option value="none">None</option>
+                <option value="floyd-steinberg">Floyd-Steinberg</option>
+                <option value="ordered">Ordered</option>
+              </select>
+            </div>
+            
+            <div class="range-container">
+              <label for="noiseInput">Noise <span id="noiseValue">0</span></label>
+              <input type="range" id="noiseInput" value="0" min="0" max="50" />
+            </div>
+          </div>
+
+          <!-- New Extra Effects group -->
+          <div class="setting-group extra">
+            <h3>Extra Effects</h3>
+            <div class="range-container">
+              <label for="blurInput">Blur <span id="blurValue">0</span>px</label>
+              <input type="range" id="blurInput" value="0" min="0" max="5" step="0.5" />
+            </div>
+            <div class="range-container">
+              <label for="saturationInput">Saturation <span id="saturationValue">0</span>%</label>
+              <input type="range" id="saturationInput" value="0" min="-100" max="100" />
+            </div>
+            <div class="range-container">
+              <label for="hueInput">Hue Rotation <span id="hueValue">0</span>°</label>
+              <input type="range" id="hueInput" value="0" min="0" max="360" />
+            </div>
+            <div class="range-container">
+              <label for="invertCheckbox">Invert Colors</label>
+              <input type="checkbox" id="invertCheckbox" />
+            </div>
+          </div>
+
+          <!-- New Advanced Effects group -->
+          <div class="setting-group advanced">
+            <h3>Advanced Effects</h3>
+            <div class="range-container">
+              <label for="vignetteInput">Vignette <span id="vignetteValue">0</span>%</label>
+              <input type="range" id="vignetteInput" value="0" min="0" max="100" />
+            </div>
+            <div class="range-container">
+              <label for="glitchInput">Glitch <span id="glitchValue">0</span></label>
+              <input type="range" id="glitchInput" value="0" min="0" max="20" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="action-row">
+          <button id="resetBtn" class="btn-secondary">Reset Settings</button>
+          <button id="applyBtn" class="btn-apply">Apply Changes</button>
+          <button id="downloadBtn">Download</button>
+        </div>
+      </div>
+      
+      <div class="canvas-container">
+        <canvas id="pixelCanvas"></canvas>
+        <div class="processing" id="processingOverlay">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      const imageInput = document.getElementById('imageInput');
+      const canvas = document.getElementById('pixelCanvas');
+      const ctx = canvas.getContext('2d');
+      const pixelSizeInput = document.getElementById('pixelSizeInput');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const sharpnessInput = document.getElementById('sharpnessInput');
+      const colorReduction = document.getElementById('colorReduction');
+      const colorMode = document.getElementById('colorMode');
+      const brightnessInput = document.getElementById('brightnessInput');
+      const contrastInput = document.getElementById('contrastInput');
+      const ditherSelect = document.getElementById('dither');
+      const noiseInput = document.getElementById('noiseInput');
+      const resetBtn = document.getElementById('resetBtn');
+      const applyBtn = document.getElementById('applyBtn');
+      const processingOverlay = document.getElementById('processingOverlay');
+      
+      // New extra effects elements
+      const blurInput = document.getElementById('blurInput');
+      const saturationInput = document.getElementById('saturationInput');
+      const hueInput = document.getElementById('hueInput');
+      const invertCheckbox = document.getElementById('invertCheckbox');
+      
+      // New advanced effects elements
+      const vignetteInput = document.getElementById('vignetteInput');
+      const glitchInput = document.getElementById('glitchInput');
+      
+      // Add value displays for sliders
+      const sliders = document.querySelectorAll('input[type="range"]');
+      sliders.forEach(slider => {
+        const valueDisplay = document.getElementById(`${slider.id}Value`);
+        if (valueDisplay) {
+          valueDisplay.textContent = slider.value;
+          slider.addEventListener('input', () => {
+            valueDisplay.textContent = slider.value;
+          });
+        }
+      });
+      
+      // Store the original image for reprocessing
+      let originalImage = null;
+      
+      function showProcessing() {
+        processingOverlay.classList.add('active');
+      }
+      
+      function hideProcessing() {
+        processingOverlay.classList.remove('active');
+      }
+      
+      // Extend resetSettings to include extra effects
+      function resetSettings() {
+        pixelSizeInput.value = 10;
+        sharpnessInput.value = 0;
+        colorReduction.value = 0;
+        colorMode.value = 'normal';
+        brightnessInput.value = 0;
+        contrastInput.value = 0;
+        ditherSelect.value = 'none';
+        noiseInput.value = 0;
+        
+        // Update display values
+        document.getElementById('pixelSizeValue').textContent = '10';
+        document.getElementById('sharpnessValue').textContent = '0';
+        document.getElementById('colorReductionValue').textContent = '0';
+        document.getElementById('brightnessValue').textContent = '0';
+        document.getElementById('contrastValue').textContent = '0';
+        document.getElementById('noiseValue').textContent = '0';
+
+        blurInput.value = 0;
+        saturationInput.value = 0;
+        hueInput.value = 0;
+        invertCheckbox.checked = false;
+        document.getElementById('blurValue').textContent = '0';
+        document.getElementById('saturationValue').textContent = '0';
+        document.getElementById('hueValue').textContent = '0';
+        
+        vignetteInput.value = 0;
+        glitchInput.value = 0;
+        document.getElementById('vignetteValue').textContent = '0';
+        document.getElementById('glitchValue').textContent = '0';
+
+        if (originalImage) {
+          processImage(originalImage);
+        }
+      }
+
+      // Add value display handlers for new extra effects sliders
+      [blurInput, saturationInput, hueInput].forEach(slider => {
+        const valueDisplay = document.getElementById(`${slider.id}Value`);
+        if (valueDisplay) {
+          valueDisplay.textContent = slider.value;
+          slider.addEventListener('input', () => { valueDisplay.textContent = slider.value; });
+        }
+      });
+      
+      // Add a convolution-based sharpening function
+      function applySharpen(ctx, width, height, amount) {
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const output = ctx.createImageData(width, height);
+        const oData = output.data;
+        const s = amount; // sharpening factor
+        // 3x3 sharpen kernel: [0, -s, 0, -s, 1+4s, -s, 0, -s, 0]
+        const kernel = [0, -s, 0, -s, 1 + 4 * s, -s, 0, -s, 0];
+        const kSize = 3;
+        const half = Math.floor(kSize / 2);
+        for (let y = 0; y < height; y++){
+          for (let x = 0; x < width; x++){
+            let r = 0, g = 0, b = 0;
+            for (let ky = -half; ky <= half; ky++){
+              for (let kx = -half; kx <= half; kx++){
+                const posY = y + ky;
+                const posX = x + kx;
+                if (posY >= 0 && posY < height && posX >= 0 && posX < width) {
+                  const offset = (posY * width + posX) * 4;
+                  const weight = kernel[(ky + half) * kSize + (kx + half)];
+                  r += data[offset] * weight;
+                  g += data[offset + 1] * weight;
+                  b += data[offset + 2] * weight;
+                }
+              }
+            }
+            const i = (y * width + x) * 4;
+            oData[i] = Math.min(255, Math.max(0, r));
+            oData[i+1] = Math.min(255, Math.max(0, g));
+            oData[i+2] = Math.min(255, Math.max(0, b));
+            oData[i+3] = data[i+3];
+          }
+        }
+        return output;
+      }
+      
+      // New function: applyGlitchEffect
+      function applyGlitchEffect(ctx, canvas, amount) {
+        if (amount <= 0) return;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas, 0, 0);
+        const blockHeight = 5;
+        for (let y = 0; y < canvas.height; y += blockHeight) {
+          const shift = Math.floor(Math.random() * (amount * 2 + 1)) - amount;
+          ctx.drawImage(tempCanvas, 0, y, canvas.width, blockHeight,
+                        shift, y, canvas.width, blockHeight);
+        }
+      }
+
+      function processImage(img) {
+        showProcessing();
+        setTimeout(() => {
+          const pixelSize = parseInt(pixelSizeInput.value) || 10;
+          const sharpness = parseInt(sharpnessInput.value) || 0;
+          const brightnessLevel = parseInt(brightnessInput.value) || 0;
+          const contrastLevel = parseInt(contrastInput.value) || 0;
+          const noiseFactor = parseInt(noiseInput.value) || 0;
+          const maxWidth = 800, maxHeight = 600;
+          const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+
+          // Offscreen canvas for pixelation
+          const offScreenCanvas = document.createElement('canvas');
+          offScreenCanvas.width = Math.ceil(img.width / pixelSize);
+          offScreenCanvas.height = Math.ceil(img.height / pixelSize);
+          const offCtx = offScreenCanvas.getContext('2d');
+          offCtx.imageSmoothingEnabled = false;
+
+          // Adjustment canvas for processing
+          const adjustmentCanvas = document.createElement('canvas');
+          adjustmentCanvas.width = img.width;
+          adjustmentCanvas.height = img.height;
+          const adjustmentCtx = adjustmentCanvas.getContext('2d');
+          adjustmentCtx.drawImage(img, 0, 0);
+
+          // Apply brightness and contrast
+          if (brightnessLevel !== 0 || contrastLevel !== 0) {
+            const imageData = adjustmentCtx.getImageData(0, 0, adjustmentCanvas.width, adjustmentCanvas.height);
+            const data = imageData.data;
+            const factor = (259 * (contrastLevel + 255)) / (255 * (259 - contrastLevel));
+            for (let i = 0; i < data.length; i += 4) {
+              data[i] = Math.max(0, Math.min(255, data[i] + brightnessLevel));
+              data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + brightnessLevel));
+              data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + brightnessLevel));
+              if (contrastLevel !== 0) {
+                data[i] = Math.max(0, Math.min(255, factor * (data[i] - 128) + 128));
+                data[i + 1] = Math.max(0, Math.min(255, factor * (data[i + 1] - 128) + 128));
+                data[i + 2] = Math.max(0, Math.min(255, factor * (data[i + 2] - 128) + 128));
+              }
+            }
+            adjustmentCtx.putImageData(imageData, 0, 0);
+          }
+
+          // Apply color mode including pop art effect
+          if (colorMode.value !== 'normal') {
+            const imageData = adjustmentCtx.getImageData(0, 0, adjustmentCanvas.width, adjustmentCanvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i], g = data[i + 1], b = data[i + 2];
+              if (colorMode.value === 'grayscale') {
+                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                data[i] = data[i + 1] = data[i + 2] = gray;
+              } else if (colorMode.value === 'sepia') {
+                data[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
+                data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
+                data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
+              } else if (colorMode.value === 'gameboy') {
+                const gray = (r + g + b) / 3;
+                if (gray < 64) { data[i] = 15; data[i + 1] = 56; data[i + 2] = 15; }
+                else if (gray < 128) { data[i] = 48; data[i + 1] = 98; data[i + 2] = 48; }
+                else if (gray < 192) { data[i] = 139; data[i + 1] = 172; data[i + 2] = 15; }
+                else { data[i] = 155; data[i + 1] = 188; data[i + 2] = 15; }
+              } else if (colorMode.value === 'crt') {
+                const scanline = Math.floor(i / (adjustmentCanvas.width * 4)) % 3;
+                if (scanline === 0) { data[i + 1] *= 0.8; data[i + 2] *= 0.8; }
+                else if (scanline === 1) { data[i] *= 0.8; data[i + 2] *= 0.8; }
+                else { data[i] *= 0.8; data[i + 1] *= 0.8; }
+              } else if (colorMode.value === 'popart') {
+                data[i] = Math.floor(r / 64) * 64;
+                data[i + 1] = Math.floor(g / 64) * 64;
+                data[i + 2] = Math.floor(b / 64) * 64;
+              }
+            }
+            adjustmentCtx.putImageData(imageData, 0, 0);
+          }
+
+          // Apply noise if enabled
+          if (noiseFactor > 0) {
+            const imageData = adjustmentCtx.getImageData(0, 0, adjustmentCanvas.width, adjustmentCanvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const noise = (Math.random() - 0.5) * noiseFactor;
+              data[i] = Math.max(0, Math.min(255, data[i] + noise));
+              data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+              data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+            }
+            adjustmentCtx.putImageData(imageData, 0, 0);
+          }
+
+          // Draw the adjusted image onto the offscreen canvas for pixelation
+          offCtx.drawImage(adjustmentCanvas, 0, 0, offScreenCanvas.width, offScreenCanvas.height);
+
+          // Apply sharpening if enabled
+          if (sharpness > 0) {
+            const sharpened = applySharpen(offCtx, offScreenCanvas.width, offScreenCanvas.height, sharpness);
+            offCtx.putImageData(sharpened, 0, 0);
+          }
+
+          // Apply extra effects via canvas filter
+          const blurValue = parseFloat(blurInput.value) || 0;
+          const saturationValue = parseInt(saturationInput.value) || 0;
+          const hueRotation = parseInt(hueInput.value) || 0;
+          const invertValue = invertCheckbox.checked;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.imageSmoothingEnabled = false;
+          ctx.filter = `blur(${blurValue}px) saturate(${saturationValue + 100}%) invert(${invertValue ? 100 : 0}%) hue-rotate(${hueRotation}deg)`;
+          ctx.drawImage(offScreenCanvas, 0, 0, canvas.width, canvas.height);
+          ctx.filter = 'none';
+
+          // Optionally apply advanced effects (e.g., glitch)
+          const glitchAmount = parseInt(glitchInput.value) || 0;
+          if (glitchAmount > 0) {
+            applyGlitchEffect(ctx, canvas, glitchAmount);
+          }
+          
+          // Additional advanced effect like vignette can be added similarly
+
+          hideProcessing();
+        }, 100);
+      }
+
+      // Wire up the reset and apply buttons
+      resetBtn.addEventListener('click', resetSettings);
+      applyBtn.addEventListener('click', function() {
+        if (originalImage) processImage(originalImage);
+      });
+
+      // Real-time update listeners for all settings
+      const realTimeSettings = [
+        pixelSizeInput, sharpnessInput, colorReduction,
+        brightnessInput, contrastInput, noiseInput,
+        blurInput, saturationInput, hueInput
+      ];
+      realTimeSettings.forEach(input => {
+        input.addEventListener('input', () => { if (originalImage) processImage(originalImage); });
+      });
+      colorMode.addEventListener('change', () => { if (originalImage) processImage(originalImage); });
+      ditherSelect.addEventListener('change', () => { if (originalImage) processImage(originalImage); });
+      invertCheckbox.addEventListener('change', () => { if (originalImage) processImage(originalImage); });
+
+      // Add download button functionality
+      downloadBtn.addEventListener('click', function() {
+        const link = document.createElement('a');
+        link.download = 'pixelated.png';
+        link.href = canvas.toDataURL();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        console.log('File selected:', file ? file.name : 'None');  // Debug log
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const img = new Image();
+          img.onload = function() {
+            originalImage = img;
+            processImage(originalImage);
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    </script>
+  </body>
+</html>
