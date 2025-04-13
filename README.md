@@ -27,7 +27,7 @@ Smaller Experiments
 
 [Marshmallow Softbody](https://blygren.github.io/yes/marshmallow-simulation.html)
 
-[Jelly Simulation](https://blygren.github.io/yes/index.html)
+[Jelly Simulation](https://blygren.github.io/yes/Jelly.html)
 
 
 
