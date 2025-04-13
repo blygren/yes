@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Marshmallow Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 1px solid #333;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            width: 200px;
+        }
+        .slider-container {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 3px;
+        }
+        .value-display {
+            display: inline-block;
+            width: 30px;
+            text-align: right;
+        }
+        .background-controls {
+            border-top: 1px solid #ccc;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <button id="reset">Reset</button>
+        <button id="squish">Squish</button>
+        
+        <div class="slider-container">
+            <label for="points-slider">Points: <span id="points-value" class="value-display">16</span></label>
+            <input type="range" id="points-slider" min="8" max="64" value="16" step="4">
+        </div>
+        
+        <div class="slider-container">
+            <label for="radius-slider">Size: <span id="radius-value" class="value-display">80</span></label>
+            <input type="range" id="radius-slider" min="30" max="150" value="80" step="5">
+        </div>
+        
+        <div class="slider-container">
+            <label for="stiffness-slider">Stiffness: <span id="stiffness-value" class="value-display">0.03</span></label>
+            <input type="range" id="stiffness-slider" min="1" max="10" value="3" step="1">
+        </div>
+
+        <div class="background-controls">
+            <div class="slider-container">
+                <label for="particles-slider">Particles: <span id="particles-value" class="value-display">50</span></label>
+                <input type="range" id="particles-slider" min="0" max="150" value="50" step="10">
+            </div>
+            <div class="slider-container">
+                <label for="theme-select">Theme:</label>
+                <select id="theme-select">
+                    <option value="space">Space</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="underwater">Underwater</option>
+                    <option value="neon">Neon</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Basic setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth - 40;
+            canvas.height = window.innerHeight - 40;
+        }
+        resizeCanvas();
+        
+        // Simple physics constants
+        const GRAVITY = 0.3;
+        const FRICTION = 0.99;
+        const BOUNCE = 0.7;
+        
+        // Marshmallow configuration - now made adjustable via UI
+        let NUM_POINTS = 16;
+        let RADIUS = 80;
+        let STIFFNESS_FACTOR = 0.03;
+        
+        // Point class - simplified
+        class Point {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.prevX = x;
+                this.prevY = y;
+                this.isFixed = false;
+            }
+            
+            update() {
+                if (this.isFixed) return;
+                
+                // Calculate velocity
+                const velocityX = (this.x - this.prevX) * FRICTION;
+                const velocityY = (this.y - this.prevY) * FRICTION;
+                
+                // Save current position
+                this.prevX = this.x;
+                this.prevY = this.y;
+                
+                // Apply forces
+                this.x += velocityX;
+                this.y += velocityY + GRAVITY;
+                
+                // Boundary checks
+                if (this.y > canvas.height - 10) {
+                    this.y = canvas.height - 10;
+                    this.prevY = this.y + (this.y - this.prevY) * BOUNCE;
+                }
+                
+                if (this.x > canvas.width - 10) {
+                    this.x = canvas.width - 10;
+                    this.prevX = this.x + (this.x - this.prevX) * BOUNCE;
+                } else if (this.x < 10) {
+                    this.x = 10;
+                    this.prevX = this.x + (this.x - this.prevX) * BOUNCE;
+                }
+            }
+        }
+        
+        // Link between points
+        class Link {
+            constructor(p1, p2, targetLength, stiffness = 0.2) {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.targetLength = targetLength;
+                this.stiffness = stiffness;
+            }
+            
+            update() {
+                // Get distances
+                const dx = this.p2.x - this.p1.x;
+                const dy = this.p2.y - this.p1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance === 0) return; // Avoid division by zero
+                
+                // Calculate force
+                const force = (distance - this.targetLength) / distance * this.stiffness;
+                
+                const forceX = dx * force;
+                const forceY = dy * force;
+                
+                // Apply forces
+                if (!this.p1.isFixed) {
+                    this.p1.x += forceX;
+                    this.p1.y += forceY;
+                }
+                
+                if (!this.p2.isFixed) {
+                    this.p2.x -= forceX;
+                    this.p2.y -= forceY;
+                }
+            }
+        }
+        
+        // Create marshmallow
+        function createMarshmallow() {
+            const points = [];
+            const links = [];
+            
+            // Create center point
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 3;
+            const center = new Point(centerX, centerY);
+            points.push(center);
+            
+            // Create outer points
+            for (let i = 0; i < NUM_POINTS; i++) {
+                const angle = (i / NUM_POINTS) * Math.PI * 2;
+                const x = centerX + Math.cos(angle) * RADIUS;
+                const y = centerY + Math.sin(angle) * RADIUS;
+                points.push(new Point(x, y));
+            }
+            
+            // Connect points with links
+            for (let i = 1; i <= NUM_POINTS; i++) {
+                // Connect to center
+                links.push(new Link(points[0], points[i], RADIUS, STIFFNESS_FACTOR));
+                
+                // Connect to adjacent points
+                links.push(new Link(points[i], points[i === NUM_POINTS ? 1 : i + 1], 
+                                    2 * Math.PI * RADIUS / NUM_POINTS, STIFFNESS_FACTOR * 1.7));
+                
+                // Connect to opposite points
+                const oppositeIdx = Math.floor(((i + NUM_POINTS/2 - 1) % NUM_POINTS) + 1);
+                links.push(new Link(points[i], points[oppositeIdx], RADIUS * 2, STIFFNESS_FACTOR * 0.33));
+                
+                // Add extra cross-connections for stability with many points
+                if (NUM_POINTS > 16) {
+                    const quarterIdx = Math.floor(((i + NUM_POINTS/4 - 1) % NUM_POINTS) + 1);
+                    links.push(new Link(points[i], points[quarterIdx], RADIUS * 1.4, STIFFNESS_FACTOR * 0.5));
+                }
+            }
+            
+            return { points, links };
+        }
+        
+        // Create marshmallow
+        let marshmallow = createMarshmallow();
+        
+        // Background configuration
+        let particleCount = 50;
+        let currentTheme = 'space';
+        const themes = {
+            space: {
+                bgColor1: '#0f0c29',
+                bgColor2: '#302b63',
+                bgColor3: '#24243e',
+                particleColors: ['#ffffff', '#f8f8ff', '#e6e6fa', '#b0c4de', '#4169e1'],
+                particleSize: [0.5, 3]
+            },
+            sunset: {
+                bgColor1: '#fc466b',
+                bgColor2: '#ff8c00',
+                bgColor3: '#ffdd3c',
+                particleColors: ['#ffffff', '#ffcc00', '#ff6600', '#ff3300'],
+                particleSize: [1, 4]
+            },
+            underwater: {
+                bgColor1: '#0f2027',
+                bgColor2: '#203a43',
+                bgColor3: '#2c5364',
+                particleColors: ['#48d1cc', '#00ffff', '#7fffd4', '#20b2aa'],
+                particleSize: [2, 6]
+            },
+            neon: {
+                bgColor1: '#000000',
+                bgColor2: '#3d0066',
+                bgColor3: '#220033',
+                particleColors: ['#ff00ff', '#00ffff', '#ff3399', '#66ff00', '#ffff00'],
+                particleSize: [0.5, 2]
+            }
+        };
+        
+        // Background particles
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                const theme = themes[currentTheme];
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * (theme.particleSize[1] - theme.particleSize[0]) + theme.particleSize[0];
+                this.speedX = (Math.random() - 0.5) * 0.8;
+                this.speedY = (Math.random() - 0.5) * 0.8;
+                this.color = theme.particleColors[Math.floor(Math.random() * theme.particleColors.length)];
+                this.opacity = Math.random() * 0.7 + 0.3;
+                this.blurAmount = Math.random() * 2 + 1;
+            }
+            
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // Bounce off edges with slight randomization
+                if (this.x < 0 || this.x > canvas.width) {
+                    this.speedX *= -1;
+                    this.speedX += (Math.random() - 0.5) * 0.2;
+                }
+                if (this.y < 0 || this.y > canvas.height) {
+                    this.speedY *= -1;
+                    this.speedY += (Math.random() - 0.5) * 0.2;
+                }
+                
+                // Occasionally change speed slightly
+                if (Math.random() < 0.01) {
+                    this.speedX += (Math.random() - 0.5) * 0.1;
+                    this.speedY += (Math.random() - 0.5) * 0.1;
+                }
+                
+                // Limit max speed
+                this.speedX = Math.max(Math.min(this.speedX, 1), -1);
+                this.speedY = Math.max(Math.min(this.speedY, 1), -1);
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.filter = `blur(${this.blurAmount}px)`;
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        // Create particles
+        const particles = [];
+        function createParticles() {
+            particles.length = 0;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+        createParticles();
+        
+        // Background animation properties
+        let animationTime = 0;
+        
+        // Draw animated background
+        function drawBackground() {
+            animationTime += 0.005;
+            const theme = themes[currentTheme];
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, theme.bgColor1);
+            gradient.addColorStop(0.5, theme.bgColor2);
+            gradient.addColorStop(1, theme.bgColor3);
+            
+            // Fill background
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw animated wave patterns
+            if (currentTheme === 'underwater') {
+                drawWaves();
+            } else if (currentTheme === 'space') {
+                drawStars();
+            } else if (currentTheme === 'neon') {
+                drawGrid();
+            }
+            
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+        }
+        
+        // Draw wave pattern for underwater theme
+        function drawWaves() {
+            ctx.save();
+            ctx.globalAlpha = 0.1;
+            ctx.strokeStyle = '#48d1cc';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                for (let x = 0; x < canvas.width; x += 10) {
+                    const frequency = 0.01 + i * 0.005;
+                    const amplitude = 20 + i * 15;
+                    const y = Math.sin((x * frequency) + animationTime) * amplitude + 
+                              canvas.height / 2 + i * 100;
+                    
+                    if (x === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        // Draw stars for space theme
+        function drawStars() {
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const size = Math.random() * 1.5;
+                const opacity = Math.random() * 0.5 + 0.5;
+                
+                ctx.save();
+                ctx.fillStyle = 'white';
+                ctx.globalAlpha = opacity;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add occasional twinkle effect
+                if (Math.random() > 0.97) {
+                    ctx.globalAlpha = Math.random() * 0.7 + 0.3;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+        
+        // Draw grid for neon theme
+        function drawGrid() {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.2;
+            
+            // Horizontal lines
+            for (let y = 0; y < canvas.height; y += 20) {
+                ctx.strokeStyle = '#0ff';
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Vertical lines
+            for (let x = 0; x < canvas.width; x += 20) {
+                ctx.strokeStyle = '#f0f';
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+        
+        // Animation loop
+        function update() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw awesome background first
+            drawBackground();
+            
+            // Update physics
+            for (let i = 0; i < 5; i++) {
+                marshmallow.links.forEach(link => link.update());
+            }
+            
+            marshmallow.points.forEach(point => point.update());
+            
+            // Draw shadow with better transparency for all themes
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            for (let i = 1; i <= NUM_POINTS; i++) {
+                const point = marshmallow.points[i];
+                if (i === 1) {
+                    ctx.moveTo(point.x, canvas.height - 5);
+                } else {
+                    ctx.lineTo(point.x, canvas.height - 5);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw marshmallow body
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.strokeStyle = 'rgba(200, 200, 200, 0.8)';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            for (let i = 1; i <= NUM_POINTS; i++) {
+                const point = marshmallow.points[i];
+                if (i === 1) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            requestAnimationFrame(update);
+        }
+        
+        // Mouse interaction
+        let draggedPoint = null;
+        
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // Find closest point
+            let closestPoint = null;
+            let minDistance = Infinity;
+            
+            marshmallow.points.forEach(point => {
+                const dx = mouseX - point.x;
+                const dy = mouseY - point.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                if (distance < minDistance && distance < RADIUS) {
+                    minDistance = distance;
+                    closestPoint = point;
+                }
+            });
+            
+            draggedPoint = closestPoint;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (!draggedPoint) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            draggedPoint.x = mouseX;
+            draggedPoint.y = mouseY;
+            draggedPoint.prevX = mouseX;
+            draggedPoint.prevY = mouseY;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            draggedPoint = null;
+        });
+        
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            const touchY = e.touches[0].clientY - rect.top;
+            
+            // Find closest point
+            let closestPoint = null;
+            let minDistance = Infinity;
+            
+            marshmallow.points.forEach(point => {
+                const dx = touchX - point.x;
+                const dy = touchY - point.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                if (distance < minDistance && distance < RADIUS) {
+                    minDistance = distance;
+                    closestPoint = point;
+                }
+            });
+            
+            draggedPoint = closestPoint;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!draggedPoint) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            const touchY = e.touches[0].clientY - rect.top;
+            
+            draggedPoint.x = touchX;
+            draggedPoint.y = touchY;
+            draggedPoint.prevX = touchX;
+            draggedPoint.prevY = touchY;
+        });
+        
+        canvas.addEventListener('touchend', () => {
+            draggedPoint = null;
+        });
+        
+        // Button controls
+        document.getElementById('reset').addEventListener('click', () => {
+            marshmallow = createMarshmallow();
+        });
+        
+        document.getElementById('squish').addEventListener('click', () => {
+            marshmallow.points.forEach(point => {
+                if (point !== marshmallow.points[0]) { // Skip center point
+                    point.prevY -= 10; // Push points upward
+                    point.prevX += (Math.random() - 0.5) * 10; // Random x movement
+                }
+            });
+        });
+        
+        // Slider controls
+        document.getElementById('points-slider').addEventListener('input', function() {
+            NUM_POINTS = parseInt(this.value);
+            document.getElementById('points-value').textContent = NUM_POINTS;
+            marshmallow = createMarshmallow();
+        });
+        
+        document.getElementById('radius-slider').addEventListener('input', function() {
+            RADIUS = parseInt(this.value);
+            document.getElementById('radius-value').textContent = RADIUS;
+            marshmallow = createMarshmallow();
+        });
+        
+        document.getElementById('stiffness-slider').addEventListener('input', function() {
+            STIFFNESS_FACTOR = parseInt(this.value) / 100;
+            document.getElementById('stiffness-value').textContent = STIFFNESS_FACTOR.toFixed(2);
+            marshmallow = createMarshmallow();
+        });
+
+        // Add background controls
+        document.getElementById('particles-slider').addEventListener('input', function() {
+            particleCount = parseInt(this.value);
+            document.getElementById('particles-value').textContent = particleCount;
+            createParticles();
+        });
+        
+        document.getElementById('theme-select').addEventListener('change', function() {
+            currentTheme = this.value;
+            createParticles(); // Recreate particles for new theme
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const oldCenterX = canvas.width / 2;
+            const oldCenterY = canvas.height / 3;
+            
+            resizeCanvas();
+            
+            const newCenterX = canvas.width / 2;
+            const newCenterY = canvas.height / 3;
+            
+            // Move all points to adjust for the new center
+            const dx = newCenterX - oldCenterX;
+            const dy = newCenterY - oldCenterY;
+            
+            marshmallow.points.forEach(point => {
+                point.x += dx;
+                point.y += dy;
+                point.prevX += dx;
+                point.prevY += dy;
+            });
+        });
+        
+        // Start animation
+        update();
+    </script>
+</body>
+</html>
