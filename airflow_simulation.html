@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airflow Simulation</title>
+    <style>
+        :root {
+            /* Light theme variables */
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #d1d9e6;
+            --btn-bg: #4CAF50;
+            --btn-hover: #45a049;
+            --btn-selected: #2E7D32;
+            --shadow: rgba(0,0,0,0.1);
+            --control-bg: #e9ecef;
+            --canvas-bg: #ffffff;
+        }
+        
+        [data-theme="dark"] {
+            /* Dark theme variables */
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333333;
+            --btn-bg: #2E7D32;
+            --btn-hover: #388E3C;
+            --btn-selected: #4CAF50;
+            --shadow: rgba(0,0,0,0.3);
+            --control-bg: #2d2d2d;
+            --canvas-bg: #1a1a1a;
+        }
+        
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1, h2, h3 {
+            text-align: center;
+            color: var(--text-color);
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px var(--shadow);
+            margin-bottom: 20px;
+            padding: 15px;
+            overflow: hidden;
+        }
+        
+        .simulation-area {
+            position: relative;
+        }
+        
+        canvas {
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--canvas-bg);
+            box-shadow: 0 0 10px var(--shadow);
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 280px;
+            padding: 15px;
+            background-color: var(--control-bg);
+            border-radius: 8px;
+        }
+        
+        .control-group {
+            margin: 15px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group-title {
+            width: 100%;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            background-color: var(--btn-bg);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        button:hover {
+            background-color: var(--btn-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+        
+        button.selected {
+            background-color: var(--btn-selected);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+            transform: translateY(1px);
+        }
+        
+        .info-panel {
+            padding: 15px;
+            background-color: var(--control-bg);
+            border-radius: 8px;
+        }
+        
+        label {
+            margin-right: 10px;
+            user-select: none;
+        }
+        
+        input[type="range"] {
+            width: 150px;
+            height: 6px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 10px;
+        }
+        
+        .slider-value {
+            width: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 15px;
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-container {
+                flex-direction: column;
+            }
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        /* Toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-left: 10px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--btn-selected);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 2px 8px var(--shadow);
+            border: 1px solid var(--border-color);
+            font-size: 0.9em;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+        
+        .data-panel {
+            flex: 1;
+            min-width: 280px;
+            padding: 15px;
+            background-color: var(--control-bg);
+            border-radius: 8px;
+        }
+        
+        .data-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .data-label {
+            font-weight: bold;
+        }
+        
+        .rotation-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Airflow Simulation</h1>
+        
+        <div class="card controls">
+            <div class="control-group">
+                <div class="control-group-title">
+                    Theme
+                    <div class="tooltip">
+                        <span class="icon">ℹ️</span>
+                        <span class="tooltip-text">Switch between light and dark mode</span>
+                    </div>
+                </div>
+                <div class="checkbox-container">
+                    <span>Light</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Dark</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-group-title">
+                    Objects
+                    <div class="tooltip">
+                        <span class="icon">ℹ️</span>
+                        <span class="tooltip-text">Select an object type to place on the canvas</span>
+                    </div>
+                </div>
+                <button id="rect-btn" title="Draw a rectangle">Rectangle</button>
+                <button id="circle-btn" title="Draw a circle">Circle</button>
+                <button id="airfoil-btn" title="Draw an airfoil">Airfoil</button>
+                <button id="triangle-btn" title="Draw a triangle">Triangle</button>
+                <button id="polygon-btn" title="Draw a custom polygon">Polygon</button>
+                <button id="erase-btn" title="Erase objects">Eraser</button>
+                <button id="clear-btn" title="Clear all objects">Clear All</button>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-group-title">
+                    Simulation Controls
+                    <div class="tooltip">
+                        <span class="icon">ℹ️</span>
+                        <span class="tooltip-text">Adjust simulation parameters</span>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <label for="speed-slider">Wind Speed:</label>
+                    <input type="range" id="speed-slider" min="1" max="10" value="5">
+                    <span class="slider-value" id="speed-value">5</span>
+                </div>
+                
+                <div id="rotation-controls" class="rotation-control hidden">
+                    <label for="rotation-slider">Rotation:</label>
+                    <input type="range" id="rotation-slider" min="0" max="359" value="0">
+                    <span class="slider-value" id="rotation-value">0°</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-group-title">
+                    Visualization
+                    <div class="tooltip">
+                        <span class="icon">ℹ️</span>
+                        <span class="tooltip-text">Toggle different visualization methods</span>
+                    </div>
+                </div>
+                <button id="toggleVectors" title="Show/hide velocity vectors">Vectors</button>
+                <button id="togglePressure" title="Show/hide pressure field">Pressure</button>
+                <button id="toggleParticles" title="Show/hide particle animation">Particles</button>
+                <button id="toggleStreamlines" title="Show/hide streamlines">Streamlines</button>
+                <button id="toggleVorticity" title="Show/hide vorticity">Vorticity</button>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-group-title">
+                    Presets
+                    <div class="tooltip">
+                        <span class="icon">ℹ️</span>
+                        <span class="tooltip-text">Load predefined scenarios</span>
+                    </div>
+                </div>
+                <button id="preset-empty" class="preset-btn" title="Clear simulation">Empty Field</button>
+                <button id="preset-obstacle" class="preset-btn" title="Simple obstacle">Simple Obstacle</button>
+                <button id="preset-wing" class="preset-btn" title="Airfoil demonstration">Wing Profile</button>
+                <button id="preset-tunnel" class="preset-btn" title="Wind tunnel setup">Wind Tunnel</button>
+            </div>
+        </div>
+        
+        <div class="simulation-area card">
+            <canvas id="simulationCanvas" width="800" height="400"></canvas>
+        </div>
+        
+        <div class="two-columns">
+            <div class="info-panel card">
+                <h3>Scientific Information</h3>
+                <p>This simulation demonstrates basic principles of fluid dynamics and aerodynamics:</p>
+                <ul>
+                    <li><strong>Pressure Distribution:</strong> Higher pressure (red) forms at the leading edge of objects</li>
+                    <li><strong>Flow Separation:</strong> Notice how airflow separates around objects</li>
+                    <li><strong>Wake Formation:</strong> Turbulence forms behind objects (blue region)</li>
+                    <li><strong>Vorticity:</strong> Measure of local rotation in the fluid flow</li>
+                </ul>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: rgb(255,0,0);"></div>
+                        <span>High Pressure</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: rgb(255,255,255);"></div>
+                        <span>Medium Pressure</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: rgb(0,0,255);"></div>
+                        <span>Low Pressure</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(to right, yellow, red);"></div>
+                        <span>Vorticity</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="data-panel card">
+                <h3>Aerodynamic Metrics</h3>
+                <div class="data-group">
+                    <span class="data-label">Reynolds Number:</span>
+                    <span id="reynolds-value">-</span>
+                </div>
+                <div class="data-group">
+                    <span class="data-label">Drag Force:</span>
+                    <span id="drag-value">-</span>
+                </div>
+                <div class="data-group">
+                    <span class="data-label">Lift Force:</span>
+                    <span id="lift-value">-</span>
+                </div>
+                <div class="data-group">
+                    <span class="data-label">Pressure Coefficient:</span>
+                    <span id="pressure-coef-value">-</span>
+                </div>
+                <div class="data-group">
+                    <span class="data-label">Wake Size:</span>
+                    <span id="wake-value">-</span>
+                </div>
+                <div class="data-group">
+                    <span class="data-label">Flow Velocity (avg):</span>
+                    <span id="velocity-value">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulation constants
+        const GRID_SIZE = 10;
+        const ITERATIONS = 16;
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 400;
+        
+        // Simulation variables
+        let windSpeed = 5;
+        let currentTool = 'rect';
+        let showVectors = true;
+        let showPressure = true;
+        let showParticles = false;
+        let showStreamlines = false;
+        let showVorticity = false;
+        let objects = [];
+        let isDragging = false;
+        let isDrawingPolygon = false;
+        let polygonPoints = [];
+        let startPoint = { x: 0, y: 0 };
+        let endPoint = { x: 0, y: 0 };
+        let selectedObjectIndex = -1;
+        
+        // Fluid simulation grid
+        let velocityField = [];
+        let pressureField = [];
+        let densityField = [];
+        let vorticityField = [];
+        
+        // Particle system
+        let particles = [];
+        const MAX_PARTICLES = 300;
+        
+        // Get canvas and context
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Initialize fields
+        function initializeFields() {
+            velocityField = [];
+            pressureField = [];
+            densityField = [];
+            vorticityField = [];
+            
+            const cols = Math.ceil(CANVAS_WIDTH / GRID_SIZE);
+            const rows = Math.ceil(CANVAS_HEIGHT / GRID_SIZE);
+            
+            for (let y = 0; y < rows; y++) {
+                velocityField[y] = [];
+                pressureField[y] = [];
+                densityField[y] = [];
+                vorticityField[y] = [];
+                
+                for (let x = 0; x < cols; x++) {
+                    velocityField[y][x] = { x: windSpeed, y: 0 };
+                    pressureField[y][x] = 0;
+                    densityField[y][x] = 0;
+                    vorticityField[y][x] = 0;
+                }
+            }
+        }
+        
+        // Update simulation
+        function updateSimulation() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            
+            // Reset fields
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    velocityField[y][x] = { x: windSpeed, y: 0 };
+                    pressureField[y][x] = 0;
+                    vorticityField[y][x] = 0;
+                }
+            }
+            
+            // Apply object influence on velocity field
+            objects.forEach(obj => {
+                applyObjectInfluence(obj);
+            });
+            
+            // Calculate pressure field based on velocity divergence
+            calculatePressureField();
+            
+            // Apply pressure forces to velocity field
+            applyPressureForces();
+            
+            // Perform diffusion and advection for smoother flow
+            diffuseVelocityField();
+            
+            // Calculate vorticity field
+            calculateVorticityField();
+            
+            // Update particles
+            if (showParticles) {
+                updateParticles();
+            }
+            
+            // Calculate aerodynamic metrics
+            calculateAerodynamicMetrics();
+        }
+        
+        function calculatePressureField() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            
+            for (let y = 1; y < rows - 1; y++) {
+                for (let x = 1; x < cols - 1; x++) {
+                    // Calculate divergence of velocity field
+                    const divergence = 
+                        (velocityField[y][x+1].x - velocityField[y][x-1].x) +
+                        (velocityField[y+1][x].y - velocityField[y-1][x].y);
+                    pressureField[y][x] = -0.5 * divergence;
+                }
+            }
+            
+            // Set boundary conditions
+            for (let y = 0; y < rows; y++) {
+                pressureField[y][0] = pressureField[y][1];
+                pressureField[y][cols-1] = pressureField[y][cols-2];
+            }
+            for (let x = 0; x < cols; x++) {
+                pressureField[0][x] = pressureField[1][x];
+                pressureField[rows-1][x] = pressureField[rows-2][x];
+            }
+        }
+        
+        function applyPressureForces() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            for (let y = 1; y < rows - 1; y++) {
+                for (let x = 1; x < cols - 1; x++) {
+                    // Skip cells that intersect with an object
+                    let isObject = false;
+                    for (const obj of objects) {
+                        if (intersectsObject(x * GRID_SIZE, y * GRID_SIZE, obj)) {
+                            isObject = true;
+                            break;
+                        }
+                    }
+                    if (isObject) continue;
+                    
+                    // Apply pressure gradient and reintroduce wind force
+                    velocityField[y][x].x -= 0.5 * (pressureField[y][x+1] - pressureField[y][x-1]);
+                    velocityField[y][x].y -= 0.5 * (pressureField[y+1][x] - pressureField[y-1][x]);
+                    velocityField[y][x].x = 0.9 * velocityField[y][x].x + 0.1 * windSpeed;
+                }
+            }
+        }
+        
+        function diffuseVelocityField() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            const diffusionFactor = 0.05;  // Controls how much velocities spread
+            
+            // Create a temporary copy of the velocity field
+            let newVelocityField = [];
+            for (let y = 0; y < rows; y++) {
+                newVelocityField[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    newVelocityField[y][x] = { 
+                        x: velocityField[y][x].x,
+                        y: velocityField[y][x].y
+                    };
+                }
+            }
+            
+            // Apply diffusion by averaging with neighbors
+            for (let y = 1; y < rows - 1; y++) {
+                for (let x = 1; x < cols - 1; x++) {
+                    // Skip diffusion for cells that intersect with objects
+                    let isObject = false;
+                    for (const obj of objects) {
+                        if (intersectsObject(x * GRID_SIZE, y * GRID_SIZE, obj)) {
+                            isObject = true;
+                            break;
+                        }
+                    }
+                    if (isObject) continue;
+                    
+                    // Calculate diffused velocity by averaging with neighboring cells
+                    const centerWeight = 1 - 4 * diffusionFactor;
+                    const neighborWeight = diffusionFactor;
+                    
+                    newVelocityField[y][x].x = centerWeight * velocityField[y][x].x + 
+                        neighborWeight * (
+                            velocityField[y][x+1].x + 
+                            velocityField[y][x-1].x + 
+                            velocityField[y+1][x].x + 
+                            velocityField[y-1][x].x
+                        );
+                        
+                    newVelocityField[y][x].y = centerWeight * velocityField[y][x].y + 
+                        neighborWeight * (
+                            velocityField[y][x+1].y + 
+                            velocityField[y][x-1].y + 
+                            velocityField[y+1][x].y + 
+                            velocityField[y-1][x].y
+                        );
+                }
+            }
+            
+            // Update the velocity field with diffused values
+            velocityField = newVelocityField;
+        }
+        
+        function calculateVorticityField() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            
+            for (let y = 1; y < rows - 1; y++) {
+                for (let x = 1; x < cols - 1; x++) {
+                    // Vorticity is the curl of the velocity field
+                    // In 2D: curl = dVy/dx - dVx/dy
+                    const dVydx = (velocityField[y][x+1].y - velocityField[y][x-1].y) / (2 * GRID_SIZE);
+                    const dVxdy = (velocityField[y+1][x].x - velocityField[y-1][x].x) / (2 * GRID_SIZE);
+                    vorticityField[y][x] = dVydx - dVxdy;
+                }
+            }
+        }
+        
+        function applyObjectInfluence(obj) {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const gridX = x * GRID_SIZE;
+                    const gridY = y * GRID_SIZE;
+                    
+                    // Check if grid cell intersects with object
+                    if (intersectsObject(gridX, gridY, obj)) {
+                        // Object boundary - zero velocity
+                        velocityField[y][x] = { x: 0, y: 0 };
+                        
+                        // Calculate pressure based on orientation to wind
+                        // This is simplified - in reality would need proper CFD
+                        if (x > 0 && velocityField[y][x-1].x > 0) {
+                            // Leading edge - high pressure
+                            pressureField[y][x-1] = 1;
+                        }
+                        if (x < cols-1) {
+                            // Trailing edge - low pressure
+                            pressureField[y][x+1] = -1;
+                        }
+                    }
+                }
+            }
+            
+            // Adjust for object rotation if applicable
+            if (obj.rotation && obj.rotation !== 0) {
+                // Apply rotation transformations when checking for intersections
+            }
+        }
+        
+        function intersectsObject(gridX, gridY, obj) {
+            if (obj.type === 'rect') {
+                if (obj.rotation && obj.rotation !== 0) {
+                    return intersectsRotatedRect(gridX, gridY, obj);
+                }
+                return (
+                    gridX < obj.x + obj.width &&
+                    gridX + GRID_SIZE > obj.x &&
+                    gridY < obj.y + obj.height &&
+                    gridY + GRID_SIZE > obj.y
+                );
+            } else if (obj.type === 'circle') {
+                const centerX = obj.x + obj.radius;
+                const centerY = obj.y + obj.radius;
+                const distance = Math.sqrt(
+                    Math.pow(gridX + GRID_SIZE/2 - centerX, 2) +
+                    Math.pow(gridY + GRID_SIZE/2 - centerY, 2)
+                );
+                return distance < obj.radius;
+            } else if (obj.type === 'airfoil') {
+                const xRel = (gridX - obj.x) / obj.width;
+                const yRel = (gridY - obj.y) / obj.height;
+                
+                if (xRel < 0 || xRel > 1 || yRel < 0 || yRel > 1) return false;
+                
+                // Curve function for airfoil shape
+                const curve = 0.1 * Math.sin(Math.PI * xRel);
+                const thickness = 0.15 * (1 - Math.pow(2*xRel-1, 2));
+                const upper = 0.5 + curve + thickness/2;
+                const lower = 0.5 + curve - thickness/2;
+                
+                return yRel >= lower && yRel <= upper;
+            } else if (obj.type === 'triangle') {
+                return pointInTriangle(
+                    gridX + GRID_SIZE/2, 
+                    gridY + GRID_SIZE/2,
+                    obj.x1, obj.y1,
+                    obj.x2, obj.y2,
+                    obj.x3, obj.y3
+                );
+            } else if (obj.type === 'polygon') {
+                return pointInPolygon(
+                    gridX + GRID_SIZE/2,
+                    gridY + GRID_SIZE/2,
+                    obj.points
+                );
+            }
+            return false;
+        }
+        
+        function intersectsRotatedRect(gridX, gridY, rect) {
+            // Convert grid point to rect's coordinate system
+            const centerX = rect.x + rect.width/2;
+            const centerY = rect.y + rect.height/2;
+            const pointX = gridX + GRID_SIZE/2;
+            const pointY = gridY + GRID_SIZE/2;
+            
+            // Translate point to origin
+            const translatedX = pointX - centerX;
+            const translatedY = pointY - centerY;
+            
+            // Rotate point
+            const angle = -rect.rotation * Math.PI / 180;
+            const rotatedX = translatedX * Math.cos(angle) - translatedY * Math.sin(angle);
+            const rotatedY = translatedX * Math.sin(angle) + translatedY * Math.cos(angle);
+            
+            // Check if point is inside the rect
+            return (
+                Math.abs(rotatedX) < rect.width/2 &&
+                Math.abs(rotatedY) < rect.height/2
+            );
+        }
+        
+        function pointInTriangle(px, py, x1, y1, x2, y2, x3, y3) {
+            // Calculate barycentric coordinates
+            const denominator = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
+            const a = ((y2 - y3) * (px - x3) + (x3 - x2) * (py - y3)) / denominator;
+            const b = ((y3 - y1) * (px - x3) + (x1 - x3) * (py - y3)) / denominator;
+            const c = 1 - a - b;
+            
+            // Check if point is inside triangle
+            return a >= 0 && a <= 1 && b >= 0 && b <= 1 && c >= 0 && c <= 1;
+        }
+        
+        function pointInPolygon(px, py, points) {
+            let inside = false;
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const xi = points[i].x, yi = points[i].y;
+                const xj = points[j].x, yj = points[j].y;
+                
+                const intersect = ((yi > py) !== (yj > py)) &&
+                    (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+        
+        function initializeParticles() {
+            particles = [];
+            for (let i = 0; i < MAX_PARTICLES; i++) {
+                particles.push({
+                    x: Math.random() * CANVAS_WIDTH,
+                    y: Math.random() * CANVAS_HEIGHT,
+                    age: Math.random() * 100,
+                    lifetime: 100 + Math.random() * 50
+                });
+            }
+        }
+        
+        function updateParticles() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            
+            particles.forEach(particle => {
+                // Find grid cell for particle
+                const gridX = Math.floor(particle.x / GRID_SIZE);
+                const gridY = Math.floor(particle.y / GRID_SIZE);
+                
+                // Check boundaries
+                if (gridX >= 0 && gridX < cols && gridY >= 0 && gridY < rows) {
+                    // Get velocity at particle position
+                    const velocity = velocityField[gridY][gridX];
+                    
+                    // Update particle position
+                    particle.x += velocity.x * 0.7;
+                    particle.y += velocity.y * 0.7;
+                    
+                    // Age particles
+                    particle.age += 1;
+                }
+                
+                // Reset particles that leave canvas or expire
+                if (particle.x < 0 || particle.x > CANVAS_WIDTH || 
+                    particle.y < 0 || particle.y > CANVAS_HEIGHT || 
+                    particle.age > particle.lifetime) {
+                    // Place new particle at left edge with random y
+                    particle.x = 0;
+                    particle.y = Math.random() * CANVAS_HEIGHT;
+                    particle.age = 0;
+                    particle.lifetime = 100 + Math.random() * 50;
+                }
+            });
+        }
+        
+        function drawStreamlines() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            const streamlinesCount = 20;
+            const streamlineLength = 100;
+            
+            ctx.strokeStyle = 'rgba(100, 150, 255, 0.7)';
+            ctx.lineWidth = 1.5;
+            
+            // Start streamlines from left edge
+            for (let i = 0; i < streamlinesCount; i++) {
+                const startY = (i + 0.5) * CANVAS_HEIGHT / streamlinesCount;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, startY);
+                
+                let x = 0;
+                let y = startY;
+                
+                // Trace streamline
+                for (let step = 0; step < streamlineLength; step++) {
+                    const gridX = Math.floor(x / GRID_SIZE);
+                    const gridY = Math.floor(y / GRID_SIZE);
+                    
+                    // Check boundaries
+                    if (gridX < 0 || gridX >= cols || gridY < 0 || gridY >= rows) break;
+                    
+                    // Get velocity at current position
+                    const vx = velocityField[gridY][gridX].x;
+                    const vy = velocityField[gridY][gridX].y;
+                    
+                    // Skip if no velocity
+                    if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) break;
+                    
+                    // Calculate next point
+                    const stepSize = 3;
+                    x += vx * stepSize;
+                    y += vy * stepSize;
+                    
+                    // Draw line to next point
+                    ctx.lineTo(x, y);
+                    
+                    // Stop if out of bounds
+                    if (x < 0 || x >= CANVAS_WIDTH || y < 0 || y >= CANVAS_HEIGHT) break;
+                }
+                
+                ctx.stroke();
+            }
+        }
+        
+        function drawVorticityField() {
+            const cols = vorticityField[0].length;
+            const rows = vorticityField.length;
+            
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const vorticity = vorticityField[y][x];
+                    
+                    // Skip rendering for cells with low vorticity
+                    if (Math.abs(vorticity) < 0.01) continue;
+                    
+                    // Map vorticity to color
+                    // Positive vorticity (counter-clockwise): red
+                    // Negative vorticity (clockwise): yellow
+                    let r, g, b;
+                    if (vorticity > 0) {
+                        const intensity = Math.min(1, vorticity * 10);
+                        r = 255;
+                        g = 255 * (1 - intensity);
+                        b = 0;
+                    } else {
+                        const intensity = Math.min(1, -vorticity * 10);
+                        r = 255 * (1 - intensity);
+                        g = 255 * (1 - intensity * 0.5);
+                        b = 255 * intensity;
+                    }
+                    
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+                    ctx.fillRect(x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                }
+            }
+        }
+        
+        function drawParticles() {
+            ctx.fillStyle = 'rgba(173, 216, 230, 0.7)';
+            
+            particles.forEach(particle => {
+                // Fade out particles near the end of their lifetime
+                const opacity = Math.min(1, (particle.lifetime - particle.age) / 20);
+                ctx.globalAlpha = opacity * 0.7;
+                
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            ctx.globalAlpha = 1.0;
+        }
+        
+        function calculateAerodynamicMetrics() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            
+            let drag = 0;
+            let lift = 0;
+            let wakeSize = 0;
+            let avgVelocity = 0;
+            let velCount = 0;
+            
+            // Simple metrics calculation based on pressure and velocity
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const pressure = pressureField[y][x];
+                    const velocity = velocityField[y][x];
+                    const vMagnitude = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+                    
+                    // Count cells for average velocity
+                    if (vMagnitude > 0) {
+                        avgVelocity += vMagnitude;
+                        velCount++;
+                    }
+                    
+                    // Identify wake regions (low pressure behind objects)
+                    if (pressure < -0.1 && x > 0 && velocity.x < windSpeed * 0.5) {
+                        wakeSize++;
+                    }
+                    
+                    // Simplified drag and lift calculation
+                    if (Math.abs(pressure) > 0.05) {
+                        // Drag - horizontal pressure difference
+                        drag += pressure * -1; // Simplified approximation
+                        
+                        // Lift - vertical pressure difference
+                        if (y < rows/2) {
+                            lift += pressure;
+                        } else {
+                            lift -= pressure;
+                        }
+                    }
+                }
+            }
+            
+            // Normalize and update UI
+            avgVelocity = velCount > 0 ? avgVelocity / velCount : 0;
+            const reynolds = avgVelocity * 100 / 1.5; // Simplified Re = velocity * characteristic length / viscosity
+            
+            document.getElementById('drag-value').textContent = Math.abs(drag).toFixed(2);
+            document.getElementById('lift-value').textContent = lift.toFixed(2);
+            document.getElementById('reynolds-value').textContent = Math.floor(reynolds);
+            document.getElementById('wake-value').textContent = wakeSize;
+            document.getElementById('velocity-value').textContent = avgVelocity.toFixed(2);
+            document.getElementById('pressure-coef-value').textContent = (drag / (0.5 * windSpeed * windSpeed)).toFixed(3);
+        }
+        
+        // Rendering functions
+        function render() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            
+            // Draw vorticity field
+            if (showVorticity) {
+                drawVorticityField();
+            }
+            
+            // Draw pressure field
+            if (showPressure) {
+                drawPressureField();
+            }
+            
+            // Draw streamlines
+            if (showStreamlines) {
+                drawStreamlines();
+            }
+            
+            // Draw velocity vectors
+            if (showVectors) {
+                drawVelocityField();
+            }
+            
+            // Draw particles
+            if (showParticles) {
+                drawParticles();
+            }
+            
+            // Draw objects
+            drawObjects();
+            
+            // Draw current shape being placed
+            if (isDragging && !isDrawingPolygon) {
+                drawPreviewObject();
+            }
+            
+            // Draw polygon in progress
+            if (isDrawingPolygon) {
+                drawPolygonInProgress();
+            }
+        }
+        
+        function drawPressureField() {
+            // Improved color gradient for pressure field
+            const cols = pressureField[0].length;
+            const rows = pressureField.length;
+            
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const pressure = pressureField[y][x];
+                    
+                    // Skip rendering for cells with zero pressure
+                    if (Math.abs(pressure) < 0.01) continue;
+                    
+                    // Map pressure to color - improved gradient
+                    let r, g, b;
+                    if (pressure > 0) {
+                        // High pressure: red gradient
+                        const intensity = Math.min(1, pressure * 5);
+                        r = 255;
+                        g = Math.max(0, 255 - (intensity * 255));
+                        b = Math.max(0, 255 - (intensity * 255));
+                    } else {
+                        // Low pressure: blue gradient
+                        const intensity = Math.min(1, -pressure * 5);
+                        r = Math.max(0, 255 - (intensity * 255));
+                        g = Math.max(0, 255 - (intensity * 255));
+                        b = 255;
+                    }
+                    
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.35)`;
+                    ctx.fillRect(x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                }
+            }
+        }
+        
+        function drawObjects() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            
+            objects.forEach((obj, index) => {
+                // Highlight selected object
+                if (index === selectedObjectIndex) {
+                    ctx.fillStyle = 'rgba(150, 220, 150, 0.8)';
+                } else {
+                    ctx.fillStyle = 'rgba(200, 200, 200, 0.8)';
+                }
+                
+                if (obj.type === 'rect') {
+                    if (obj.rotation && obj.rotation !== 0) {
+                        drawRotatedRect(obj);
+                    } else {
+                        ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+                        ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
+                    }
+                } else if (obj.type === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(obj.x + obj.radius, obj.y + obj.radius, obj.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (obj.type === 'airfoil') {
+                    drawAirfoil(obj);
+                } else if (obj.type === 'triangle') {
+                    ctx.beginPath();
+                    ctx.moveTo(obj.x1, obj.y1);
+                    ctx.lineTo(obj.x2, obj.y2);
+                    ctx.lineTo(obj.x3, obj.y3);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (obj.type === 'polygon') {
+                    ctx.beginPath();
+                    ctx.moveTo(obj.points[0].x, obj.points[0].y);
+                    for (let i = 1; i < obj.points.length; i++) {
+                        ctx.lineTo(obj.points[i].x, obj.points[i].y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            });
+        }
+        
+        function drawRotatedRect(rect) {
+            ctx.save();
+            
+            // Translate to rectangle center
+            const centerX = rect.x + rect.width/2;
+            const centerY = rect.y + rect.height/2;
+            ctx.translate(centerX, centerY);
+            
+            // Rotate
+            ctx.rotate(rect.rotation * Math.PI / 180);
+            
+            // Draw rectangle
+            ctx.fillRect(-rect.width/2, -rect.height/2, rect.width, rect.height);
+            ctx.strokeRect(-rect.width/2, -rect.height/2, rect.width, rect.height);
+            
+            // Restore context
+            ctx.restore();
+        }
+        
+        function drawPolygonInProgress() {
+            if (polygonPoints.length === 0) return;
+            
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(polygonPoints[0].x, polygonPoints[0].y);
+            
+            for (let i = 1; i < polygonPoints.length; i++) {
+                ctx.lineTo(polygonPoints[i].x, polygonPoints[i].y);
+            }
+            
+            // Draw line to current mouse position
+            if (isDragging) {
+                ctx.lineTo(endPoint.x, endPoint.y);
+            }
+            
+            ctx.stroke();
+            
+            // Draw points
+            ctx.fillStyle = 'rgba(100, 100, 255, 0.8)';
+            polygonPoints.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        function drawPreviewObject() {
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+            ctx.lineWidth = 1;
+            
+            const width = endPoint.x - startPoint.x;
+            const height = endPoint.y - startPoint.y;
+            
+            if (currentTool === 'rect') {
+                ctx.fillRect(startPoint.x, startPoint.y, width, height);
+                ctx.strokeRect(startPoint.x, startPoint.y, width, height);
+            } else if (currentTool === 'circle') {
+                const radius = Math.max(Math.abs(width), Math.abs(height)) / 2;
+                ctx.beginPath();
+                ctx.arc(
+                    startPoint.x + Math.sign(width) * radius,
+                    startPoint.y + Math.sign(height) * radius,
+                    radius,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+                ctx.stroke();
+            } else if (currentTool === 'airfoil') {
+                const obj = {
+                    type: 'airfoil',
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: width,
+                    height: height
+                };
+                drawAirfoil(obj);
+            } else if (currentTool === 'triangle') {
+                ctx.beginPath();
+                ctx.moveTo(startPoint.x, startPoint.y + height); // Bottom left
+                ctx.lineTo(startPoint.x + width, startPoint.y + height); // Bottom right
+                ctx.lineTo(startPoint.x + width/2, startPoint.y); // Top middle
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+        
+        function drawVelocityField() {
+            const cols = velocityField[0].length;
+            const rows = velocityField.length;
+            
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.lineWidth = 1;
+            
+            const skipFactor = 4;  // Only draw every 4th vector to avoid cluttering
+            const vectorScale = 5; // Scale the vectors for better visibility
+            
+            for (let y = 0; y < rows; y += skipFactor) {
+                for (let x = 0; x < cols; x += skipFactor) {
+                    const vx = velocityField[y][x].x;
+                    const vy = velocityField[y][x].y;
+                    
+                    // Skip very small vectors
+                    const magnitude = Math.sqrt(vx*vx + vy*vy);
+                    if (magnitude < 0.5) continue;
+                    
+                    const centerX = x * GRID_SIZE + GRID_SIZE / 2;
+                    const centerY = y * GRID_SIZE + GRID_SIZE / 2;
+                    
+                    // Draw arrow
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(
+                        centerX + vx * vectorScale,
+                        centerY + vy * vectorScale
+                    );
+                    
+                    // Calculate perpendicular direction for arrow head
+                    const arrowLength = 3;
+                    const dx = vx * vectorScale;
+                    const dy = vy * vectorScale;
+                    const norm = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (norm > 0) {
+                        const nx = -dy / norm;
+                        const ny = dx / norm;
+                        
+                        ctx.lineTo(
+                            centerX + vx * vectorScale - arrowLength * dx/norm + arrowLength * nx,
+                            centerY + vy * vectorScale - arrowLength * dy/norm + arrowLength * ny
+                        );
+                        ctx.moveTo(
+                            centerX + vx * vectorScale,
+                            centerY + vy * vectorScale
+                        );
+                        ctx.lineTo(
+                            centerX + vx * vectorScale - arrowLength * dx/norm - arrowLength * nx,
+                            centerY + vy * vectorScale - arrowLength * dy/norm - arrowLength * ny
+                        );
+                    }
+                    
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawAirfoil(obj) {
+            // Save current context state
+            ctx.save();
+            
+            // Apply rotation if it exists
+            if (obj.rotation && obj.rotation !== 0) {
+                const centerX = obj.x + obj.width/2;
+                const centerY = obj.y + obj.height/2;
+                ctx.translate(centerX, centerY);
+                ctx.rotate(obj.rotation * Math.PI / 180);
+                ctx.translate(-centerX, -centerY);
+            }
+            
+            // Draw the airfoil shape
+            ctx.fillStyle = ctx.fillStyle || 'rgba(200, 200, 200, 0.8)';
+            ctx.strokeStyle = 'black';
+            ctx.beginPath();
+            
+            const steps = 20;
+            
+            // Draw upper surface
+            ctx.moveTo(obj.x, obj.y + obj.height / 2);
+            for (let i = 1; i <= steps; i++) {
+                const x = obj.x + (i / steps) * obj.width;
+                const xRel = i / steps;
+                const curve = 0.1 * Math.sin(Math.PI * xRel);
+                const thickness = 0.15 * (1 - Math.pow(2*xRel-1, 2));
+                const y = obj.y + (0.5 + curve + thickness/2) * obj.height;
+                ctx.lineTo(x, y);
+            }
+            
+            // Draw lower surface
+            for (let i = steps; i >= 0; i--) {
+                const x = obj.x + (i / steps) * obj.width;
+                const xRel = i / steps;
+                const curve = 0.1 * Math.sin(Math.PI * xRel);
+                const thickness = 0.15 * (1 - Math.pow(2*xRel-1, 2));
+                const y = obj.y + (0.5 + curve - thickness/2) * obj.height;
+                ctx.lineTo(x, y);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Restore context to previous state
+            ctx.restore();
+        }
+        
+        // Load preset scenarios
+        function loadPreset(preset) {
+            objects = [];
+            
+            switch(preset) {
+                case 'empty':
+                    // Just clear objects
+                    break;
+                case 'obstacle':
+                    // Simple rectangle obstacle
+                    objects.push({
+                        type: 'rect',
+                        x: CANVAS_WIDTH * 0.4,
+                        y: CANVAS_HEIGHT * 0.3,
+                        width: CANVAS_WIDTH * 0.1,
+                        height: CANVAS_HEIGHT * 0.4
+                    });
+                    break;
+                case 'wing':
+                    // Airfoil
+                    objects.push({
+                        type: 'airfoil',
+                        x: CANVAS_WIDTH * 0.3,
+                        y: CANVAS_HEIGHT * 0.4,
+                        width: CANVAS_WIDTH * 0.3,
+                        height: CANVAS_HEIGHT * 0.2,
+                        rotation: -5
+                    });
+                    break;
+                case 'tunnel':
+                    // Wind tunnel with obstacles
+                    // Top wall
+                    objects.push({
+                        type: 'rect',
+                        x: 0,
+                        y: 0,
+                        width: CANVAS_WIDTH,
+                        height: CANVAS_HEIGHT * 0.1
+                    });
+                    // Bottom wall
+                    objects.push({
+                        type: 'rect',
+                        x: 0,
+                        y: CANVAS_HEIGHT * 0.9,
+                        width: CANVAS_WIDTH,
+                        height: CANVAS_HEIGHT * 0.1
+                    });
+                    // Test object
+                    objects.push({
+                        type: 'circle',
+                        x: CANVAS_WIDTH * 0.4,
+                        y: CANVAS_HEIGHT * 0.4,
+                        radius: CANVAS_HEIGHT * 0.1
+                    });
+                    break;
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('theme-toggle').addEventListener('change', function() {
+            document.documentElement.setAttribute('data-theme', this.checked ? 'dark' : 'light');
+        });
+        
+        document.getElementById('rect-btn').addEventListener('click', function() {
+            setTool('rect');
+        });
+        
+        document.getElementById('circle-btn').addEventListener('click', function() {
+            setTool('circle');
+        });
+        
+        document.getElementById('airfoil-btn').addEventListener('click', function() {
+            setTool('airfoil');
+        });
+        
+        document.getElementById('triangle-btn').addEventListener('click', function() {
+            setTool('triangle');
+        });
+        
+        document.getElementById('polygon-btn').addEventListener('click', function() {
+            setTool('polygon');
+            if (!isDrawingPolygon) {
+                isDrawingPolygon = true;
+                polygonPoints = [];
+            }
+        });
+        
+        document.getElementById('erase-btn').addEventListener('click', function() {
+            setTool('erase');
+            isDrawingPolygon = false;
+        });
+        
+        document.getElementById('clear-btn').addEventListener('click', function() {
+            objects = [];
+            selectedObjectIndex = -1;
+            document.getElementById('rotation-controls').classList.add('hidden');
+        });
+        
+        document.getElementById('speed-slider').addEventListener('input', function() {
+            windSpeed = parseFloat(this.value);
+            document.getElementById('speed-value').textContent = windSpeed;
+        });
+        
+        document.getElementById('rotation-slider').addEventListener('input', function() {
+            const rotation = parseInt(this.value);
+            document.getElementById('rotation-value').textContent = `${rotation}°`;
+            
+            if (selectedObjectIndex >= 0) {
+                objects[selectedObjectIndex].rotation = rotation;
+            }
+        });
+        
+        document.getElementById('toggleVectors').addEventListener('click', function() {
+            showVectors = !showVectors;
+            this.classList.toggle('selected');
+        });
+        
+        document.getElementById('togglePressure').addEventListener('click', function() {
+            showPressure = !showPressure;
+            this.classList.toggle('selected');
+        });
+        
+        document.getElementById('toggleParticles').addEventListener('click', function() {
+            showParticles = !showParticles;
+            this.classList.toggle('selected');
+            if (showParticles && particles.length === 0) {
+                initializeParticles();
+            }
+        });
+        
+        document.getElementById('toggleStreamlines').addEventListener('click', function() {
+            showStreamlines = !showStreamlines;
+            this.classList.toggle('selected');
+        });
+        
+        document.getElementById('toggleVorticity').addEventListener('click', function() {
+            showVorticity = !showVorticity;
+            this.classList.toggle('selected');
+        });
+        
+        // Preset buttons
+        document.getElementById('preset-empty').addEventListener('click', function() {
+            loadPreset('empty');
+            selectedObjectIndex = -1;
+            document.getElementById('rotation-controls').classList.add('hidden');
+        });
+        
+        document.getElementById('preset-obstacle').addEventListener('click', function() {
+            loadPreset('obstacle');
+        });
+        
+        document.getElementById('preset-wing').addEventListener('click', function() {
+            loadPreset('wing');
+        });
+        
+        document.getElementById('preset-tunnel').addEventListener('click', function() {
+            loadPreset('tunnel');
+        });
+        
+        canvas.addEventListener('mousedown', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            startPoint = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            endPoint = { ...startPoint };
+            
+            if (currentTool === 'polygon' && isDrawingPolygon) {
+                // Add point to polygon
+                polygonPoints.push({ ...startPoint });
+                
+                // Double click to finish polygon
+                if (e.detail === 2 && polygonPoints.length > 2) {
+                    finishPolygon();
+                }
+            } else {
+                isDragging = true;
+                
+                // Check if clicking on an existing object for selection
+                if (currentTool !== 'erase') {
+                    for (let i = objects.length - 1; i >= 0; i--) {
+                        if (isPointInObject(startPoint, objects[i])) {
+                            selectedObjectIndex = i;
+                            
+                            // Show rotation controls if applicable
+                            if (objects[i].type === 'rect' || objects[i].type === 'airfoil') {
+                                document.getElementById('rotation-controls').classList.remove('hidden');
+                                document.getElementById('rotation-slider').value = objects[i].rotation || 0;
+                                document.getElementById('rotation-value').textContent = `${objects[i].rotation || 0}°`;
+                            } else {
+                                document.getElementById('rotation-controls').classList.add('hidden');
+                            }
+                            
+                            return;
+                        }
+                    }
+                    
+                    // If not clicking on object, deselect
+                    selectedObjectIndex = -1;
+                    document.getElementById('rotation-controls').classList.add('hidden');
+                }
+            }
+        });
+        
+        canvas.addEventListener('mousemove', function(e) {
+            if (!isDragging && !isDrawingPolygon) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            endPoint = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        });
+        
+        canvas.addEventListener('mouseup', function() {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            if (currentTool === 'erase') {
+                eraseObjectAt(startPoint);
+                return;
+            }
+            
+            if (isDrawingPolygon) return;
+            
+            const width = endPoint.x - startPoint.x;
+            const height = endPoint.y - startPoint.y;
+            
+            // Minimum size check
+            if (Math.abs(width) < 10 || Math.abs(height) < 10) {
+                return;
+            }
+            
+            let newObject;
+            
+            if (currentTool === 'rect') {
+                newObject = {
+                    type: 'rect',
+                    x: Math.min(startPoint.x, endPoint.x),
+                    y: Math.min(startPoint.y, endPoint.y),
+                    width: Math.abs(width),
+                    height: Math.abs(height),
+                    rotation: 0
+                };
+            } else if (currentTool === 'circle') {
+                const radius = Math.max(Math.abs(width), Math.abs(height)) / 2;
+                newObject = {
+                    type: 'circle',
+                    x: Math.min(startPoint.x, endPoint.x),
+                    y: Math.min(startPoint.y, endPoint.y),
+                    radius: radius
+                };
+            } else if (currentTool === 'airfoil') {
+                newObject = {
+                    type: 'airfoil',
+                    x: Math.min(startPoint.x, endPoint.x),
+                    y: Math.min(startPoint.y, endPoint.y),
+                    width: Math.abs(width),
+                    height: Math.abs(height),
+                    rotation: 0
+                };
+            } else if (currentTool === 'triangle') {
+                const x = Math.min(startPoint.x, endPoint.x);
+                const y = Math.min(startPoint.y, endPoint.y);
+                const w = Math.abs(width);
+                const h = Math.abs(height);
+                
+                newObject = {
+                    type: 'triangle',
+                    x1: x, y1: y + h,  // bottom left
+                    x2: x + w, y2: y + h, // bottom right
+                    x3: x + w/2, y3: y // top middle
+                };
+            }
+            
+            if (newObject) {
+                objects.push(newObject);
+                selectedObjectIndex = objects.length - 1;
+                
+                // Show rotation controls for applicable shapes
+                if (newObject.type === 'rect' || newObject.type === 'airfoil') {
+                    document.getElementById('rotation-controls').classList.remove('hidden');
+                    document.getElementById('rotation-slider').value = 0;
+                    document.getElementById('rotation-value').textContent = '0°';
+                }
+            }
+        });
+        
+        function finishPolygon() {
+            if (polygonPoints.length < 3) {
+                // Need at least 3 points for a polygon
+                isDrawingPolygon = false;
+                polygonPoints = [];
+                return;
+            }
+            
+            const newObject = {
+                type: 'polygon',
+                points: [...polygonPoints]
+            };
+            
+            objects.push(newObject);
+            isDrawingPolygon = false;
+            polygonPoints = [];
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            // Escape key to cancel polygon drawing
+            if (e.key === 'Escape' && isDrawingPolygon) {
+                isDrawingPolygon = false;
+                polygonPoints = [];
+            }
+            
+            // Enter key to finish polygon
+            if (e.key === 'Enter' && isDrawingPolygon && polygonPoints.length >= 3) {
+                finishPolygon();
+            }
+            
+            // Delete key to remove selected object
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObjectIndex >= 0) {
+                objects.splice(selectedObjectIndex, 1);
+                selectedObjectIndex = -1;
+                document.getElementById('rotation-controls').classList.add('hidden');
+            }
+        });
+        
+        function isPointInObject(point, obj) {
+            if (obj.type === 'rect') {
+                if (obj.rotation && obj.rotation !== 0) {
+                    // For rotated rectangles
+                    const centerX = obj.x + obj.width/2;
+                    const centerY = obj.y + obj.height/2;
+                    
+                    // Translate point
+                    const translatedX = point.x - centerX;
+                    const translatedY = point.y - centerY;
+                    
+                    // Rotate point
+                    const angle = -obj.rotation * Math.PI / 180;
+                    const rotatedX = translatedX * Math.cos(angle) - translatedY * Math.sin(angle);
+                    const rotatedY = translatedX * Math.sin(angle) + translatedY * Math.cos(angle);
+                    
+                    // Check if in rectangle bounds
+                    return (
+                        Math.abs(rotatedX) <= obj.width/2 &&
+                        Math.abs(rotatedY) <= obj.height/2
+                    );
+                }
+                
+                return (
+                    point.x >= obj.x && 
+                    point.x <= obj.x + obj.width &&
+                    point.y >= obj.y && 
+                    point.y <= obj.y + obj.height
+                );
+            } else if (obj.type === 'circle') {
+                const centerX = obj.x + obj.radius;
+                const centerY = obj.y + obj.radius;
+                const distance = Math.sqrt(
+                    Math.pow(point.x - centerX, 2) +
+                    Math.pow(point.y - centerY, 2)
+                );
+                return distance <= obj.radius;
+            } else if (obj.type === 'airfoil') {
+                return (
+                    point.x >= obj.x && 
+                    point.x <= obj.x + obj.width &&
+                    point.y >= obj.y && 
+                    point.y <= obj.y + obj.height
+                );
+            } else if (obj.type === 'triangle') {
+                return pointInTriangle(
+                    point.x, point.y,
+                    obj.x1, obj.y1,
+                    obj.x2, obj.y2,
+                    obj.x3, obj.y3
+                );
+            } else if (obj.type === 'polygon') {
+                return pointInPolygon(point.x, point.y, obj.points);
+            }
+            return false;
+        }
+        
+        function setTool(tool) {
+            currentTool = tool;
+            
+            if (tool !== 'polygon') {
+                isDrawingPolygon = false;
+                polygonPoints = [];
+            }
+            
+            // Update button states
+            document.querySelectorAll('.controls button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            document.getElementById(`${tool}-btn`).classList.add('selected');
+        }
+        
+        function eraseObjectAt(point) {
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                
+                if (isPointInObject(point, obj)) {
+                    objects.splice(i, 1);
+                    if (selectedObjectIndex === i) {
+                        selectedObjectIndex = -1;
+                        document.getElementById('rotation-controls').classList.add('hidden');
+                    } else if (selectedObjectIndex > i) {
+                        selectedObjectIndex--;
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // Initialize and start
+        function init() {
+            // Set initial tool
+            setTool('rect');
+            
+            // Initialize fields
+            initializeFields();
+            
+            // Initialize particles
+            initializeParticles();
+            
+            // Set initial button states
+            document.getElementById('toggleVectors').classList.add('selected');
+            document.getElementById('togglePressure').classList.add('selected');
+            
+            // Make canvas responsive
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            
+            // Start the simulation loop
+            setInterval(function() {
+                updateSimulation();
+                render();
+            }, 50);
+        }
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth;
+            
+            // Set canvas size keeping aspect ratio
+            if (containerWidth < CANVAS_WIDTH) {
+                const scale = containerWidth / CANVAS_WIDTH;
+                canvas.style.width = '100%';
+                canvas.style.height = (CANVAS_HEIGHT * scale) + 'px';
+            } else {
+                canvas.style.width = CANVAS_WIDTH + 'px';
+                canvas.style.height = CANVAS_HEIGHT + 'px';
+            }
+        }
+        
+        // Start everything when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
