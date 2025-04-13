@@ -27,7 +27,7 @@ Smaller Experiments
 
 [Marshmallow Softbody](https://blygren.github.io/yes/marshmallow-simulation.html)
 
-[mug game](https://blygren.github.io/yes/nodejelly.html)
+[Jelly](https://blygren.github.io/yes/index.html)
 
 
 
