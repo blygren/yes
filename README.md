@@ -31,6 +31,6 @@ Smaller Experiments
 
 [air Flow](https://blygren.github.io/yes/airflow_simulation.html)
 
-
+[Plasma Physics](https://blygren.github.io/yes/plasma-physics.html)
 
 
