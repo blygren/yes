@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plasma Physics Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+            color: #0af;
+        }
+        
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        #bgCanvas {
+            z-index: 0;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            background-color: rgba(0, 10, 30, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #0af;
+            box-shadow: 0 0 10px #0af;
+        }
+        
+        .controls button {
+            background-color: #003366;
+            color: #0af;
+            border: 1px solid #0af;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .controls button:hover {
+            background-color: #0af;
+            color: #000;
+        }
+        
+        h1 {
+            text-shadow: 0 0 10px #0af;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="controls">
+        <h1>Plasma Physics</h1>
+        <button id="addPlasma">Add Plasma</button>
+        <button id="reset">Reset</button>
+        <p>Click and drag to interact with the plasma entities</p>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // Background Canvas Setup
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        bgCanvas.width = window.innerWidth;
+        bgCanvas.height = window.innerHeight;
+        
+        // Star field setup
+        const stars = [];
+        const starCount = 200;
+        const starSpeed = 0.2;
+        
+        // Grid setup
+        const gridSize = 50;
+        const gridOpacity = 0.15;
+        
+        // Initialize stars
+        function initStars() {
+            stars.length = 0;
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * bgCanvas.width,
+                    y: Math.random() * bgCanvas.height,
+                    radius: Math.random() * 1.5 + 0.5,
+                    brightness: Math.random() * 0.8 + 0.2,
+                    speed: Math.random() * starSpeed + 0.1
+                });
+            }
+        }
+        
+        // Draw background
+        function drawBackground() {
+            // Clear background
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            
+            // Draw base gradient
+            const baseGradient = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+            baseGradient.addColorStop(0, 'rgba(5, 15, 45, 1)');
+            baseGradient.addColorStop(0.5, 'rgba(10, 10, 30, 1)');
+            baseGradient.addColorStop(1, 'rgba(5, 5, 20, 1)');
+            bgCtx.fillStyle = baseGradient;
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+            
+            // Draw nebula-like effects
+            const time = Date.now() * 0.0001;
+            for (let i = 0; i < 3; i++) {
+                const nebulaGradient = bgCtx.createRadialGradient(
+                    bgCanvas.width * (0.3 + 0.4 * Math.sin(time + i)),
+                    bgCanvas.height * (0.3 + 0.4 * Math.cos(time * 0.7 + i)),
+                    0,
+                    bgCanvas.width * (0.3 + 0.4 * Math.sin(time + i)),
+                    bgCanvas.height * (0.3 + 0.4 * Math.cos(time * 0.7 + i)),
+                    bgCanvas.width * 0.5
+                );
+                
+                // Create colors based on index (different hues for each nebula)
+                const hue = (200 + i * 30) % 360;
+                nebulaGradient.addColorStop(0, `hsla(${hue}, 70%, 30%, 0.1)`);
+                nebulaGradient.addColorStop(0.5, `hsla(${hue}, 60%, 20%, 0.05)`);
+                nebulaGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                bgCtx.fillStyle = nebulaGradient;
+                bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+            }
+            
+            // Draw grid
+            bgCtx.strokeStyle = `rgba(30, 120, 255, ${gridOpacity})`;
+            bgCtx.lineWidth = 0.5;
+            
+            // Horizontal grid lines
+            for (let y = 0; y < bgCanvas.height; y += gridSize) {
+                bgCtx.beginPath();
+                bgCtx.moveTo(0, y);
+                bgCtx.lineTo(bgCanvas.width, y);
+                bgCtx.stroke();
+            }
+            
+            // Vertical grid lines
+            for (let x = 0; x < bgCanvas.width; x += gridSize) {
+                bgCtx.beginPath();
+                bgCtx.moveTo(x, 0);
+                bgCtx.lineTo(x, bgCanvas.height);
+                bgCtx.stroke();
+            }
+            
+            // Draw stars
+            bgCtx.save();
+            for (const star of stars) {
+                // Update star position
+                star.y += star.speed;
+                if (star.y > bgCanvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * bgCanvas.width;
+                }
+                
+                // Draw star
+                const glow = bgCtx.createRadialGradient(
+                    star.x, star.y, 0,
+                    star.x, star.y, star.radius * 2
+                );
+                glow.addColorStop(0, `rgba(180, 230, 255, ${star.brightness})`);
+                glow.addColorStop(1, 'rgba(180, 230, 255, 0)');
+                
+                bgCtx.fillStyle = glow;
+                bgCtx.beginPath();
+                bgCtx.arc(star.x, star.y, star.radius * 2, 0, Math.PI * 2);
+                bgCtx.fill();
+                
+                // Draw main star point
+                bgCtx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+                bgCtx.beginPath();
+                bgCtx.arc(star.x, star.y, star.radius * 0.5, 0, Math.PI * 2);
+                bgCtx.fill();
+            }
+            bgCtx.restore();
+            
+            // Create distant energy pulses
+            const pulseTime = Date.now() * 0.001;
+            for (let i = 0; i < 2; i++) {
+                const pulseX = bgCanvas.width * (0.2 + 0.6 * Math.sin(pulseTime * 0.2 + i * Math.PI));
+                const pulseY = bgCanvas.height * (0.2 + 0.6 * Math.cos(pulseTime * 0.3 + i * Math.PI));
+                const pulseSize = (Math.sin(pulseTime + i) * 0.5 + 0.5) * 150 + 50;
+                
+                const pulseGradient = bgCtx.createRadialGradient(
+                    pulseX, pulseY, 0,
+                    pulseX, pulseY, pulseSize
+                );
+                pulseGradient.addColorStop(0, 'rgba(100, 200, 255, 0.1)');
+                pulseGradient.addColorStop(0.7, 'rgba(50, 150, 255, 0.03)');
+                pulseGradient.addColorStop(1, 'rgba(30, 100, 200, 0)');
+                
+                bgCtx.fillStyle = pulseGradient;
+                bgCtx.beginPath();
+                bgCtx.arc(pulseX, pulseY, pulseSize, 0, Math.PI * 2);
+                bgCtx.fill();
+            }
+            
+            requestAnimationFrame(drawBackground);
+        }
+        
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Physics parameters
+        const GRAVITY = 0.05;
+        const DAMPING = 0.98;
+        const MOUSE_INFLUENCE = 20;
+        const MOUSE_REPEL = false;
+        
+        // Plasma entity class
+        class PlasmaEntity {
+            constructor(x, y, particleCount = 20, radius = 50) {
+                this.particles = [];
+                this.springs = [];
+                this.center = { x, y };
+                this.radius = radius;
+                this.hue = Math.random() * 60 + 180; // Blue to cyan range
+                this.alive = true;
+                
+                // Create particles in a circle
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = (i / particleCount) * Math.PI * 2;
+                    const px = x + Math.cos(angle) * radius;
+                    const py = y + Math.sin(angle) * radius;
+                    
+                    this.particles.push({
+                        x: px,
+                        y: py,
+                        oldx: px,
+                        oldy: py,
+                        vx: 0,
+                        vy: 0,
+                        radius: 3,
+                        isAnchor: false
+                    });
+                }
+                
+                // Connect particles with springs
+                for (let i = 0; i < particleCount; i++) {
+                    this.springs.push({
+                        p1: this.particles[i],
+                        p2: this.particles[(i + 1) % particleCount],
+                        length: 2 * Math.PI * radius / particleCount,
+                        stiffness: 0.2
+                    });
+                    
+                    // Add cross springs for stability
+                    if (particleCount > 5) {
+                        this.springs.push({
+                            p1: this.particles[i],
+                            p2: this.particles[(i + Math.floor(particleCount / 3)) % particleCount],
+                            length: 2 * radius * Math.sin(Math.PI / 3),
+                            stiffness: 0.05
+                        });
+                    }
+                }
+            }
+            
+            update() {
+                // Update particle positions based on physics
+                for (let i = 0; i < this.particles.length; i++) {
+                    const p = this.particles[i];
+                    if (p.isAnchor) continue;
+                    
+                    // Verlet integration
+                    const vx = (p.x - p.oldx) * DAMPING;
+                    const vy = (p.y - p.oldy) * DAMPING + GRAVITY;
+                    
+                    p.oldx = p.x;
+                    p.oldy = p.y;
+                    p.x += vx;
+                    p.y += vy;
+                    
+                    // Keep particles within canvas
+                    if (p.x < p.radius) p.x = p.radius;
+                    else if (p.x > canvas.width - p.radius) p.x = canvas.width - p.radius;
+                    
+                    if (p.y < p.radius) p.y = p.radius;
+                    else if (p.y > canvas.height - p.radius) p.y = canvas.height - p.radius;
+                    
+                    // Mouse interaction
+                    if (mouse.down) {
+                        const dx = p.x - mouse.x;
+                        const dy = p.y - mouse.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < MOUSE_INFLUENCE) {
+                            if (MOUSE_REPEL) {
+                                const force = (MOUSE_INFLUENCE - distance) * 0.1;
+                                p.x += dx * force / distance;
+                                p.y += dy * force / distance;
+                            } else {
+                                p.x = mouse.x + (dx * MOUSE_INFLUENCE) / distance;
+                                p.y = mouse.y + (dy * MOUSE_INFLUENCE) / distance;
+                            }
+                        }
+                    }
+                }
+                
+                // Apply spring constraints
+                for (let i = 0; i < this.springs.length; i++) {
+                    const s = this.springs[i];
+                    const dx = s.p2.x - s.p1.x;
+                    const dy = s.p2.y - s.p1.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const difference = (distance - s.length) / distance;
+                    
+                    const offsetX = dx * difference * s.stiffness;
+                    const offsetY = dy * difference * s.stiffness;
+                    
+                    if (!s.p1.isAnchor) {
+                        s.p1.x += offsetX;
+                        s.p1.y += offsetY;
+                    }
+                    
+                    if (!s.p2.isAnchor) {
+                        s.p2.x -= offsetX;
+                        s.p2.y -= offsetY;
+                    }
+                }
+                
+                // Calculate new center
+                let cx = 0, cy = 0;
+                for (const p of this.particles) {
+                    cx += p.x;
+                    cy += p.y;
+                }
+                this.center = {
+                    x: cx / this.particles.length,
+                    y: cy / this.particles.length
+                };
+            }
+            
+            draw() {
+                // Draw plasma body
+                ctx.beginPath();
+                const gradient = ctx.createRadialGradient(
+                    this.center.x, this.center.y, 0,
+                    this.center.x, this.center.y, this.radius * 2
+                );
+                gradient.addColorStop(0, `hsla(${this.hue}, 100%, 70%, 0.8)`);
+                gradient.addColorStop(0.5, `hsla(${this.hue}, 100%, 50%, 0.4)`);
+                gradient.addColorStop(1, `hsla(${this.hue}, 100%, 40%, 0)`);
+                
+                // Draw plasma body (filled)
+                ctx.beginPath();
+                ctx.moveTo(this.particles[0].x, this.particles[0].y);
+                for (let i = 1; i < this.particles.length; i++) {
+                    const p1 = this.particles[i];
+                    const p2 = this.particles[(i + 1) % this.particles.length];
+                    
+                    // Create curved edges for smoother look
+                    const cpX = (p1.x + p2.x) / 2;
+                    const cpY = (p1.y + p2.y) / 2;
+                    ctx.quadraticCurveTo(p1.x, p1.y, cpX, cpY);
+                }
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Draw outer glow
+                ctx.shadowColor = `hsla(${this.hue}, 100%, 60%, 0.8)`;
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = `hsla(${this.hue}, 100%, 70%, 0.8)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                // Draw energy tendrils
+                for (const spring of this.springs) {
+                    ctx.beginPath();
+                    ctx.moveTo(spring.p1.x, spring.p1.y);
+                    ctx.lineTo(spring.p2.x, spring.p2.y);
+                    
+                    const gradient = ctx.createLinearGradient(
+                        spring.p1.x, spring.p1.y, spring.p2.x, spring.p2.y
+                    );
+                    gradient.addColorStop(0, `hsla(${this.hue}, 100%, 70%, 0.2)`);
+                    gradient.addColorStop(0.5, `hsla(${this.hue}, 100%, 90%, 0.4)`);
+                    gradient.addColorStop(1, `hsla(${this.hue}, 100%, 70%, 0.2)`);
+                    
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = 2;
+                    ctx.shadowColor = `hsla(${this.hue}, 100%, 70%, 0.8)`;
+                    ctx.shadowBlur = 5;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+            
+            // Check if can merge with another entity
+            canMergeWith(other) {
+                const dx = this.center.x - other.center.x;
+                const dy = this.center.y - other.center.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < (this.radius + other.radius) * 0.7;
+            }
+        }
+        
+        // Global variables
+        let plasmaEntities = [];
+        const mouse = { x: 0, y: 0, down: false };
+        
+        // Initialize
+        function init() {
+            plasmaEntities = [];
+            addPlasmaEntity(canvas.width / 2, canvas.height / 2);
+            animate();
+        }
+        
+        // Add a new plasma entity
+        function addPlasmaEntity(x, y) {
+            const particleCount = Math.floor(Math.random() * 10) + 15;
+            const radius = Math.random() * 30 + 40;
+            plasmaEntities.push(new PlasmaEntity(x, y, particleCount, radius));
+        }
+        
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw plasma entities
+            for (let i = 0; i < plasmaEntities.length; i++) {
+                plasmaEntities[i].update();
+                plasmaEntities[i].draw();
+                
+                // Check for merging
+                for (let j = i + 1; j < plasmaEntities.length; j++) {
+                    if (plasmaEntities[i].canMergeWith(plasmaEntities[j])) {
+                        // Remove the smaller entity
+                        if (plasmaEntities[i].radius < plasmaEntities[j].radius) {
+                            plasmaEntities.splice(i, 1);
+                            i--;
+                        } else {
+                            plasmaEntities.splice(j, 1);
+                            j--;
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Event listeners
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+            initStars();
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            mouse.down = true;
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouse.down = false;
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            mouse.down = true;
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+        });
+        
+        canvas.addEventListener('touchend', () => {
+            mouse.down = false;
+        });
+        
+        document.getElementById('addPlasma').addEventListener('click', () => {
+            addPlasmaEntity(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height
+            );
+        });
+        
+        document.getElementById('reset').addEventListener('click', init);
+        
+        // Start animation
+        initStars();
+        drawBackground();
+        init();
+    </script>
+</body>
+</html>
