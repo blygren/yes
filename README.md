@@ -27,7 +27,7 @@ Smaller Experiments
 
 [Marshmallow Softbody](https://blygren.github.io/yes/marshmallow-simulation.html)
 
-[Jelly](https://blygren.github.io/yes/indetx.html)
+[Jelly](https://blygren.github.io/yes/index.html)
 
 [air Flow](https://blygren.github.io/yes/airflow_simulation.html)
 
