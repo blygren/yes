@@ -39,5 +39,8 @@ Smaller Experiments
 
 [Colour mixer](https://blygren.github.io/yes/color-mixer.html)
 
+[softbody smile](https://blygren.github.io/yes/softbody-smiley.html)
+
+
 
 
