@@ -37,7 +37,7 @@ Smaller Experiments
 
 [liquorice](https://blygren.github.io/yes/wat.html)
 
-[liquorice](https://blygren.github.io/yes/color-mixer.html)
+[Colour mixer](https://blygren.github.io/yes/color-mixer.html)
 
 
 
