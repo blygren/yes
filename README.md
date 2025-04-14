@@ -2,7 +2,7 @@
 
 [mug game](https://blygren.github.io/yes/Cube%20Water%20Mug.html)
 
-[falling sand](https://blygren.github.io/yes/Falling%20Sand/basic%20Version.html)
+[falling sand](https://blygren.github.io/yes/Doge.html)
 
 [ropes](https://blygren.github.io/yes/Ropes.html)
 
