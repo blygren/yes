@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Softbody Smiley Face</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        canvas {
+            background-color: #1e1e1e;
+            box-shadow: 0 0 15px rgba(255, 225, 26, 0.3);
+            touch-action: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            background-color: #2d2d2d;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        
+        .slider-label {
+            min-width: 100px;
+            text-align: left;
+        }
+        
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #4d4d4d;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #FFE11A;
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #FFE11A;
+            cursor: pointer;
+        }
+        
+        .value-display {
+            min-width: 60px;
+            text-align: right;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            margin: 0 0 15px 0;
+            color: #FFE11A;
+            text-shadow: 0 0 5px rgba(255, 225, 26, 0.4);
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                width: 90%;
+                padding: 12px 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .slider-container {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 5px;
+            }
+            
+            .slider-label {
+                text-align: center;
+            }
+            
+            .value-display {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Softbody Smiley</h1>
+        <div class="slider-container">
+            <div class="slider-label">Drag Strength:</div>
+            <input type="range" id="dragStrength" class="slider" min="0" max="100" value="15">
+            <div class="value-display" id="dragValue">0.15</div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        const resize = () => {
+            const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+            canvas.width = size;
+            canvas.height = size;
+        };
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Physics parameters
+        const numPoints = 20;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width * 0.4;
+        const stiffness = 0.2;
+        const damping = 0.7;
+        const mouseInfluence = 100;
+        const restoreFactor = 0.1;
+
+        // Customizable parameters
+        let dragStrengthFactor = 0.15; // Default value
+
+        // Setup UI controls
+        const dragSlider = document.getElementById("dragStrength");
+        const dragValue = document.getElementById("dragValue");
+        
+        dragSlider.addEventListener("input", function() {
+            dragStrengthFactor = this.value / 100;
+            dragValue.textContent = dragStrengthFactor.toFixed(2);
+        });
+
+        // Create points around a circle
+        const points = [];
+        for (let i = 0; i < numPoints; i++) {
+            const angle = (i / numPoints) * Math.PI * 2;
+            points.push({
+                x: centerX + Math.cos(angle) * radius,
+                y: centerY + Math.sin(angle) * radius,
+                originalX: centerX + Math.cos(angle) * radius,
+                originalY: centerY + Math.sin(angle) * radius,
+                vx: 0,
+                vy: 0
+            });
+        }
+
+        // Mouse interaction
+        let mouse = { x: 0, y: 0, down: false };
+        
+        canvas.addEventListener('mousedown', (e) => {
+            mouse.down = true;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouse.down = false;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            mouse.down = true;
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.touches[0].clientX - rect.left;
+            mouse.y = e.touches[0].clientY - rect.top;
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            mouse.down = false;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.touches[0].clientX - rect.left;
+            mouse.y = e.touches[0].clientY - rect.top;
+        });
+
+        function update() {
+            // Apply forces to points
+            points.forEach(point => {
+                // Spring force to restore to original position
+                const dx = point.originalX - point.x;
+                const dy = point.originalY - point.y;
+                point.vx += dx * restoreFactor;
+                point.vy += dy * restoreFactor;
+                
+                // Mouse influence with customizable strength
+                if (mouse.down) {
+                    const mouseDistX = mouse.x - point.x;
+                    const mouseDistY = mouse.y - point.y;
+                    const mouseDist = Math.sqrt(mouseDistX * mouseDistX + mouseDistY * mouseDistY);
+                    if (mouseDist < mouseInfluence) {
+                        point.vx += mouseDistX * dragStrengthFactor;
+                        point.vy += mouseDistY * dragStrengthFactor;
+                    }
+                }
+                
+                // Apply damping
+                point.vx *= damping;
+                point.vy *= damping;
+                
+                // Update position
+                point.x += point.vx;
+                point.y += point.vy;
+            });
+
+            // Connect the points with springs
+            for (let i = 0; i < numPoints; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % numPoints];
+                
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const targetDist = (2 * Math.PI * radius) / numPoints;
+                
+                if (dist !== 0) {
+                    const springForce = (dist - targetDist) * stiffness;
+                    const fx = (dx / dist) * springForce;
+                    const fy = (dy / dist) * springForce;
+                    
+                    p1.vx += fx;
+                    p1.vy += fy;
+                    p2.vx -= fx;
+                    p2.vy -= fy;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the face body (filled yellow circle)
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i <= numPoints; i++) {
+                const p1 = points[i - 1];
+                const p2 = points[i % numPoints];
+                
+                // Use quadratic curve for smoother appearance
+                const xc = (p1.x + p2.x) / 2;
+                const yc = (p1.y + p2.y) / 2;
+                
+                ctx.quadraticCurveTo(p1.x, p1.y, xc, yc);
+            }
+            ctx.fillStyle = '#FFE11A';
+            ctx.fill();
+            
+            // Calculate the center of the deformed face
+            let avgX = 0, avgY = 0;
+            points.forEach(p => {
+                avgX += p.x;
+                avgY += p.y;
+            });
+            avgX /= points.length;
+            avgY /= points.length;
+            
+            // Draw eyes (follow deformation)
+            const eyeOffsetX = radius * 0.3;
+            const eyeOffsetY = radius * 0.2;
+            const eyeRadius = radius * 0.1;
+            
+            // Calculate eye positions based on deformation
+            const leftEyeX = avgX - eyeOffsetX;
+            const rightEyeX = avgX + eyeOffsetX;
+            const eyeY = avgY - eyeOffsetY;
+            
+            ctx.fillStyle = '#000000';
+            
+            // Left eye
+            ctx.beginPath();
+            ctx.arc(leftEyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Right eye
+            ctx.beginPath();
+            ctx.arc(rightEyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw smile (follows deformation)
+            ctx.beginPath();
+            ctx.arc(avgX, avgY, radius * 0.5, 0.2 * Math.PI, 0.8 * Math.PI);
+            ctx.lineWidth = radius * 0.05;
+            ctx.strokeStyle = '#000000'; // Set smile color to black so it's visible
+            ctx.stroke();
+            
+            // Draw outline around the entire smiley face AFTER all features are drawn
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i <= numPoints; i++) {
+                const p1 = points[i - 1];
+                const p2 = points[i % numPoints];
+                
+                // Use quadratic curve for smoother appearance
+                const xc = (p1.x + p2.x) / 2;
+                const yc = (p1.y + p2.y) / 2;
+                
+                ctx.quadraticCurveTo(p1.x, p1.y, xc, yc);
+            }
+            ctx.closePath(); // Close the path explicitly to fix the missing corner
+            ctx.strokeStyle = '#FFE11A'; // Yellow outline to match the theme
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function animate() {
+            update();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
