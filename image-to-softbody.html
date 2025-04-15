@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Softbody Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toxiclibsjs/0.1.3/toxiclibs.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 90%;
+            background-color: #1e1e1e;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #ffffff;
+            margin-bottom: 25px;
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+        }
+
+        h1:after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 3px;
+        }
+
+        .upload-area {
+            border: 2px dashed #4CAF50;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background-color: #272727;
+        }
+
+        .upload-area:hover {
+            border-color: #8BC34A;
+            background-color: #2d2d2d;
+            transform: translateY(-3px);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn:hover {
+            box-shadow: 0 6px 15px rgba(76, 175, 80, 0.5);
+            transform: translateY(-2px);
+        }
+
+        #canvas-container {
+            margin-top: 25px;
+            position: relative;
+            background-color: #272727;
+            border-radius: 15px;
+            padding: 5px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-panel {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #272727;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-container {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .slider-container label {
+            flex: 1;
+            text-align: right;
+            padding-right: 15px;
+            font-weight: 500;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 2;
+            -webkit-appearance: none;
+            background: #333;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            background: #8BC34A;
+        }
+
+        .slider-container span {
+            flex: 0.5;
+            text-align: left;
+            padding-left: 15px;
+            color: #8BC34A;
+            font-weight: 500;
+            min-width: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin: 10px 0 20px;
+            color: #8BC34A;
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image to Softbody Converter</h1>
+        
+        <div class="upload-area" id="dropArea">
+            <p>Click to upload an image or drag and drop</p>
+            <input type="file" id="fileInput" accept="image/*">
+            <button class="btn" id="uploadBtn">Upload Image</button>
+        </div>
+        
+        <div class="control-panel" id="controlPanel" style="display: none;">
+            <div class="section-title">Physics Controls</div>
+            
+            <div class="slider-container">
+                <label for="springStrength">Spring Strength:</label>
+                <input type="range" id="springStrength" min="0.005" max="0.2" step="0.005" value="0.05">
+                <span id="springStrengthValue">0.05</span>
+            </div>
+            
+            <div class="slider-container">
+                <label for="damping">Damping:</label>
+                <input type="range" id="damping" min="0.01" max="0.5" step="0.01" value="0.05">
+                <span id="dampingValue">0.05</span>
+            </div>
+            
+            <div class="slider-container">
+                <label for="dragStrength">Drag Strength:</label>
+                <input type="range" id="dragStrength" min="0.01" max="0.2" step="0.01" value="0.05">
+                <span id="dragStrengthValue">0.05</span>
+            </div>
+            
+            <div class="slider-container">
+                <label for="wobbleAmount">Wobble Effect:</label>
+                <input type="range" id="wobbleAmount" min="0" max="1.0" step="0.05" value="0.2">
+                <span id="wobbleAmountValue">0.2</span>
+            </div>
+
+            <div class="slider-container">
+                <label for="gravity">Gravity:</label>
+                <input type="range" id="gravity" min="0" max="0.5" step="0.01" value="0.05">
+                <span id="gravityValue">0.05</span>
+            </div>
+            
+            <div class="slider-container">
+                <label for="interactionStrength">Interaction Strength:</label>
+                <input type="range" id="interactionStrength" min="1" max="60" step="1" value="8">
+                <span id="interactionStrengthValue">8</span>
+            </div>
+            
+            <div class="slider-container">
+                <label for="resolution">Mesh Resolution:</label>
+                <input type="range" id="resolution" min="10" max="50" step="5" value="20">
+                <span id="resolutionValue">20</span>
+            </div>
+            
+            <button class="btn" id="resetBtn">Reset Simulation</button>
+        </div>
+        
+        <div id="canvas-container"></div>
+    </div>
+
+    <script>
+        let imageObj = null;
+        let physics;
+        let particles = [];
+        let springs = [];
+        let img;
+        let imgWidth = 400;
+        let imgHeight = 300;
+        let isSimulationRunning = false;
+        
+        // Configuration
+        let springStrength = 0.05;
+        let damping = 0.05;
+        let dragStrength = 0.05;
+        let resolution = 20;
+        let wobbleAmount = 0.2;
+        let gravity = 0.05;
+        let interactionStrength = 8;
+        let wobbleTimer = 0;
+        
+        // Event listeners for file upload
+        document.getElementById('uploadBtn').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('dropArea').addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#8BC34A';
+        });
+
+        document.getElementById('dropArea').addEventListener('dragleave', function() {
+            this.style.borderColor = '#4CAF50';
+        });
+
+        document.getElementById('dropArea').addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#4CAF50';
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (this.files[0]) {
+                handleFile(this.files[0]);
+            }
+        });
+
+        // Handle slider updates
+        document.getElementById('springStrength').addEventListener('input', function() {
+            springStrength = parseFloat(this.value);
+            document.getElementById('springStrengthValue').textContent = springStrength;
+            if (isSimulationRunning) {
+                updateSprings();
+            }
+        });
+
+        document.getElementById('damping').addEventListener('input', function() {
+            damping = parseFloat(this.value);
+            document.getElementById('dampingValue').textContent = damping;
+            if (isSimulationRunning) {
+                updateDamping();
+            }
+        });
+
+        document.getElementById('dragStrength').addEventListener('input', function() {
+            dragStrength = parseFloat(this.value);
+            document.getElementById('dragStrengthValue').textContent = dragStrength;
+            if (isSimulationRunning) {
+                updateDragStrength();
+            }
+        });
+        
+        document.getElementById('wobbleAmount').addEventListener('input', function() {
+            wobbleAmount = parseFloat(this.value);
+            document.getElementById('wobbleAmountValue').textContent = wobbleAmount;
+        });
+        
+        document.getElementById('gravity').addEventListener('input', function() {
+            gravity = parseFloat(this.value);
+            document.getElementById('gravityValue').textContent = gravity;
+            if (isSimulationRunning && physics) {
+                updateGravity();
+            }
+        });
+        
+        document.getElementById('interactionStrength').addEventListener('input', function() {
+            interactionStrength = parseInt(this.value);
+            document.getElementById('interactionStrengthValue').textContent = interactionStrength;
+        });
+
+        document.getElementById('resolution').addEventListener('input', function() {
+            resolution = parseInt(this.value);
+            document.getElementById('resolutionValue').textContent = resolution;
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            if (imageObj) {
+                resetSimulation();
+            }
+        });
+        
+        function handleFile(file) {
+            if (!file.type.match('image.*')) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imageObj = new Image();
+                imageObj.onload = function() {
+                    document.getElementById('controlPanel').style.display = 'block';
+                    startSketch();
+                }
+                imageObj.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function startSketch() {
+            if (window.myp5) {
+                window.myp5.remove();
+            }
+            
+            window.myp5 = new p5(function(p) {
+                p.setup = function() {
+                    try {
+                        // Calculate aspect ratio and resize
+                        const aspectRatio = imageObj.width / imageObj.height;
+                        if (aspectRatio > 1) {
+                            // Wider than tall
+                            imgWidth = Math.min(imageObj.width, 600);
+                            imgHeight = imgWidth / aspectRatio;
+                        } else {
+                            // Taller than wide
+                            imgHeight = Math.min(imageObj.height, 400);
+                            imgWidth = imgHeight * aspectRatio;
+                        }
+                        
+                        // Create a WEBGL canvas (required for textures)
+                        const canvas = p.createCanvas(imgWidth, imgHeight, p.WEBGL);
+                        canvas.parent('canvas-container');
+                        
+                        // Load image properly
+                        img = p.createImage(imgWidth, imgHeight);
+                        img.loadPixels();
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = imgWidth;
+                        tempCanvas.height = imgHeight;
+                        const ctx = tempCanvas.getContext('2d');
+                        ctx.drawImage(imageObj, 0, 0, imgWidth, imgHeight);
+                        const imageData = ctx.getImageData(0, 0, imgWidth, imgHeight);
+                        
+                        // Copy pixel data
+                        for (let i = 0; i < imageData.data.length; i++) {
+                            img.pixels[i] = imageData.data[i];
+                        }
+                        img.updatePixels();
+                        
+                        setupPhysics();
+                        isSimulationRunning = true;
+                    } catch (e) {
+                        console.error("Error in setup:", e);
+                        alert("An error occurred while setting up the simulation: " + e.message);
+                    }
+                }
+                
+                p.draw = function() {
+                    try {
+                        p.clear();
+                        
+                        wobbleTimer += 0.05;
+                        
+                        // Add wobble effect
+                        if (physics && wobbleAmount > 0) {
+                            applyWobbleEffect();
+                        }
+                        
+                        if (physics) {
+                            physics.update();
+                        }
+                        
+                        // Move the particle closest to the mouse
+                        if (p.mouseIsPressed && p.mouseButton === p.LEFT) {
+                            // Convert mouse coordinates from screen space to WEBGL space
+                            const adjustedMouseX = p.mouseX - p.width/2;
+                            const adjustedMouseY = p.mouseY - p.height/2;
+                            
+                            // Find particles in a radius for more responsive dragging
+                            let draggedAny = false;
+                            const dragRadius = 30;
+                            
+                            for (let particle of particles) {
+                                if (!particle || particle.locked) continue;
+                                
+                                const dx = particle.x - adjustedMouseX;
+                                const dy = particle.y - adjustedMouseY;
+                                const dist = Math.sqrt(dx*dx + dy*dy);
+                                
+                                if (dist < dragRadius) {
+                                    draggedAny = true;
+                                    const force = 1.0 - (dist / dragRadius); // Closer particles move more
+                                    const moveX = (adjustedMouseX - particle.x) * force * interactionStrength * 0.05;
+                                    const moveY = (adjustedMouseY - particle.y) * force * interactionStrength * 0.05;
+                                    
+                                    particle.x += moveX;
+                                    particle.y += moveY;
+                                }
+                            }
+                            
+                            // If no particles were affected by area dragging, try the closest one
+                            if (!draggedAny) {
+                                let closest = findClosestParticle(p.mouseX, p.mouseY);
+                                if (closest) {
+                                    // Pull with more force for stronger interaction
+                                    const dx = adjustedMouseX - closest.x;
+                                    const dy = adjustedMouseY - closest.y;
+                                    closest.x += dx * 0.2 * interactionStrength * 0.05;
+                                    closest.y += dy * 0.2 * interactionStrength * 0.05;
+                                }
+                            }
+                        }
+                        
+                        drawSoftbody();
+                    } catch (e) {
+                        console.error("Error in draw:", e);
+                    }
+                }
+
+                function setupPhysics() {
+                    // Create a new physics instance using the proper namespace
+                    physics = new toxi.physics2d.VerletPhysics2D();
+                    physics.setDrag(dragStrength);
+                    
+                    // Adjust world bounds for WEBGL coordinates (origin is center)
+                    physics.setWorldBounds(new toxi.geom.Rect(-p.width/2, -p.height/2, p.width, p.height));
+                    
+                    // Add gravity with correct namespace
+                    if (gravity > 0) {
+                        try {
+                            // Correct namespace for GravityBehavior
+                            const gravityForce = new toxi.geom.Vec2D(0, gravity);
+                            const gravityBehavior = new toxi.physics2d.behaviors.GravityBehavior(gravityForce);
+                            physics.addBehavior(gravityBehavior);
+                        } catch (e) {
+                            console.error("Error adding gravity:", e);
+                            // Alternative simple gravity implementation if GravityBehavior fails
+                            physics.addBehavior({
+                                apply: function(p) {
+                                    if (!p.isLocked()) {
+                                        p.addForce(new toxi.geom.Vec2D(0, gravity));
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
+                    particles = [];
+                    springs = [];
+                    
+                    // Create a grid of particles
+                    const xSpacing = p.width / resolution;
+                    const ySpacing = p.height / resolution;
+                    
+                    // Offset for WEBGL coordinates (center origin)
+                    const offsetX = -p.width/2;
+                    const offsetY = -p.height/2;
+                    
+                    // Create particles
+                    for (let y = 0; y < resolution; y++) {
+                        for (let x = 0; x < resolution; x++) {
+                            const px = offsetX + x * xSpacing;
+                            const py = offsetY + y * ySpacing;
+                            
+                            // Create a particle at this position
+                            const particle = new toxi.physics2d.VerletParticle2D(px, py);
+                            
+                            // Lock the edges of the mesh to create a stable boundary
+                            // Only lock top edge for better jelly physics
+                            if (y === 0 || (x === 0 && y < resolution/3) || (x === resolution-1 && y < resolution/3)) {
+                                particle.lock();
+                            }
+                            
+                            physics.addParticle(particle);
+                            particles.push(particle);
+                        }
+                    }
+                    
+                    // Create springs with variable strength based on position
+                    for (let y = 0; y < resolution; y++) {
+                        for (let x = 0; x < resolution; x++) {
+                            const i = y * resolution + x;
+                            
+                            // Connect to right neighbor
+                            if (x < resolution - 1) {
+                                // Make bottom springs a bit looser for more jiggle
+                                const localStrength = springStrength * (1.0 - 0.3 * (y / resolution));
+                                
+                                const spring = new toxi.physics2d.VerletSpring2D(
+                                    particles[i],
+                                    particles[i + 1],
+                                    xSpacing,
+                                    localStrength
+                                );
+                                physics.addSpring(spring);
+                                springs.push(spring);
+                            }
+                            
+                            // Connect to bottom neighbor
+                            if (y < resolution - 1) {
+                                const spring = new toxi.physics2d.VerletSpring2D(
+                                    particles[i],
+                                    particles[i + resolution],
+                                    ySpacing,
+                                    springStrength
+                                );
+                                physics.addSpring(spring);
+                                springs.push(spring);
+                            }
+                            
+                            // Add diagonal springs for stability but make them weaker
+                            if (x < resolution - 1 && y < resolution - 1) {
+                                const diagonalStrength = springStrength * 0.4;
+                                const dist = Math.sqrt(xSpacing*xSpacing + ySpacing*ySpacing);
+                                
+                                const spring1 = new toxi.physics2d.VerletSpring2D(
+                                    particles[i],
+                                    particles[i + resolution + 1],
+                                    dist,
+                                    diagonalStrength
+                                );
+                                physics.addSpring(spring1);
+                                springs.push(spring1);
+                                
+                                const spring2 = new toxi.physics2d.VerletSpring2D(
+                                    particles[i + 1],
+                                    particles[i + resolution],
+                                    dist,
+                                    diagonalStrength
+                                );
+                                physics.addSpring(spring2);
+                                springs.push(spring2);
+                            }
+                        }
+                    }
+                }
+                
+                function findClosestParticle(x, y) {
+                    let closest = null;
+                    let minDist = Number.MAX_VALUE;
+                    
+                    // Adjust mouse coordinates for WEBGL (convert from screen to WEBGL coordinates)
+                    const adjustedX = x - p.width/2;
+                    const adjustedY = y - p.height/2;
+                    
+                    for (let particle of particles) {
+                        if (!particle) continue;
+                        
+                        // Check if particle is locked using the correct method
+                        try {
+                            if (particle.locked) continue; // Using property check instead of method call
+                        } catch (e) {
+                            continue;
+                        }
+                        
+                        const d = p.dist(adjustedX, adjustedY, particle.x, particle.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            closest = particle;
+                        }
+                    }
+                    
+                    return minDist < 30 ? closest : null;
+                }
+
+                function drawSoftbody() {
+                    // Make sure the simulation is running and the image is loaded
+                    if (!isSimulationRunning || !img || particles.length === 0) return;
+                    
+                    // Draw the image on the deformed mesh
+                    p.noStroke();
+                    
+                    // Draw triangles for the mesh
+                    for (let y = 0; y < resolution - 1; y++) {
+                        for (let x = 0; x < resolution - 1; x++) {
+                            const i0 = y * resolution + x;
+                            const i1 = y * resolution + x + 1;
+                            const i2 = (y + 1) * resolution + x;
+                            const i3 = (y + 1) * resolution + x + 1;
+                            
+                            // Check if all necessary particles exist
+                            if (!particles[i0] || !particles[i1] || 
+                                !particles[i2] || !particles[i3]) continue;
+                            
+                            const p0 = particles[i0];
+                            const p1 = particles[i1];
+                            const p2 = particles[i2];
+                            const p3 = particles[i3];
+                            
+                            // Map grid positions to image coordinates
+                            const tx0 = p.map(x, 0, resolution - 1, 0, 1);
+                            const ty0 = p.map(y, 0, resolution - 1, 0, 1);
+                            const tx1 = p.map(x + 1, 0, resolution - 1, 0, 1);
+                            const ty1 = p.map(y + 1, 0, resolution - 1, 0, 1);
+                            
+                            // Set texture mode and draw triangles
+                            p.textureMode(p.NORMAL);
+                            
+                            // Draw the first triangle
+                            p.beginShape(p.TRIANGLES);
+                            p.texture(img);
+                            p.vertex(p0.x, p0.y, tx0, ty0);
+                            p.vertex(p1.x, p1.y, tx1, ty0);
+                            p.vertex(p2.x, p2.y, tx0, ty1);
+                            p.endShape();
+                            
+                            // Draw the second triangle
+                            p.beginShape(p.TRIANGLES);
+                            p.texture(img);
+                            p.vertex(p1.x, p1.y, tx1, ty0);
+                            p.vertex(p3.x, p3.y, tx1, ty1);
+                            p.vertex(p2.x, p2.y, tx0, ty1);
+                            p.endShape();
+                        }
+                    }
+                    
+                    // Debug visualization - show all particles as red dots
+                    if (false) {  // Set to true to see the mesh points
+                        p.stroke(255, 0, 0);
+                        p.strokeWeight(4);
+                        for (let particle of particles) {
+                            if (particle) {
+                                p.point(particle.x, particle.y);
+                            }
+                        }
+                    }
+                }
+            }, 'canvas-container');
+        }
+
+        function resetSimulation() {
+            if (!isSimulationRunning) return;
+            
+            // Re-initialize with current values
+            startSketch();
+        }
+
+        function updateSprings() {
+            if (!springs) return;
+            
+            for (let spring of springs) {
+                spring.setStrength(springStrength);
+            }
+        }
+
+        function updateDamping() {
+            if (!physics) return;
+            
+            physics.setDrag(damping);
+        }
+
+        function updateDragStrength() {
+            if (!physics) return;
+            
+            physics.setDrag(dragStrength);
+        }
+
+        function applyWobbleEffect() {
+            // Add subtle random motion to create a jelly wobble effect
+            if (wobbleAmount <= 0 || !particles) return;
+            
+            try {
+                for (let i = 0; i < particles.length; i++) {
+                    const particle = particles[i];
+                    if (!particle || particle.locked) continue;
+                    
+                    // Skip every other particle to create a wave-like effect
+                    if (i % 3 !== 0) continue;
+                    
+                    // Use p instead of window.myp5 to access the p5 instance correctly
+                    const noiseX = p.noise(particle.x * 0.01, particle.y * 0.01, wobbleTimer) * 2 - 1;
+                    const noiseY = p.noise(particle.x * 0.01, particle.y * 0.01, wobbleTimer + 100) * 2 - 1;
+                    
+                    // Add a small force in the noise direction
+                    particle.addForce(new toxi.geom.Vec2D(
+                        noiseX * wobbleAmount * 0.1,
+                        noiseY * wobbleAmount * 0.1
+                    ));
+                }
+            } catch (e) {
+                console.error("Error applying wobble effect:", e);
+            }
+        }
+
+        function updateGravity() {
+            // Remove all behaviors first
+            try {
+                physics.behaviors = [];
+                
+                // Add updated gravity behavior with correct namespace
+                if (gravity > 0) {
+                    const gravityForce = new toxi.geom.Vec2D(0, gravity);
+                    const gravityBehavior = new toxi.physics2d.behaviors.GravityBehavior(gravityForce);
+                    physics.addBehavior(gravityBehavior);
+                }
+            } catch (e) {
+                console.error("Error updating gravity:", e);
+                // Alternative simple gravity implementation
+                physics.behaviors = [];
+                if (gravity > 0) {
+                    physics.addBehavior({
+                        apply: function(p) {
+                            if (!p.isLocked()) {
+                                p.addForce(new toxi.geom.Vec2D(0, gravity));
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
