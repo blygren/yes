@@ -41,8 +41,8 @@ Smaller Experiments
 
 [softbody smile](https://blygren.github.io/yes/softbody-smiley.html)
 
-[softbody Creator](https://blygren.github.io/yes/
-image-to-softbody.html)
+
+[Colour mixer](https://blygren.github.io/yes/image-to-softbody.html)
 
 
 
