@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Grass Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            bottom: 0;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            user-select: none;
+        }
+        
+        /* Add controls container styling */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 220px;
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .control-label {
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        
+        .control-value {
+            width: 30px;
+            text-align: right;
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+        }
+        
+        .toggle-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            z-index: 101;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                bottom: auto;
+                top: 50px;
+                left: 10px;
+                padding: 10px;
+            }
+        }
+        
+        /* Tool selection styling */
+        .tool-selector {
+            margin: 5px 0;
+        }
+        
+        .tool-options {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        
+        .tool-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 12px;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .tool-btn.active {
+            background-color: rgba(92, 184, 92, 0.6);
+            font-weight: bold;
+        }
+        
+        .cursor-indicator {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="grassCanvas"></canvas>
+    <div class="info">Move your mouse/finger to interact with the grass</div>
+    
+    <!-- Remove slice cursor indicator, keep only attract and repel indicators -->
+    <div id="cursorAttract" class="cursor-indicator">🧲</div>
+    <div id="cursorRepel" class="cursor-indicator">↔️</div>
+    
+    <!-- Add controls for customization -->
+    <div id="controls" class="controls">
+        <div class="tool-selector">
+            <span class="control-label">Tool:</span>
+            <div class="tool-options">
+                <button id="toolAttract" class="tool-btn active">Attract</button>
+                <button id="toolRepel" class="tool-btn">Repel</button>
+            </div>
+        </div>
+        <div class="control-row">
+            <span class="control-label">Interaction Strength:</span>
+            <input type="range" id="interactionStrength" min="0" max="100" value="30">
+            <span id="interactionStrengthValue" class="control-value">0.3</span>
+        </div>
+        <div class="control-row">
+            <button id="hideControls">Hide Controls</button>
+        </div>
+    </div>
+    
+    <button id="showControls" class="toggle-controls">Show Controls</button>
+    
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('grassCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full window width/height
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Simplified GrassBlade class without slicing functionality
+        class GrassBlade {
+            constructor(x, height, width, color, swayFactor) {
+                this.x = x;
+                this.originalX = x;
+                this.height = height;
+                this.width = width;
+                this.color = color;
+                this.swayFactor = swayFactor;
+                
+                // Physics properties - reduced values for stability
+                this.segments = 8;
+                this.segmentHeight = height / this.segments;
+                this.segmentAngles = new Array(this.segments).fill(0);
+                this.segmentVelocities = new Array(this.segments).fill(0);
+                
+                // More controlled physics parameters
+                this.stiffness = 0.15 - (Math.random() * 0.05);
+                this.damping = 0.92 + (Math.random() * 0.03);
+                this.gravity = 0.002 + (Math.random() * 0.001);
+                this.maxVelocity = 0.015;
+                this.maxAngle = 0.25;
+                
+                // Add base y-offset to ensure grass starts at ground level
+                this.baseYOffset = 0; // No offset from ground surface
+                
+                // Wind and time variables
+                this.time = Math.random() * 100;
+                this.swaySpeed = (Math.random() * 0.0005) + 0.0003;
+                this.windInfluence = Math.random() * 0.3 + 0.3;
+                
+                // Previous positions for smooth interpolation
+                this.prevSegmentAngles = [...this.segmentAngles];
+            }
+            
+            update(time, mouseX, mouseY, globalWindFactor, interactionStrength, tool) {
+                this.time += this.swaySpeed;
+                
+                // Store previous angles for interpolation
+                this.prevSegmentAngles = [...this.segmentAngles];
+                
+                // Calculate wind and mouse influence gradually
+                const windEffect = globalWindFactor * this.windInfluence;
+                const distance = Math.abs(mouseX - this.x);
+                const mouseInfluence = Math.max(0, 1 - (distance / 150)) * interactionStrength;
+                
+                // Determine direction based on tool
+                let mouseDirection = 0;
+                if (tool === 'attract') {
+                    mouseDirection = mouseX > this.x ? -1 : 1;
+                } else if (tool === 'repel') {
+                    mouseDirection = mouseX > this.x ? 1 : -1;
+                }
+                
+                // Apply forces to segments with more constraints
+                for (let i = 0; i < this.segments; i++) {
+                    const segmentFactor = Math.pow((i + 1) / this.segments, 1.5);
+                    
+                    let targetAngle = Math.sin(this.time) * 0.03 * segmentFactor * this.swayFactor;
+                    
+                    targetAngle += windEffect * segmentFactor * 0.1;
+                    
+                    // Apply force based on selected tool
+                    const mouseThreshold = 0.05 * (interactionStrength / 0.3);
+                    if (mouseInfluence > mouseThreshold && (tool === 'attract' || tool === 'repel')) {
+                        targetAngle += mouseDirection * mouseInfluence * segmentFactor * 0.2;
+                    }
+                    
+                    targetAngle += this.gravity * segmentFactor;
+                    
+                    if (i > 0) {
+                        targetAngle += this.segmentAngles[i-1] * 0.3;
+                    }
+                    
+                    const angleDiff = targetAngle - this.segmentAngles[i];
+                    let force = angleDiff * this.stiffness;
+                    
+                    this.segmentVelocities[i] += force;
+                    this.segmentVelocities[i] *= this.damping;
+                    
+                    if (this.segmentVelocities[i] > this.maxVelocity) {
+                        this.segmentVelocities[i] = this.maxVelocity;
+                    } else if (this.segmentVelocities[i] < -this.maxVelocity) {
+                        this.segmentVelocities[i] = -this.maxVelocity;
+                    }
+                    
+                    this.segmentAngles[i] += this.segmentVelocities[i];
+                    
+                    if (this.segmentAngles[i] > this.maxAngle) {
+                        this.segmentAngles[i] = this.maxAngle;
+                        this.segmentVelocities[i] *= 0.5;
+                    } else if (this.segmentAngles[i] < -this.maxAngle) {
+                        this.segmentAngles[i] = -this.maxAngle;
+                        this.segmentVelocities[i] *= 0.5;
+                    }
+                }
+            }
+            
+            draw(deltaTime) {
+                const groundY = canvas.height - groundHeight;
+                
+                let x = this.x;
+                let y = groundY + this.baseYOffset;
+                let cumulativeAngle = 0;
+                
+                for (let i = 0; i < this.segments; i++) {
+                    ctx.save();
+                    ctx.translate(x, y);
+                    
+                    cumulativeAngle += this.segmentAngles[i];
+                    ctx.rotate(cumulativeAngle);
+                    
+                    const segmentHeight = this.segmentHeight;
+                    const segmentWidth = this.width * (1 - (i * 0.08));
+                    
+                    const lightness = i * 3;
+                    const gradient = ctx.createLinearGradient(0, 0, 0, -segmentHeight);
+                    gradient.addColorStop(0, lightenColor(this.color, lightness));
+                    gradient.addColorStop(1, lightenColor(this.color, lightness + 4));
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    
+                    if (i === this.segments - 1) {
+                        ctx.moveTo(-segmentWidth / 2, 0);
+                        ctx.quadraticCurveTo(0, -segmentHeight * 0.7, 0, -segmentHeight);
+                        ctx.quadraticCurveTo(0, -segmentHeight * 0.7, segmentWidth / 2, 0);
+                    } else {
+                        ctx.moveTo(-segmentWidth / 2, 0);
+                        ctx.bezierCurveTo(
+                            -segmentWidth / 4, -segmentHeight / 3,
+                            -segmentWidth / 6, -segmentHeight * 2/3,
+                            0, -segmentHeight
+                        );
+                        ctx.bezierCurveTo(
+                            segmentWidth / 6, -segmentHeight * 2/3,
+                            segmentWidth / 4, -segmentHeight / 3,
+                            segmentWidth / 2, 0
+                        );
+                    }
+                    
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    const endX = Math.sin(cumulativeAngle) * segmentHeight;
+                    const endY = -Math.cos(cumulativeAngle) * segmentHeight;
+                    
+                    ctx.restore();
+                    
+                    x += endX;
+                    y += endY;
+                }
+            }
+        }
+        
+        function lightenColor(color, amount) {
+            const num = parseInt(color.slice(1), 16);
+            const r = Math.min(255, ((num >> 16) & 0xff) + amount);
+            const g = Math.min(255, ((num >> 8) & 0xff) + amount);
+            const b = Math.min(255, (num & 0xff) + amount);
+            return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+        }
+        
+        const blades = [];
+        const numBlades = Math.floor(canvas.width / 15);
+        const groundHeight = 20;
+        
+        const grassColors = [
+            '#1e5012', '#2a6d12', '#3a7c17', '#4c9a2a', '#5cb52e', '#306b10'
+        ];
+        
+        for (let i = 0; i < numBlades; i++) {
+            const x = i * 15 + Math.random() * 10;
+            const height = 160 + Math.random() * 50;
+            const width = 3 + Math.random() * 3;
+            const color = grassColors[Math.floor(Math.random() * grassColors.length)];
+            const swayFactor = Math.random() * 0.3 + 0.3;
+            
+            blades.push(new GrassBlade(x, height, width, color, swayFactor));
+        }
+        
+        let mouseX = -100;
+        let mouseY = -100;
+        let targetMouseX = -100;
+        let targetMouseY = -100;
+        
+        canvas.addEventListener('mousemove', (e) => {
+            targetMouseX = e.clientX;
+            targetMouseY = e.clientY;
+            updateCursor(e.clientX, e.clientY);
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            targetMouseX = e.touches[0].clientX;
+            targetMouseY = e.touches[0].clientY;
+            updateCursor(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+        
+        canvas.addEventListener('mouseleave', () => {
+            targetMouseX = -100;
+            targetMouseY = -100;
+        });
+        
+        let windFactor = 0;
+        let targetWindFactor = 0;
+        let windChangeTime = 0;
+        let lastTime = 0;
+        
+        // Controls setup for interaction strength
+        let interactionStrength = 0.3;  // Default value
+        const interactionSlider = document.getElementById('interactionStrength');
+        const interactionValueDisplay = document.getElementById('interactionStrengthValue');
+        const controlsPanel = document.getElementById('controls');
+        const hideControlsBtn = document.getElementById('hideControls');
+        const showControlsBtn = document.getElementById('showControls');
+        
+        // Initialize slider to match the default value
+        interactionSlider.value = interactionStrength * 100;
+        
+        // Update interaction strength when slider changes
+        interactionSlider.addEventListener('input', function() {
+            interactionStrength = this.value / 100;
+            interactionValueDisplay.textContent = interactionStrength.toFixed(1);
+        });
+        
+        // Hide/show controls panel
+        hideControlsBtn.addEventListener('click', function() {
+            controlsPanel.style.display = 'none';
+            showControlsBtn.style.display = 'block';
+        });
+        
+        showControlsBtn.addEventListener('click', function() {
+            controlsPanel.style.display = 'flex';
+            showControlsBtn.style.display = 'none';
+        });
+        
+        // Simplified tool selection - only attract and repel
+        let currentTool = 'attract';
+        
+        // Tool buttons
+        const toolAttractBtn = document.getElementById('toolAttract');
+        const toolRepelBtn = document.getElementById('toolRepel');
+        
+        // Cursor indicators
+        const cursorAttract = document.getElementById('cursorAttract');
+        const cursorRepel = document.getElementById('cursorRepel');
+        
+        // Set tool functions
+        function setTool(tool) {
+            currentTool = tool;
+            
+            // Update button states
+            toolAttractBtn.classList.remove('active');
+            toolRepelBtn.classList.remove('active');
+            
+            // Hide all cursor indicators
+            cursorAttract.style.display = 'none';
+            cursorRepel.style.display = 'none';
+            
+            // Set the active button and cursor
+            switch(tool) {
+                case 'attract':
+                    toolAttractBtn.classList.add('active');
+                    cursorAttract.style.display = 'block';
+                    break;
+                case 'repel':
+                    toolRepelBtn.classList.add('active');
+                    cursorRepel.style.display = 'block';
+                    break;
+            }
+        }
+        
+        // Add event listeners to tool buttons
+        toolAttractBtn.addEventListener('click', () => setTool('attract'));
+        toolRepelBtn.addEventListener('click', () => setTool('repel'));
+        
+        // Update cursor position
+        function updateCursor(x, y) {
+            cursorAttract.style.left = x + 'px';
+            cursorAttract.style.top = y + 'px';
+            cursorRepel.style.left = x + 'px';
+            cursorRepel.style.top = y + 'px';
+        }
+        
+        function animate(timestamp) {
+            const deltaTime = lastTime ? (timestamp - lastTime) / 1000 : 0.016;
+            lastTime = timestamp;
+            
+            const limitedDelta = Math.min(deltaTime, 0.05);
+            
+            mouseX += (targetMouseX - mouseX) * 0.1;
+            mouseY += (targetMouseY - mouseY) * 0.1;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#5d8dbd');
+            skyGradient.addColorStop(1, '#c5dee8');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const groundGradient = ctx.createLinearGradient(0, canvas.height - groundHeight, 0, canvas.height);
+            groundGradient.addColorStop(0, '#7d5d3b');
+            groundGradient.addColorStop(1, '#5e442a');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+            
+            ctx.fillStyle = 'rgba(60, 40, 20, 0.4)';
+            ctx.fillRect(0, canvas.height - groundHeight - 3, canvas.width, 3);
+            
+            ctx.fillStyle = 'rgba(60, 40, 20, 0.2)';
+            for (let i = 0; i < 100; i++) {
+                const x = Math.random() * canvas.width;
+                const y = canvas.height - Math.random() * (groundHeight - 4);
+                const size = Math.random() * 2 + 1;
+                ctx.fillRect(x, y, size, size);
+            }
+            
+            ctx.fillStyle = 'rgba(40, 30, 10, 0.3)';
+            for (const blade of blades) {
+                const rootWidth = blade.width * 1.2;
+                ctx.beginPath();
+                ctx.ellipse(
+                    blade.x, 
+                    canvas.height - groundHeight + 2, 
+                    rootWidth, 1.5, 
+                    0, 0, Math.PI * 2
+                );
+                ctx.fill();
+            }
+            
+            const currentTime = timestamp * 0.001;
+            if (currentTime > windChangeTime) {
+                targetWindFactor = (Math.random() * 1.2 - 0.6) * 0.2;
+                windChangeTime = currentTime + 3 + Math.random() * 4;
+            }
+            
+            windFactor += (targetWindFactor - windFactor) * 0.005;
+            
+            blades.sort((a, b) => a.x - b.x);
+            
+            for (const blade of blades) {
+                blade.update(currentTime, mouseX, mouseY, windFactor, interactionStrength, currentTool);
+                blade.draw(limitedDelta);
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        setTool('attract');
+        animate();
+    </script>
+</body>
+</html>
