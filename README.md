@@ -45,4 +45,6 @@ Smaller Experiments
 [Colour mixer](https://blygren.github.io/yes/image-to-softbody.html)
 
 
+[Grass simulation](https://blygren.github.io/yes/interactive_grass.html)
+
 
