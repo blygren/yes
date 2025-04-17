@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rope Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #2c3e50; /* Dark blue background */
+            font-family: Arial, sans-serif;
+        }
+        
+        canvas {
+            display: block;
+            background-color: #34495e;
+            touch-action: none; /* Prevent browser's default touch actions */
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            width: 280px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, backdrop-filter 0.3s ease;
+            transform: translateX(0);
+            backdrop-filter: blur(10px);
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .controls.collapsed {
+            width: auto;
+            height: auto;
+            padding: 8px;
+            overflow: hidden;
+            transform: translateX(-100%);
+            width: 40px;
+        }
+        
+        .controls.collapsed .panel-content {
+            display: none;
+        }
+        
+        .panel-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 20px;
+            color: #2c3e50;
+            display: none;
+        }
+        
+        .controls.collapsed .panel-title {
+            display: inline;
+        }
+        
+        .expand-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+
+        .controls.collapsed .expand-toggle {
+            position: absolute;
+            top: 10px;
+            left: 100%;
+            margin-left: 8px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            background-color: #3498db;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .action-buttons {
+            display: flex;
+            margin-bottom: 12px;
+        }
+        
+        .section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #bbb;
+        }
+        
+        .section h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section h3::before {
+            content: "▶";
+            margin-right: 6px;
+            font-size: 10px;
+            color: #7f8c8d;
+        }
+        
+        .option {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .option label {
+            flex: 1;
+            font-size: 14px;
+            color: #34495e;
+        }
+        
+        .option input[type="range"] {
+            flex: 1;
+            margin: 0 8px;
+        }
+        
+        .option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-left: auto;
+        }
+        
+        .option span.value {
+            width: 30px;
+            text-align: right;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .color-preview {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid #999;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .color-preview:hover {
+            transform: scale(1.1);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-left: auto;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #2196F3;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .preset-button {
+            padding: 5px 10px;
+            background-color: #7f8c8d;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+        
+        .preset-button:hover {
+            background-color: #95a5a6;
+        }
+        
+        @media (max-height: 750px) {
+            .controls {
+                max-height: 80vh;
+            }
+        }
+
+        .option select {
+            padding: 5px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            background-color: #ffffff;
+            font-size: 14px;
+            color: #34495e;
+            margin-left: 8px;
+        }
+        
+        .option select:disabled {
+            background-color: #ecf0f1;
+            color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls" id="controlPanel">
+        <span class="panel-title">Settings</span>
+        <span class="expand-toggle" id="expandToggle">−</span>
+        
+        <div class="panel-content">
+            <div class="action-buttons">
+                <button id="spawnBtn">Spawn Rope</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+            <span id="instructions">Click and drag to interact!</span>
+            
+            <div class="section">
+                <h3>Rope Appearance</h3>
+                <div class="option">
+                    <label for="ropeLength">Length:</label>
+                    <input type="range" id="ropeLength" min="5" max="80" value="30">
+                    <span class="value" id="ropeLengthValue">30</span>
+                </div>
+                <div class="option">
+                    <label for="ropeThickness">Thickness:</label>
+                    <input type="range" id="ropeThickness" min="2" max="30" value="12">
+                    <span class="value" id="ropeThicknessValue">12</span>
+                </div>
+                <div class="option">
+                    <label for="ropeColor">Color:</label>
+                    <input type="color" id="ropeColor" value="#c0392b">
+                    <div class="color-preview" id="colorPreview" style="background-color: #c0392b;"></div>
+                </div>
+                <div class="option">
+                    <label for="showNodes">Show nodes:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showNodes" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="preset-buttons">
+                    <button class="preset-button" id="colorPreset1" style="background-color: #c0392b;">Red</button>
+                    <button class="preset-button" id="colorPreset2" style="background-color: #27ae60;">Green</button>
+                    <button class="preset-button" id="colorPreset3" style="background-color: #2980b9;">Blue</button>
+                    <button class="preset-button" id="colorPreset4" style="background-color: #f39c12;">Yellow</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Physics Settings</h3>
+                <div class="option">
+                    <label for="gravityStrength">Gravity:</label>
+                    <input type="range" id="gravityStrength" min="0" max="1" step="0.05" value="0.3">
+                    <span class="value" id="gravityValue">0.3</span>
+                </div>
+                <div class="option">
+                    <label for="tensionStrength">Tension:</label>
+                    <input type="range" id="tensionStrength" min="0.1" max="1" step="0.05" value="0.5">
+                    <span class="value" id="tensionValue">0.5</span>
+                </div>
+                <div class="option">
+                    <label for="frictionValue">Friction:</label>
+                    <input type="range" id="frictionValue" min="0.8" max="0.999" step="0.001" value="0.99">
+                    <span class="value" id="frictionDisplay">0.99</span>
+                </div>
+                <div class="option">
+                    <label for="bounciness">Bounciness:</label>
+                    <input type="range" id="bounciness" min="0" max="0.9" step="0.05" value="0.3">
+                    <span class="value" id="bouncinessValue">0.30</span>
+                </div>
+                <div class="option">
+                    <label for="pinRopes">Pin ropes:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pinRopes" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Special Effects</h3>
+                <div class="option">
+                    <label for="useWind">Wind effect:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="useWind">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="option">
+                    <label for="windStrength">Wind strength:</label>
+                    <input type="range" id="windStrength" min="0" max="0.5" step="0.01" value="0.1" disabled>
+                    <span class="value" id="windValue">0.10</span>
+                </div>
+                <div class="option">
+                    <label for="windDirection">Direction:</label>
+                    <select id="windDirection" disabled>
+                        <option value="left">Left</option>
+                        <option value="right" selected>Right</option>
+                        <option value="random">Random</option>
+                    </select>
+                </div>
+                <div class="option">
+                    <label for="showGrid">Grid Background:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showGrid">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Presets</h3>
+                <button id="waterRope">Water-like Rope</button>
+                <button id="heavyRope">Heavy Chain</button>
+                <button id="elasticRope">Elastic Band</button>
+                <button id="silkRope">Silk Ribbon</button>
+                <button id="stormEffect">Storm Effect</button>
+            </div>
+        </div>
+    </div>
+    <canvas id="canvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const spawnBtn = document.getElementById('spawnBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const controlPanel = document.getElementById('controlPanel');
+        const expandToggle = document.getElementById('expandToggle');
+        
+        // UI control elements
+        expandToggle.addEventListener('click', () => {
+            controlPanel.classList.toggle('collapsed');
+            expandToggle.textContent = controlPanel.classList.contains('collapsed') ? '+' : '−';
+        });
+        
+        // Customize controls
+        const ropeLengthSlider = document.getElementById('ropeLength');
+        const ropeLengthValue = document.getElementById('ropeLengthValue');
+        const ropeThicknessSlider = document.getElementById('ropeThickness');
+        const ropeThicknessValue = document.getElementById('ropeThicknessValue');
+        const ropeColorPicker = document.getElementById('ropeColor');
+        const colorPreview = document.getElementById('colorPreview');
+        const showNodesCheckbox = document.getElementById('showNodes');
+        const gravitySlider = document.getElementById('gravityStrength');
+        const gravityValue = document.getElementById('gravityValue');
+        const tensionSlider = document.getElementById('tensionStrength');
+        const tensionValue = document.getElementById('tensionValue');
+        const frictionSlider = document.getElementById('frictionValue');
+        const frictionDisplay = document.getElementById('frictionDisplay');
+        const bouncinessSlider = document.getElementById('bounciness');
+        const bouncinessValue = document.getElementById('bouncinessValue');
+        const pinRopesCheckbox = document.getElementById('pinRopes');
+        const useWindCheckbox = document.getElementById('useWind');
+        const windStrengthSlider = document.getElementById('windStrength');
+        const windValue = document.getElementById('windValue');
+        const windDirectionSelect = document.getElementById('windDirection');
+        const showGridCheckbox = document.getElementById('showGrid');
+        
+        // Preset buttons
+        const colorPreset1 = document.getElementById('colorPreset1');
+        const colorPreset2 = document.getElementById('colorPreset2');
+        const colorPreset3 = document.getElementById('colorPreset3');
+        const colorPreset4 = document.getElementById('colorPreset4');
+        const waterRopeBtn = document.getElementById('waterRope');
+        const heavyRopeBtn = document.getElementById('heavyRope');
+        const elasticRopeBtn = document.getElementById('elasticRope');
+        const silkRopeBtn = document.getElementById('silkRope');
+        const stormEffectBtn = document.getElementById('stormEffect');
+        
+        // Customize settings
+        let customRopeLength = parseInt(ropeLengthSlider.value);
+        let customRopeThickness = parseInt(ropeThicknessSlider.value);
+        let customRopeColor = ropeColorPicker.value;
+        let customShowNodes = showNodesCheckbox.checked;
+        let customGravity = parseFloat(gravitySlider.value);
+        let customTension = parseFloat(tensionSlider.value);
+        let customFriction = parseFloat(frictionSlider.value);
+        let customBounciness = parseFloat(bouncinessSlider.value);
+        let customPinRopes = pinRopesCheckbox.checked;
+        let customUseWind = useWindCheckbox.checked;
+        let customWindStrength = parseFloat(windStrengthSlider.value);
+        let customWindDirection = windDirectionSelect.value;
+        let customShowGrid = showGridCheckbox.checked;
+        
+        // Enable/disable wind controls based on wind toggle
+        useWindCheckbox.addEventListener('change', () => {
+            customUseWind = useWindCheckbox.checked;
+            windStrengthSlider.disabled = !customUseWind;
+            windDirectionSelect.disabled = !customUseWind;
+        });
+
+        // Update display values
+        ropeLengthSlider.addEventListener('input', () => {
+            customRopeLength = parseInt(ropeLengthSlider.value);
+            ropeLengthValue.textContent = customRopeLength;
+        });
+        
+        ropeThicknessSlider.addEventListener('input', () => {
+            customRopeThickness = parseInt(ropeThicknessSlider.value);
+            ropeThicknessValue.textContent = customRopeThickness;
+            for (const rope of allRopes) {
+                rope.thickness = customRopeThickness;
+            }
+        });
+        
+        ropeColorPicker.addEventListener('input', () => {
+            customRopeColor = ropeColorPicker.value;
+            colorPreview.style.backgroundColor = customRopeColor;
+        });
+        
+        showNodesCheckbox.addEventListener('change', () => {
+            customShowNodes = showNodesCheckbox.checked;
+            for (const rope of allRopes) {
+                rope.showNodes = customShowNodes;
+            }
+        });
+        
+        gravitySlider.addEventListener('input', () => {
+            customGravity = parseFloat(gravitySlider.value);
+            gravityValue.textContent = customGravity.toFixed(2);
+            GRAVITY = customGravity;
+        });
+        
+        tensionSlider.addEventListener('input', () => {
+            customTension = parseFloat(tensionSlider.value);
+            tensionValue.textContent = customTension.toFixed(2);
+            TENSION = customTension;
+        });
+        
+        frictionSlider.addEventListener('input', () => {
+            customFriction = parseFloat(frictionSlider.value);
+            frictionDisplay.textContent = customFriction.toFixed(3);
+            FRICTION = customFriction;
+        });
+        
+        bouncinessSlider.addEventListener('input', () => {
+            customBounciness = parseFloat(bouncinessSlider.value);
+            bouncinessValue.textContent = customBounciness.toFixed(2);
+        });
+        
+        pinRopesCheckbox.addEventListener('change', () => {
+            customPinRopes = pinRopesCheckbox.checked;
+            for (const rope of allRopes) {
+                rope.segments[0].pinned = customPinRopes;
+            }
+        });
+        
+        windStrengthSlider.addEventListener('input', () => {
+            customWindStrength = parseFloat(windStrengthSlider.value);
+            windValue.textContent = customWindStrength.toFixed(2);
+        });
+        
+        windDirectionSelect.addEventListener('change', () => {
+            customWindDirection = windDirectionSelect.value;
+        });
+        
+        showGridCheckbox.addEventListener('change', () => {
+            customShowGrid = showGridCheckbox.checked;
+        });
+        
+        colorPreset1.addEventListener('click', () => {
+            const color = '#c0392b';
+            ropeColorPicker.value = color;
+            customRopeColor = color;
+            colorPreview.style.backgroundColor = color;
+        });
+        
+        colorPreset2.addEventListener('click', () => {
+            const color = '#27ae60';
+            ropeColorPicker.value = color;
+            customRopeColor = color;
+            colorPreview.style.backgroundColor = color;
+        });
+        
+        colorPreset3.addEventListener('click', () => {
+            const color = '#2980b9';
+            ropeColorPicker.value = color;
+            customRopeColor = color;
+            colorPreview.style.backgroundColor = color;
+        });
+        
+        colorPreset4.addEventListener('click', () => {
+            const color = '#f39c12';
+            ropeColorPicker.value = color;
+            customRopeColor = color;
+            colorPreview.style.backgroundColor = color;
+        });
+        
+        waterRopeBtn.addEventListener('click', () => {
+            gravitySlider.value = 0.2;
+            tensionSlider.value = 0.3;
+            ropeThicknessSlider.value = 8;
+            frictionSlider.value = 0.98;
+            bouncinessSlider.value = 0.2;
+            
+            customGravity = 0.2;
+            customTension = 0.3;
+            customRopeThickness = 8;
+            customFriction = 0.98;
+            customBounciness = 0.2;
+            
+            gravityValue.textContent = customGravity.toFixed(2);
+            tensionValue.textContent = customTension.toFixed(2);
+            ropeThicknessValue.textContent = customRopeThickness;
+            frictionDisplay.textContent = customFriction.toFixed(3);
+            bouncinessValue.textContent = customBounciness.toFixed(2);
+            
+            GRAVITY = customGravity;
+            TENSION = customTension;
+            FRICTION = customFriction;
+            
+            createBigRope();
+        });
+        
+        heavyRopeBtn.addEventListener('click', () => {
+            gravitySlider.value = 0.6;
+            tensionSlider.value = 0.7;
+            ropeThicknessSlider.value = 20;
+            frictionSlider.value = 0.995;
+            bouncinessSlider.value = 0.1;
+            
+            customGravity = 0.6;
+            customTension = 0.7;
+            customRopeThickness = 20;
+            customFriction = 0.995;
+            customBounciness = 0.1;
+            
+            gravityValue.textContent = customGravity.toFixed(2);
+            tensionValue.textContent = customTension.toFixed(2);
+            ropeThicknessValue.textContent = customRopeThickness;
+            frictionDisplay.textContent = customFriction.toFixed(3);
+            bouncinessValue.textContent = customBounciness.toFixed(2);
+            
+            GRAVITY = customGravity;
+            TENSION = customTension;
+            FRICTION = customFriction;
+            
+            createBigRope();
+        });
+        
+        elasticRopeBtn.addEventListener('click', () => {
+            gravitySlider.value = 0.2;
+            tensionSlider.value = 0.9;
+            ropeThicknessSlider.value = 6;
+            frictionSlider.value = 0.99;
+            bouncinessSlider.value = 0.4;
+            
+            customGravity = 0.2;
+            customTension = 0.9;
+            customRopeThickness = 6;
+            customFriction = 0.99;
+            customBounciness = 0.4;
+            
+            gravityValue.textContent = customGravity.toFixed(2);
+            tensionValue.textContent = customTension.toFixed(2);
+            ropeThicknessValue.textContent = customRopeThickness;
+            frictionDisplay.textContent = customFriction.toFixed(3);
+            bouncinessValue.textContent = customBounciness.toFixed(2);
+            
+            GRAVITY = customGravity;
+            TENSION = customTension;
+            FRICTION = customFriction;
+            
+            createBigRope();
+        });
+        
+        silkRopeBtn.addEventListener('click', () => {
+            gravitySlider.value = 0.15;
+            tensionSlider.value = 0.4;
+            ropeThicknessSlider.value = 4;
+            frictionSlider.value = 0.97;
+            bouncinessSlider.value = 0.15;
+            ropeColorPicker.value = "#9b59b6";
+            
+            customGravity = 0.15;
+            customTension = 0.4;
+            customRopeThickness = 4;
+            customFriction = 0.97;
+            customBounciness = 0.15;
+            customRopeColor = "#9b59b6";
+            
+            gravityValue.textContent = customGravity.toFixed(2);
+            tensionValue.textContent = customTension.toFixed(2);
+            ropeThicknessValue.textContent = customRopeThickness;
+            frictionDisplay.textContent = customFriction.toFixed(3);
+            bouncinessValue.textContent = customBounciness.toFixed(2);
+            colorPreview.style.backgroundColor = customRopeColor;
+            
+            GRAVITY = customGravity;
+            TENSION = customTension;
+            FRICTION = customFriction;
+            
+            createBigRope();
+        });
+        
+        stormEffectBtn.addEventListener('click', () => {
+            gravitySlider.value = 0.3;
+            tensionSlider.value = 0.4;
+            ropeThicknessSlider.value = 6;
+            frictionSlider.value = 0.99;
+            bouncinessSlider.value = 0.4;
+            
+            customGravity = 0.3;
+            customTension = 0.4;
+            customRopeThickness = 6;
+            customFriction = 0.99;
+            customBounciness = 0.4;
+            
+            useWindCheckbox.checked = true;
+            customUseWind = true;
+            windStrengthSlider.disabled = false;
+            windDirectionSelect.disabled = false;
+            windStrengthSlider.value = 0.3;
+            customWindStrength = 0.3;
+            windValue.textContent = customWindStrength.toFixed(2);
+            windDirectionSelect.value = "random";
+            customWindDirection = "random";
+            
+            gravityValue.textContent = customGravity.toFixed(2);
+            tensionValue.textContent = customTension.toFixed(2);
+            ropeThicknessValue.textContent = customRopeThickness;
+            frictionDisplay.textContent = customFriction.toFixed(3);
+            bouncinessValue.textContent = customBounciness.toFixed(2);
+            
+            GRAVITY = customGravity;
+            TENSION = customTension;
+            FRICTION = customFriction;
+            
+            createBigRope();
+        });
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        let GRAVITY = 0.3;
+        let FRICTION = 0.99;
+        let TENSION = 0.5;
+        let windTime = 0;
+        
+        let allRopes = [];
+        
+        let mouse = { x: 0, y: 0, isDown: false, grabbed: null };
+        
+        class RopeSegment {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.oldX = x;
+                this.oldY = y;
+                this.radius = 6;
+                this.pinned = false;
+            }
+            
+            update() {
+                if (this.pinned) return;
+                
+                const vx = (this.x - this.oldX) * FRICTION;
+                const vy = (this.y - this.oldY) * FRICTION;
+                
+                this.oldX = this.x;
+                this.oldY = this.y;
+                
+                let windForce = 0;
+                if (customUseWind) {
+                    if (customWindDirection === "right") {
+                        windForce = customWindStrength;
+                    } else if (customWindDirection === "left") {
+                        windForce = -customWindStrength;
+                    } else {
+                        windForce = Math.sin(windTime * 0.005) * customWindStrength;
+                    }
+                }
+                
+                this.x += vx + windForce;
+                this.y += vy + GRAVITY;
+                
+                if (this.x < this.radius) {
+                    this.x = this.radius;
+                    this.oldX = this.x + vx * (1 + customBounciness);
+                } else if (this.x > canvas.width - this.radius) {
+                    this.x = canvas.width - this.radius;
+                    this.oldX = this.x + vx * (1 + customBounciness);
+                }
+                
+                if (this.y < this.radius) {
+                    this.y = this.radius;
+                    this.oldY = this.y + vy * (1 + customBounciness);
+                } else if (this.y > canvas.height - this.radius) {
+                    this.y = canvas.height - this.radius;
+                    this.oldY = this.y + vy * (1 + customBounciness);
+                }
+                
+                if (mouse.isDown && mouse.grabbed === this) {
+                    this.x = mouse.x;
+                    this.y = mouse.y;
+                    this.oldX = this.x;
+                    this.oldY = this.y;
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.pinned ? '#e74c3c' : '#95a5a6';
+                ctx.fill();
+            }
+        }
+        
+        class Rope {
+            constructor(x, y, segments = 15, color = '#c0392b', showNodes = true, thickness = 12) {
+                this.segments = [];
+                this.color = color;
+                this.showNodes = showNodes;
+                this.thickness = thickness;
+                
+                for (let i = 0; i < segments; i++) {
+                    const segment = new RopeSegment(x, y + i * 20);
+                    this.segments.push(segment);
+                }
+                
+                this.segments[0].pinned = customPinRopes;
+            }
+            
+            update() {
+                for (let i = 0; i < this.segments.length; i++) {
+                    this.segments[i].update();
+                }
+                
+                for (let k = 0; k < 5; k++) {
+                    this.applyConstraints();
+                }
+                
+                this.handleCollisions();
+            }
+            
+            applyConstraints() {
+                const segDist = 20;
+                
+                for (let i = 0; i < this.segments.length - 1; i++) {
+                    const segmentA = this.segments[i];
+                    const segmentB = this.segments[i + 1];
+                    
+                    const dx = segmentB.x - segmentA.x;
+                    const dy = segmentB.y - segmentA.y;
+                    
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const diff = distance - segDist;
+                    
+                    const percent = (diff / distance) * TENSION;
+                    const offsetX = dx * percent;
+                    const offsetY = dy * percent;
+                    
+                    if (!segmentA.pinned) {
+                        segmentA.x += offsetX;
+                        segmentA.y += offsetY;
+                    }
+                    
+                    if (!segmentB.pinned) {
+                        segmentB.x -= offsetX;
+                        segmentB.y -= offsetY;
+                    }
+                }
+            }
+            
+            handleCollisions() {
+                for (const otherRope of allRopes) {
+                    if (otherRope === this) continue;
+                    
+                    for (const selfSegment of this.segments) {
+                        for (const otherSegment of otherRope.segments) {
+                            const dx = otherSegment.x - selfSegment.x;
+                            const dy = otherSegment.y - selfSegment.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            const minDist = selfSegment.radius + otherSegment.radius;
+                            
+                            if (distance < minDist) {
+                                const angle = Math.atan2(dy, dx);
+                                const pushX = Math.cos(angle) * (minDist - distance) * 0.5;
+                                const pushY = Math.sin(angle) * (minDist - distance) * 0.5;
+                                
+                                if (!selfSegment.pinned && !otherSegment.pinned) {
+                                    selfSegment.x -= pushX;
+                                    selfSegment.y -= pushY;
+                                    otherSegment.x += pushX;
+                                    otherSegment.y += pushY;
+                                } else if (!selfSegment.pinned) {
+                                    selfSegment.x -= pushX * 2;
+                                    selfSegment.y -= pushY * 2;
+                                } else if (!otherSegment.pinned) {
+                                    otherSegment.x += pushX * 2;
+                                    otherSegment.y += pushY * 2;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.segments[0].x, this.segments[0].y);
+                
+                for (let i = 1; i < this.segments.length; i++) {
+                    ctx.lineTo(this.segments[i].x, this.segments[i].y);
+                }
+                
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = this.thickness;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                
+                if (this.showNodes) {
+                    for (let i = 0; i < this.segments.length; i++) {
+                        this.segments[i].draw();
+                    }
+                }
+            }
+        }
+        
+        function spawnRope() {
+            const x = 100 + Math.random() * (canvas.width - 200);
+            const y = 50;
+            allRopes.push(new Rope(x, y, customRopeLength, customRopeColor, customShowNodes, customRopeThickness));
+        }
+        
+        function createBigRope() {
+            const x = canvas.width / 2;
+            const y = 50;
+            allRopes = [new Rope(x, y, customRopeLength, customRopeColor, customShowNodes, customRopeThickness)];
+        }
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (customShowGrid) drawGrid();
+            
+            windTime++;
+            
+            for (let i = 0; i < allRopes.length; i++) {
+                allRopes[i].update();
+                allRopes[i].draw();
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        function drawGrid() {
+            const gridSize = 50;
+            ctx.save();
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 0.5;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        function handleStart(x, y) {
+            mouse.isDown = true;
+            mouse.x = x;
+            mouse.y = y;
+            
+            for (const rope of allRopes) {
+                for (const segment of rope.segments) {
+                    const dx = mouse.x - segment.x;
+                    const dy = mouse.y - segment.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    const hitRadius = ('ontouchstart' in window) ? segment.radius * 3 : segment.radius * 2;
+                    
+                    if (distance < hitRadius) {
+                        mouse.grabbed = segment;
+                        break;
+                    }
+                }
+                if (mouse.grabbed) break;
+            }
+        }
+        
+        function handleMove(x, y) {
+            mouse.x = x;
+            mouse.y = y;
+        }
+        
+        function handleEnd() {
+            mouse.isDown = false;
+            mouse.grabbed = null;
+        }
+        
+        canvas.addEventListener('mousedown', (e) => {
+            handleStart(e.clientX, e.clientY);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            handleMove(e.clientX, e.clientY);
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            handleEnd();
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            handleEnd();
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleStart(touch.clientX, touch.clientY);
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            handleEnd();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            handleEnd();
+        }, { passive: false });
+        
+        spawnBtn.addEventListener('click', spawnRope);
+        resetBtn.addEventListener('click', () => {
+            createBigRope();
+        });
+        
+        createBigRope();
+        animate();
+    </script>
+</body>
+</html>
