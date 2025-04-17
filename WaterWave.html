@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Water Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Hide scrollbars */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a; /* Dark background */
+            color: #e0e0e0; /* Light text */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+        }
+
+        h1 {
+            margin-top: 15px; /* Adjusted margin */
+            margin-bottom: 15px;
+            color: #e0e0e0; /* Light text */
+            font-weight: 300; /* Lighter font weight */
+        }
+
+        #controls {
+            margin-bottom: 15px; /* Space between controls and canvas */
+            padding: 8px 12px; /* Slightly more padding */
+            background-color: #2a2a2a; /* Darker controls background */
+            border-radius: 6px; /* Slightly more rounded */
+            border: 1px solid #444; /* Subtle border */
+        }
+
+        #controls span {
+            margin-right: 10px;
+            font-weight: normal; /* Normal weight */
+            color: #bbb; /* Lighter text for label */
+        }
+
+        .tool-button {
+            padding: 6px 12px; /* Adjusted padding */
+            margin: 0 3px; /* Adjusted margin */
+            cursor: pointer;
+            border: none; /* Remove border for flatter look */
+            background-color: #444; /* Dark button background */
+            color: #e0e0e0; /* Light button text */
+            border-radius: 4px; /* Rounded corners */
+            transition: background-color 0.2s ease; /* Smooth transition */
+        }
+
+        .tool-button.active {
+            background-color: #007bff; /* Accent color for active */
+            color: #fff; /* White text for active */
+            font-weight: normal; /* Keep normal weight */
+        }
+
+        .tool-button:hover:not(.active) { /* Hover effect only for non-active buttons */
+            background-color: #555; /* Slightly lighter on hover */
+        }
+
+        canvas {
+            display: block;
+            border: 1px solid #444; /* Darker border for canvas */
+            background-color: #001f3f; /* Dark blue background for water area */
+        }
+    </style>
+</head>
+<body>
+    <h1>2D Water Simulation</h1>
+    <div id="controls">
+        <span>Tool:</span>
+        <button id="tool-repulse" class="tool-button active">Repulse</button>
+        <button id="tool-drag" class="tool-button">Drag</button>
+        <button id="tool-spawn" class="tool-button">Spawn Cube</button>
+    </div>
+    <canvas id="waterCanvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('waterCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Simulation Parameters ---
+        const K = 0.025; // Spring constant (can be tweaked)
+        const DAMPING = 0.018; // Damping factor for water columns (slightly reduced)
+        const SPREAD = 0.03; // Wave spread factor (slightly increased)
+        const NUM_COLUMNS = 200; // Number of vertical columns (Increased for more detail)
+        const WATER_COLOR_TOP = '#3498db';    // Original water color for top
+        const WATER_COLOR_BOTTOM = '#2980b9'; // Darker shade for bottom of gradient
+        const SURFACE_LINE_COLOR = '#66b2ff'; // Lighter color for surface line
+        const CUBE_COLOR = '#e74c3c'; // Cube color
+        const GRAVITY = 0.1;
+        const BUOYANCY_MULTIPLIER = 0.3; // Increase for more upward force from water
+        const CUBE_DAMPING = 0.05; // Increase for more slowing effect from water
+        const CANVAS_BACKGROUND_COLOR = '#001f3f'; // Match CSS background
+
+        let canvasWidth = window.innerWidth * 0.8;
+        let canvasHeight = window.innerHeight * 0.6;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // --- Tool Selection ---
+        let currentTool = 'repulse'; // 'repulse', 'drag', 'spawn'
+        const toolButtons = document.querySelectorAll('.tool-button');
+
+        toolButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                toolButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentTool = button.id.split('-')[1]; // e.g., 'repulse'
+                isDragging = false; // Reset drag state when changing tools
+            });
+        });
+
+        // --- Water Column Class ---
+        class WaterColumn {
+            constructor(x, targetHeight) {
+                this.x = x;
+                this.targetHeight = targetHeight; // Equilibrium height
+                this.height = targetHeight;
+                this.velocity = 0;
+            }
+
+            update(leftDelta, rightDelta) {
+                // Calculate force based on Hooke's Law (F = -kx)
+                const force = -K * (this.height - this.targetHeight);
+                // Acceleration based on F=ma (assuming mass=1) -> a = F
+                let acceleration = force;
+
+                // Add force from neighbors (wave spreading)
+                acceleration += SPREAD * (leftDelta + rightDelta);
+
+                // Update velocity (apply acceleration and damping)
+                this.velocity += acceleration;
+                this.velocity *= (1 - DAMPING);
+
+                // Update height
+                this.height += this.velocity;
+            }
+
+            draw(ctx, columnWidth) {
+                ctx.lineTo(this.x + columnWidth / 2, this.height);
+            }
+        }
+
+        // --- Cube Class ---
+        class Cube {
+            constructor(x, y, size = 20, mass = 1) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.size = size;
+                this.mass = mass; // Affects buoyancy and gravity response
+                this.halfSize = size / 2;
+            }
+
+            update(columns, columnWidth) {
+                // Apply gravity
+                this.vy += GRAVITY;
+
+                // Calculate submerged area and apply buoyancy / interaction
+                const firstColIndex = Math.max(0, Math.floor((this.x - this.halfSize) / columnWidth));
+                const lastColIndex = Math.min(columns.length - 1, Math.floor((this.x + this.halfSize) / columnWidth));
+                let submergedVolume = 0;
+                let avgWaterHeight = 0;
+                let avgWaterVelocity = 0;
+                let colsInvolved = 0;
+
+                for (let i = firstColIndex; i <= lastColIndex; i++) {
+                    const waterHeight = columns[i].height;
+                    const colX = columns[i].x + columnWidth / 2; // Center of column
+
+                    // Check horizontal overlap (simple check)
+                    if (Math.abs(colX - this.x) < this.halfSize + columnWidth / 2) {
+                        const submergedDepth = Math.max(0, waterHeight - (this.y - this.halfSize));
+                        const colSubmergedHeight = Math.min(this.size, submergedDepth);
+
+                        if (colSubmergedHeight > 0) {
+                            const submergedRatio = colSubmergedHeight / this.size; // Ratio of cube height submerged at this column
+                            submergedVolume += submergedRatio; // Approximation of submerged volume proportion
+                            avgWaterHeight += waterHeight;
+                            avgWaterVelocity += columns[i].velocity;
+                            colsInvolved++;
+
+                            // Apply force from cube back onto water column
+                            // Push water down based on cube's downward velocity and depth
+                            // Increased impact slightly
+                            const forceOnWater = (this.vy * 0.015 + submergedRatio * 0.15) * this.mass; // Increased multipliers
+                            // Apply force more locally for bigger splash effect
+                            const splashFactor = Math.max(0.1, 1.0 - Math.abs(columns[i].x + columnWidth / 2 - this.x) / (this.size * 1.5)); // Force drops off further from cube center
+                            columns[i].velocity += (forceOnWater / columns.length) * splashFactor * 5; // Added splashFactor and increased base multiplier
+                        }
+                    }
+                }
+
+                if (colsInvolved > 0) {
+                    avgWaterHeight /= colsInvolved;
+                    avgWaterVelocity /= colsInvolved;
+
+                    // Apply Buoyancy force (proportional to submerged volume)
+                    // Uses BUOYANCY_MULTIPLIER
+                    const buoyancyForce = submergedVolume * BUOYANCY_MULTIPLIER * this.mass;
+                    this.vy -= buoyancyForce;
+
+                    // Apply drag/damping from water
+                    // Uses CUBE_DAMPING
+                    this.vx *= (1 - CUBE_DAMPING);
+                    this.vy *= (1 - CUBE_DAMPING);
+
+                    // Apply force from water velocity (push cube with waves)
+                    this.vy += avgWaterVelocity * 0.05;
+                }
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Collision with canvas bounds (simple)
+                if (this.x - this.halfSize < 0) {
+                    this.x = this.halfSize;
+                    this.vx *= -0.5; // Bounce with energy loss
+                }
+                if (this.x + this.halfSize > canvasWidth) {
+                    this.x = canvasWidth - this.halfSize;
+                    this.vx *= -0.5;
+                }
+                if (this.y - this.halfSize < 0) {
+                    // Allow going off top slightly
+                }
+                // Prevent sinking through floor (optional, could let them fall off)
+                if (this.y + this.halfSize > canvasHeight) {
+                    this.y = canvasHeight - this.halfSize;
+                    this.vy = 0; // Stop vertical velocity at floor
+                    this.vx *= 0.9; // Friction on floor
+                }
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = CUBE_COLOR;
+                ctx.fillRect(this.x - this.halfSize, this.y - this.halfSize, this.size, this.size);
+                ctx.strokeStyle = '#111'; // Darker stroke for dark theme
+                ctx.lineWidth = 1;
+                ctx.strokeRect(this.x - this.halfSize, this.y - this.halfSize, this.size, this.size);
+            }
+        }
+
+        // --- Initialize Water ---
+        const columns = [];
+        let columnWidth = canvasWidth / NUM_COLUMNS; // Initialize columnWidth globally
+        let waterLevel = canvasHeight * 0.7; // Baseline water level
+
+        function initializeWater() {
+            columns.length = 0; // Clear existing columns
+            columnWidth = canvasWidth / NUM_COLUMNS; // Recalculate width
+            waterLevel = canvasHeight * 0.7;
+            for (let i = 0; i <= NUM_COLUMNS; i++) {
+                columns.push(new WaterColumn(i * columnWidth, waterLevel));
+            }
+        }
+        initializeWater(); // Initial setup
+
+        // --- Initialize Cubes ---
+        const cubes = [];
+
+        // --- Update and Render Loop ---
+        function update() {
+            // Calculate height differences for wave spreading
+            const leftDeltas = new Array(columns.length).fill(0);
+            const rightDeltas = new Array(columns.length).fill(0);
+
+            // Pass 1: Calculate deltas (spread simulation)
+            for (let i = 0; i < columns.length; i++) {
+                if (i > 0) {
+                    leftDeltas[i] = SPREAD * (columns[i].height - columns[i - 1].height);
+                    columns[i - 1].velocity += leftDeltas[i];
+                }
+                if (i < columns.length - 1) {
+                    rightDeltas[i] = SPREAD * (columns[i].height - columns[i + 1].height);
+                    columns[i + 1].velocity += rightDeltas[i];
+                }
+            }
+
+            // Update Cubes (before updating water columns based on cube interaction)
+            cubes.forEach(cube => {
+                cube.update(columns, columnWidth);
+            });
+
+            // Pass 2: Update column heights and velocities (includes cube interaction effects)
+            for (let i = 0; i < columns.length; i++) {
+                columns[i].update(leftDeltas[i], rightDeltas[i]);
+            }
+        }
+
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = CANVAS_BACKGROUND_COLOR; // Use constant for background
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // --- Draw Water with Gradient ---
+            ctx.beginPath();
+            ctx.moveTo(columns[0].x, columns[0].height); // Start path at the first column
+
+            let minY = canvasHeight; // Find the minimum water height for gradient calculation
+            for (let i = 1; i < columns.length; i++) {
+                columns[i].draw(ctx, columnWidth);
+                if (columns[i].height < minY) {
+                    minY = columns[i].height;
+                }
+            }
+
+            // Close the path to fill the water area
+            ctx.lineTo(canvasWidth, canvasHeight); // Bottom right corner
+            ctx.lineTo(0, canvasHeight); // Bottom left corner
+            ctx.closePath();
+
+            // Create gradient (adjust minY slightly upwards for better effect)
+            const gradient = ctx.createLinearGradient(0, minY - 20, 0, canvasHeight);
+            gradient.addColorStop(0, WATER_COLOR_TOP);
+            gradient.addColorStop(1, WATER_COLOR_BOTTOM);
+
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // --- Draw Surface Line ---
+            ctx.beginPath();
+            ctx.moveTo(columns[0].x, columns[0].height);
+            for (let i = 1; i < columns.length; i++) {
+                // Use quadratic curve for smoother line (optional, lineTo is simpler)
+                const xc = (columns[i].x + columns[i-1].x + columnWidth) / 2;
+                const yc = (columns[i].height + columns[i-1].height) / 2;
+                ctx.quadraticCurveTo(columns[i-1].x + columnWidth / 2, columns[i-1].height, xc, yc);
+                // Or simpler: ctx.lineTo(columns[i].x + columnWidth / 2, columns[i].height);
+            }
+            // Ensure line reaches the end
+            ctx.lineTo(columns[columns.length-1].x + columnWidth / 2, columns[columns.length-1].height);
+
+            ctx.strokeStyle = SURFACE_LINE_COLOR;
+            ctx.lineWidth = 1.5; // Slightly thicker line
+            ctx.stroke();
+
+            // Draw Cubes
+            cubes.forEach(cube => {
+                cube.draw(ctx);
+            });
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Interaction ---
+        let isDragging = false;
+        let dragStartY = 0;
+        let dragColumnIndex = -1;
+
+        function splash(x, speed, width = 3) { // Added width parameter
+            const startIndex = Math.max(0, Math.floor(x / columnWidth) - Math.floor(width / 2));
+            const endIndex = Math.min(columns.length - 1, startIndex + width);
+
+            for (let i = startIndex; i <= endIndex; i++) {
+                // Apply more force to the center, less to the edges
+                const distance = Math.abs(i - (startIndex + width / 2));
+                const force = speed * (1 - distance / (width / 2 + 1)); // Simple falloff
+                if (columns[i]) {
+                    columns[i].velocity += force;
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            dragStartY = mouseY;
+            dragColumnIndex = Math.floor(mouseX / columnWidth);
+
+            if (currentTool === 'spawn') {
+                cubes.push(new Cube(mouseX, mouseY));
+                isDragging = false; // Don't drag when spawning
+            } else if (currentTool === 'repulse') {
+                splash(mouseX, -5, 5); // Negative speed to push away, wider splash
+                isDragging = false; // Repulse is instantaneous
+            }
+            // For 'drag', we just set isDragging = true and store start info
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (currentTool === 'drag' && dragColumnIndex >= 0 && dragColumnIndex < columns.length) {
+                const deltaY = mouseY - dragStartY;
+                columns[dragColumnIndex].height += deltaY * 0.5; // Apply drag effect
+                columns[dragColumnIndex].velocity = 0; // Stop natural oscillation while dragging
+                dragStartY = mouseY; // Update start Y for continuous drag
+                // Optionally affect neighbours
+                if (dragColumnIndex > 0) columns[dragColumnIndex - 1].height += deltaY * 0.2;
+                if (dragColumnIndex < columns.length - 1) columns[dragColumnIndex + 1].height += deltaY * 0.2;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            dragColumnIndex = -1;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false; // Stop dragging if mouse leaves canvas
+            dragColumnIndex = -1;
+        });
+
+        // --- Start Simulation ---
+        gameLoop();
+
+        // --- Handle Window Resize ---
+        window.addEventListener('resize', () => {
+            canvasWidth = window.innerWidth * 0.8;
+            canvasHeight = window.innerHeight * 0.6;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Recalculate column positions and target height
+            // columnWidth is recalculated inside initializeWater
+            initializeWater(); // Re-initialize water columns for new size
+
+            // Optional: Adjust cube positions if needed, or just let them fall
+            cubes.forEach(cube => {
+                // Keep cubes within new bounds if desired
+                cube.x = Math.max(cube.halfSize, Math.min(canvasWidth - cube.halfSize, cube.x));
+            });
+
+            // Re-render immediately after resize
+            render();
+        });
+    </script>
+</body>
+</html>
