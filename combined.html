@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>2D Pressure Flow Simulation</title>
+  <style>
+    body, html {
+      margin: 0; height: 100%; display: flex; align-items: center; justify-content: center;
+      background: #222;
+    }
+    canvas { border: 1px solid #666; }
+
+    #controls {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 8px; border-radius: 4px;
+      font-family: sans-serif; font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #controls label { display: block; margin-bottom: 4px; }
+    #controls button { margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="controls">
+    <label>Time Step: <input id="timeStep" type="range" min="0.01" max="1" step="0.01" value="0.1"></label>
+    <label>Viscosity: <input id="viscosity" type="range" min="0" max="0.001" step="0.0001" value="0.0001"></label>
+    <button id="reset">Reset</button>
+    <button id="pause">Pause</button>
+    <label><input type="checkbox" id="vorticity" checked> Vorticity</label>
+    <label><input type="checkbox" id="showArrows"> Show Arrows</label>
+    <label><input type="checkbox" id="colorMode"> Color Mode</label>
+  </div>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const N = 100, ITER = 20;
+    const size = N * N;
+    let u = new Float32Array(size), v = new Float32Array(size);
+    let u0 = new Float32Array(size), v0 = new Float32Array(size);
+    let p = new Float32Array(size), div = new Float32Array(size);
+    let dt = 0.1, visc = 0.0001;
+    let dens = new Float32Array(size), dens0 = new Float32Array(size);
+    let enableVort = true, showArrows = false, colorMode = false;
+    canvas.width = canvas.height = 500;
+    const cell = canvas.width / N;
+
+    // helpers
+    function idx(x,y){return x + y*N;}
+    function addSource(x,y,amountU,amountV){
+      const i = idx(x,y);
+      u[i] += amountU; v[i] += amountV;
+      dens[i] += 5;               // inject density
+    }
+
+    // enforce no-slip walls
+    function setBoundary(b, arr) {
+      for(let i=0;i<N;i++){
+        arr[idx(i,0)]     = b===2 ? -arr[idx(i,1)]     : arr[idx(i,1)];
+        arr[idx(i,N-1)]   = b===2 ? -arr[idx(i,N-2)]   : arr[idx(i,N-2)];
+        arr[idx(0,i)]     = b===1 ? -arr[idx(1,i)]     : arr[idx(1,i)];
+        arr[idx(N-1,i)]   = b===1 ? -arr[idx(N-2,i)]   : arr[idx(N-2,i)];
+      }
+      // corners
+      arr[idx(0,0)]       = 0.5*(arr[idx(1,0)]+arr[idx(0,1)]);
+      arr[idx(0,N-1)]     = 0.5*(arr[idx(1,N-1)]+arr[idx(0,N-2)]);
+      arr[idx(N-1,0)]     = 0.5*(arr[idx(N-2,0)]+arr[idx(N-1,1)]);
+      arr[idx(N-1,N-1)]   = 0.5*(arr[idx(N-2,N-1)]+arr[idx(N-1,N-2)]);
+    }
+
+    // pressure solver
+    function buildDivergence(){
+      for(let y=1;y<N-1;y++){
+        for(let x=1;x<N-1;x++){
+          const i=idx(x,y);
+          div[i] = -0.5 * cell * (u[idx(x+1,y)] - u[idx(x-1,y)] + v[idx(x,y+1)] - v[idx(x,y-1)]);
+          p[i] = 0;
+        }
+      }
+    }
+    function relaxPressure(){
+      for(let k=0;k<ITER;k++){
+        for(let y=1;y<N-1;y++){
+          for(let x=1;x<N-1;x++){
+            const i=idx(x,y);
+            p[i] = (div[i] + p[idx(x+1,y)] + p[idx(x-1,y)] + p[idx(x,y+1)] + p[idx(x,y-1)])/4;
+          }
+        }
+      }
+    }
+    function project(){
+      buildDivergence();
+      relaxPressure();
+      for(let y=1;y<N-1;y++){
+        for(let x=1;x<N-1;x++){
+          const i=idx(x,y);
+          u[i] -= 0.5*(p[idx(x+1,y)] - p[idx(x-1,y)])/cell;
+          v[i] -= 0.5*(p[idx(x,y+1)] - p[idx(x,y-1)])/cell;
+        }
+      }
+    }
+
+    // advection (semi-Lagrangian)
+    function advect(b0, b){
+      for(let y=1;y<N-1;y++){
+        for(let x=1;x<N-1;x++){
+          let i = idx(x,y);
+          let x0 = x - dt * u0[i] / cell;
+          let y0 = y - dt * v0[i] / cell;
+          x0 = Math.min(N-1.001, Math.max(0.001, x0));
+          y0 = Math.min(N-1.001, Math.max(0.001, y0));
+          const i0 = Math.floor(x0), j0 = Math.floor(y0);
+          const s1 = x0 - i0, s0 = 1 - s1;
+          const t1 = y0 - j0, t0 = 1 - t1;
+          b[i] = s0*(t0*b0[idx(i0,j0)] + t1*b0[idx(i0,j0+1)])
+               + s1*(t0*b0[idx(i0+1,j0)] + t1*b0[idx(i0+1,j0+1)]);
+        }
+      }
+    }
+
+    // diffusion
+    function diffuse(b, b0, diff){
+      const a = dt * diff * N * N;
+      for(let k=0;k<ITER;k++){
+        for(let y=1;y<N-1;y++){
+          for(let x=1;x<N-1;x++){
+            const i = idx(x,y);
+            b[i] = (b0[i]
+                   + a*(b[idx(x+1,y)] + b[idx(x-1,y)] + b[idx(x,y+1)] + b[idx(x,y-1)]))
+                   / (1 + 4*a);
+          }
+        }
+      }
+    }
+
+    // vorticity confinement
+    function applyVorticity() {
+      const curl = new Float32Array(size), forceU = new Float32Array(size), forceV = new Float32Array(size);
+      const eps = 0.001;
+      // compute curl
+      for(let y=1;y<N-1;y++) for(let x=1;x<N-1;x++){
+        const i = idx(x,y);
+        curl[i] = (v[idx(x+1,y)] - v[idx(x-1,y)] - u[idx(x,y+1)] + u[idx(x,y-1)]) * 0.5;
+      }
+      // compute force
+      for(let y=2;y<N-2;y++) for(let x=2;x<N-2;x++){
+        const i = idx(x,y);
+        // ∇|ω|
+        const dw_dx = (Math.abs(curl[idx(x+1,y)]) - Math.abs(curl[idx(x-1,y)])) * 0.5;
+        const dw_dy = (Math.abs(curl[idx(x,y+1)]) - Math.abs(curl[idx(x,y-1)])) * 0.5;
+        const len = Math.hypot(dw_dx, dw_dy) + 1e-6;
+        // normalize & apply
+        forceU[i] =  eps * ( dw_dy / len) * curl[i];
+        forceV[i] = -eps * ( dw_dx / len) * curl[i];
+      }
+      // add forces
+      for(let i=0;i<size;i++){
+        u[i] += forceU[i];
+        v[i] += forceV[i];
+      }
+    }
+
+    // main step
+    function step(){
+      // velocity diffusion
+      [u0,u]=[u,u0]; [v0,v]=[v,v0];
+      diffuse(u,u0,visc); setBoundary(1,u);
+      diffuse(v,v0,visc); setBoundary(2,v);
+      project();
+
+      // vorticity confinement
+      if(enableVort) applyVorticity();
+
+      // advection
+      [u0,u]=[u,u0]; [v0,v]=[v,v0];
+      advect(u0,u); setBoundary(1,u);
+      advect(v0,v); setBoundary(2,v);
+      project();
+
+      // density
+      dens0.set(dens);
+      diffuse(dens,dens0,visc); setBoundary(0,dens);
+      advect(dens0,dens); setBoundary(0,dens);
+    }
+
+    // draw
+    function draw(){
+      const img = ctx.createImageData(N, N);
+      // draw density/pressure as blue
+      if(colorMode){
+        for(let i=0;i<size;i++){
+          const d = Math.min(1, dens[i]) * 255;
+          img.data[4*i]   = 0;
+          img.data[4*i+1] = 0;
+          img.data[4*i+2] = d;
+          img.data[4*i+3] = 255;
+        }
+      } else {
+        for(let i=0;i<size;i++){
+          const d = Math.min(1, dens[i]) * 255;
+          img.data[4*i]   = 0;
+          img.data[4*i+1] = 0;
+          img.data[4*i+2] = d;
+          img.data[4*i+3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      ctx.drawImage(canvas, 0, 0, N, N, 0, 0, canvas.width, canvas.height);
+      // optional arrows
+      if(showArrows){
+        ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+        for(let y=2;y<N-2;y+=8){
+          for(let x=2;x<N-2;x+=8){
+            const i = idx(x,y);
+            const vx = u[i], vy = v[i];
+            ctx.beginPath();
+            ctx.moveTo(x*cell, y*cell);
+            ctx.lineTo(x*cell+vx*10, y*cell+vy*10);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // mouse interaction
+    canvas.addEventListener("mousemove", e=>{
+      if(e.buttons){
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX-rect.left)/cell);
+        const y = Math.floor((e.clientY-rect.top)/cell);
+        addSource(x,y,200*(Math.random()-0.5),200*(Math.random()-0.5));
+      }
+    });
+
+    // UI controls
+    const timeStepSlider = document.getElementById('timeStep');
+    const viscSlider      = document.getElementById('viscosity');
+    const resetBtn        = document.getElementById('reset');
+    const pauseBtn        = document.getElementById('pause');
+    let paused = false;
+    timeStepSlider.oninput = e => dt = parseFloat(e.target.value);
+    viscSlider.oninput     = e => visc = parseFloat(e.target.value);
+    resetBtn.onclick       = () => { u.fill(0); v.fill(0); dens.fill(0); };
+    pauseBtn.onclick       = () => {
+      paused = !paused;
+      pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+    };
+    document.getElementById('vorticity').onchange = e => enableVort = e.target.checked;
+    document.getElementById('showArrows').onchange = e => showArrows = e.target.checked;
+    document.getElementById('colorMode').onchange    = e => colorMode = e.target.checked;
+
+    // loop
+    function loop(){
+      if(!paused) step();
+      draw();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>
