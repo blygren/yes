@@ -55,7 +55,7 @@ Smaller Experiments
 The archive
 
 
-[Better Ropes](https://blygren.github.io/yes/space-gen-combined.html)
+[Star map](https://blygren.github.io/yes/space-gen-combined.html)
 
 
 
