@@ -48,8 +48,7 @@ Smaller Experiments
 [Grass simulation](https://blygren.github.io/yes/interactive_grass.html)
 
 
-[Better ropes](https://blygren.github.io/yes/
-ropesss.html)
+[Better Ropes](https://blygren.github.io/yes/ropesss.html)
 
 
 
