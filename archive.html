@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Archive</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap">
+    <style>
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #0c0c14;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), 
+                              url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #c2e9fb;
+        }
+        
+        header {
+            background-color: #0e0b16;
+            border-bottom: 2px solid #00ffff;
+            color: #00ffff;
+            width: 100%;
+            padding: 1rem 0;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        h1 {
+            margin: 0;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 4px;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+            text-transform: uppercase;
+        }
+        
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: #ff2a6d;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 8px rgba(255, 42, 109, 0.6);
+        }
+        
+        .container {
+            max-width: 850px;
+            margin: 2rem auto;
+            padding: 2rem;
+            text-align: center;
+            background-color: rgba(14, 11, 22, 0.7);
+            border: 1px solid #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(14, 11, 22, 0.7), rgba(14, 11, 22, 0.7)),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.1) 2px, rgba(0, 255, 255, 0.1) 4px);
+            pointer-events: none;
+        }
+        
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .archive-button {
+            background-color: rgba(14, 11, 22, 0.7);
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            padding: 18px 20px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s, color 0.3s;
+            border-radius: 0;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .archive-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(125deg, transparent 40%, rgba(0, 255, 255, 0.2) 70%);
+            pointer-events: none;
+        }
+        
+        .archive-button:hover {
+            background-color: #00ffff;
+            color: #0c0c14;
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+        }
+        
+        .archive-button:first-child {
+            border-color: #ff2a6d;
+            color: #ff2a6d;
+            box-shadow: 0 0 10px rgba(255, 42, 109, 0.4);
+        }
+        
+        .archive-button:first-child:hover {
+            background-color: #ff2a6d;
+            color: #0c0c14;
+            box-shadow: 0 0 20px rgba(255, 42, 109, 0.7);
+        }
+        
+        footer {
+            margin-top: auto;
+            background-color: #0e0b16;
+            border-top: 2px solid #05ffa1;
+            color: #05ffa1;
+            width: 100%;
+            text-align: center;
+            padding: 1rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(14, 11, 22, 0.8), rgba(14, 11, 22, 0.8)),
+                        url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            pointer-events: none;
+        }
+        
+        footer p {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cyber-divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #05ffa1, transparent);
+            margin: 1.5rem 0;
+            position: relative;
+        }
+        
+        .cyber-divider::before {
+            content: '';
+            position: absolute;
+            height: 8px;
+            width: 8px;
+            background: #05ffa1;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            box-shadow: 0 0 10px #05ffa1;
+        }
+        
+        p {
+            line-height: 1.6;
+            color: #c2e9fb;
+            text-shadow: 0 0 5px rgba(194, 233, 251, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>THE ARCHIVE</h1>
+    </header>
+    
+    <div class="container">
+        <h2>ACCESS: GAME DATABASE</h2>
+        <p>Preserving my unfinished projects.</p>
+        
+        <div class="cyber-divider"></div>
+        
+        <p>Please choose a game below and enjoy!</p>
+        
+        <div class="button-container">
+            <button class="archive-button" onclick="window.location.href='https://blygren.github.io/yes/space-gen-combined.html'">Space Map</button>
+            <button class="archive-button" onclick="window.location.href='https://blygren.github.io/yes/combined.html'">Dye</button>
+            <button class="archive-button" onclick="window.location.href='https://blygren.github.io/yes/Fractals.html'">Fractals</button>
+            <button class="archive-button" onclick="window.location.href='https://blygren.github.io/yes/WaterWave.html'">Waves</button>
+            <button class="archive-button" onclick="window.location.href='https://blygren.github.io/yes/Completed%20Trainable%20Model.html'">Chatbot</button>
+            <button class="archive-button" onclick="alert('This feature is coming soon!')">More Coming Soon</button>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2077 CYBER ARCHIVES // ALL RIGHTS SECURED</p>
+    </footer>
+    
+    <script>
+        // JavaScript can be added here for future functionality
+    </script>
+</body>
+</html>
