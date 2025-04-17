@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural Star Map</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            background-color: #000; /* Black background */
+            color: #eee;
+            font-family: sans-serif;
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Stack panel and canvas vertically */
+            height: 100vh; /* Full viewport height */
+        }
+
+        #controlPanel {
+            background-color: rgba(10, 10, 20, 0.85);
+            padding: 8px 15px;
+            border-bottom: 1px solid rgba(100, 100, 200, 0.5);
+            display: flex;
+            flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+            gap: 15px 20px; /* Row and column gap */
+            align-items: center;
+            flex-shrink: 0; /* Prevent panel from shrinking */
+            z-index: 10; /* Ensure panel is above canvas */
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #controlPanel label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #controlPanel input[type="number"],
+        #controlPanel input[type="range"],
+        #controlPanel input[type="checkbox"] { /* Add checkbox */
+            background-color: #334;
+            border: 1px solid #556;
+            color: #eee;
+            padding: 3px 5px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            vertical-align: middle; /* Align checkbox */
+        }
+        #controlPanel input[type="number"] {
+            width: 70px; /* Adjust width as needed */
+        }
+        #controlPanel input[type="range"] {
+            vertical-align: middle; /* Align range slider better */
+            width: 80px; /* Slightly smaller range sliders */
+        }
+        #controlPanel input[type="checkbox"] {
+            width: auto; /* Default checkbox width */
+            cursor: pointer;
+        }
+
+        #controlPanel button {
+            background-color: #446;
+            border: 1px solid #668;
+            color: #eee;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-left: auto; /* Push button to the right if space allows */
+        }
+
+        #controlPanel button:hover {
+            background-color: #557;
+        }
+        #controlPanel button:active {
+            background-color: #335;
+        }
+
+        #starMapCanvas {
+            display: block;
+            cursor: none;
+            flex-grow: 1; /* Allow canvas to fill remaining space */
+            min-height: 0; /* Prevent canvas from overflowing in flex layout */
+        }
+    </style>
+</head>
+<body>
+    <div id="controlPanel">
+        <div class="control-group">
+            <label for="numStarsInput">Stars:</label>
+            <input type="number" id="numStarsInput" min="100" max="20000" step="100">
+        </div>
+        <div class="control-group">
+            <label for="worldSizeInput">World Size:</label>
+            <input type="number" id="worldSizeInput" min="5000" max="100000" step="1000">
+        </div>
+        <div class="control-group">
+            <label for="starSizeInput">Star Size:</label>
+            <input type="range" id="starSizeInput" min="0.5" max="2.5" step="0.1">
+            <span id="starSizeValue">1.0</span>
+        </div>
+        <div class="control-group">
+            <label for="bandDensityInput">Band Density:</label>
+            <input type="range" id="bandDensityInput" min="0" max="0.2" step="0.01">
+            <span id="bandDensityValue">0.08</span>
+        </div>
+        <div class="control-group">
+            <label for="twinkleInput">Twinkle:</label>
+            <input type="range" id="twinkleInput" min="0" max="0.5" step="0.05">
+            <span id="twinkleValue">0.2</span>
+        </div>
+        <div class="control-group">
+            <label for="tempColorCheckbox">Temp Color:</label>
+            <input type="checkbox" id="tempColorCheckbox">
+        </div>
+        <button id="regenerateButton">Regenerate Universe</button>
+    </div>
+
+    <canvas id="starMapCanvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('starMapCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Elements
+        const numStarsInput = document.getElementById('numStarsInput');
+        const worldSizeInput = document.getElementById('worldSizeInput');
+        const starSizeInput = document.getElementById('starSizeInput');
+        const starSizeValueSpan = document.getElementById('starSizeValue');
+        const bandDensityInput = document.getElementById('bandDensityInput');
+        const bandDensityValueSpan = document.getElementById('bandDensityValue');
+        const twinkleInput = document.getElementById('twinkleInput');
+        const twinkleValueSpan = document.getElementById('twinkleValue');
+        const tempColorCheckbox = document.getElementById('tempColorCheckbox');
+        const regenerateButton = document.getElementById('regenerateButton');
+
+        let canvasWidth, canvasHeight;
+        let viewX = 0;
+        let viewY = 0;
+        let zoom = 1.0; // Initial zoom level
+        const minZoom = 0.1; // Minimum zoom out
+        const maxZoom = 20.0; // Increased max zoom for detail
+        const zoomSensitivity = 0.005;
+
+        let stars = [];
+        // Default Generation Parameters (will be updated by UI)
+        let numStars = 5000; // Increased star count for density
+        let worldSize = 30000; // Tripled virtual world size
+        let starSizeMultiplier = 1.0; // New parameter for scaling size
+        let galacticBandDensity = 0.08; // New parameter
+        let twinkleIntensity = 0.2; // New parameter
+        let useTemperatureColor = false; // New parameter
+
+        // Star colors (mostly white/pale yellow, some blue/red)
+        const starColors = [
+            '#FFFFFF', '#FFF8DC', '#FFFACD', '#FAFAD2', '#FFFFE0', // Whites/Yellows
+            '#ADD8E6', '#B0E0E6', // Blues
+            '#FFDAB9', '#FFE4B5'  // Oranges/Reds
+        ];
+
+        let isPanning = false;
+        let lastMouseX, lastMouseY;
+        let currentMouseX = -1, currentMouseY = -1; // Track mouse for custom cursor
+
+        let selectedStar = null; // Track the clicked star
+
+        // --- Procedural Generation ---
+
+        const nameParts = {
+            prefix: ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho", "Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega", "Sol", "Proxima", "Sirius", "Rigel", "Vega", "Cygnus", "Orion", "Andromeda", "Kepler", "Gliese"],
+            middle: [" Centauri", " Majoris", " Minoris", " Prime", " Secundus", " Tertius", " System", " Cluster", " Nebula", " Expanse", " Sector", " Quadrant"],
+            suffix: [" I", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X", "-A", "-B", "-C", "-D", "-E", "-F", "-G", "-H", "-J", "-K"]
+        };
+
+        const planetTypes = ["Terrestrial", "Gas Giant", "Ice Giant", "Rocky World", "Ocean World", "Volcanic Planet", "Desert Planet", "Super-Earth", "Dwarf Planet", "Asteroid Belt", "Nebula Core", "Trading Hub", "Barren Moon", "Ringed Gas Giant", "Forge World"];
+        const economyTypes = ["Mining", "Agriculture", "Technology", "Industrial", "Trade Hub", "Refinery", "Tourism", "Military", "Research", "None", "Pirate Haven"];
+        const features = ["Ancient Ruins", "Rich Biodiversity", "Extreme Weather", "High Gravity", "Low Gravity", "Magnetic Anomalies", "Subterranean Oceans", "Unique Flora", "Dangerous Fauna", "Wormhole Proximity", "Nebula Gas Clouds", "None"];
+        const populationSizes = ["Uninhabited", "Sparse", "Moderate", "Dense", "Metropolis", "Ecumenopolis", "Outpost"];
+
+        function generatePlanetName() {
+            let name = nameParts.prefix[Math.floor(Math.random() * nameParts.prefix.length)];
+            if (Math.random() > 0.3) { // Add middle part sometimes
+                name += nameParts.middle[Math.floor(Math.random() * nameParts.middle.length)];
+            }
+            if (Math.random() > 0.5) { // Add suffix sometimes
+                 name += nameParts.suffix[Math.floor(Math.random() * nameParts.suffix.length)];
+            } else {
+                 name += " " + Math.floor(Math.random() * 900 + 100); // Or add a number
+            }
+            return name;
+        }
+
+        function generatePlanetType() {
+            return planetTypes[Math.floor(Math.random() * planetTypes.length)];
+        }
+
+        function generatePopulation() {
+            return populationSizes[Math.floor(Math.random() * populationSizes.length)];
+        }
+
+        function generateEconomy() {
+            return economyTypes[Math.floor(Math.random() * economyTypes.length)];
+        }
+
+        function generateFeature() {
+            if (Math.random() < 0.4) return "None"; // Make features less common
+            return features[Math.floor(Math.random() * features.length)];
+        }
+
+        function generateTemperature() {
+            // Simple temperature simulation (could be used for color later)
+            return Math.random() * 30000 + 2000; // Kelvin (e.g., 2000K to 32000K)
+        }
+
+        function resizeCanvas() {
+            // Recalculate canvas size based on its container (body minus control panel)
+            canvasWidth = canvas.clientWidth;
+            canvasHeight = canvas.clientHeight;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            requestAnimationFrame(draw);
+        }
+
+        function getRandomColor() {
+            return starColors[Math.floor(Math.random() * starColors.length)];
+        }
+
+        // Function to get color based on temperature
+        function getColorFromTemperature(temp) {
+            if (temp < 3500) return '#FFDAB9'; // Cooler - Orange/Red
+            if (temp < 5000) return '#FFFFE0'; // Yellowish White
+            if (temp < 7500) return '#FFFFFF'; // White
+            if (temp < 10000) return '#FFFACD'; // White/Pale Yellow
+            return '#ADD8E6'; // Hotter - Blue/White
+        }
+
+        function generateStars() {
+            stars = [];
+            // Use current parameter values
+            for (let i = 0; i < numStars; i++) {
+                // Apply starSizeMultiplier to the base size calculation
+                const baseSize = (Math.random() * 1.8 + 0.7);
+                const size = baseSize * starSizeMultiplier * 1.2; // Apply multiplier
+                const temp = generateTemperature();
+                // Determine color based on setting
+                const color = useTemperatureColor ? getColorFromTemperature(temp) : getRandomColor();
+
+                stars.push({
+                    x: Math.random() * worldSize - worldSize / 2,
+                    y: Math.random() * worldSize - worldSize / 2,
+                    size: size,
+                    baseBrightness: Math.random() * 0.5 + 0.5,
+                    brightness: 0,
+                    color: color, // Use determined color
+                    depth: Math.random() * 0.6 + 0.1,
+                    name: generatePlanetName(),
+                    type: generatePlanetType(),
+                    temperature: temp, // Store temperature regardless
+                    population: generatePopulation(),
+                    economy: generateEconomy(),
+                    feature: generateFeature()
+                });
+            }
+            stars.sort((a, b) => a.depth - b.depth);
+            selectedStar = null; // Deselect star on regeneration
+        }
+
+        // Function to convert screen coordinates to world coordinates
+        function screenToWorld(screenX, screenY) {
+            const worldX = (screenX - canvasWidth / 2) / zoom + viewX;
+            const worldY = (screenY - canvasHeight / 2) / zoom + viewY;
+            return { x: worldX, y: worldY };
+        }
+
+        // Use galacticBandDensity parameter
+        function getGalacticDensity(worldX, worldY) {
+            const bandWidth = worldSize * 0.15;
+            const distFromCenterY = Math.abs(worldY);
+            const density = Math.max(0, 1 - distFromCenterY / bandWidth);
+            // Apply the multiplier here
+            return density * density * (galacticBandDensity / 0.08); // Scale relative to default
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // --- Draw Background (Simulated Milky Way) ---
+            ctx.save();
+            ctx.translate(canvasWidth / 2, canvasHeight / 2);
+            ctx.scale(zoom, zoom);
+            const steps = 50;
+            for(let i = 0; i < steps; i++) {
+                const y = (i / steps - 0.5) * (canvasHeight / zoom);
+                // getGalacticDensity now uses the parameter
+                const density = getGalacticDensity(0, viewY + y);
+                if (density > 0.01) {
+                    // Use the parameter directly for alpha scaling
+                    const alpha = density; // Density function now includes the multiplier
+                    ctx.fillStyle = `rgba(180, 180, 220, ${Math.min(alpha, 0.5)})`; // Clamp max alpha
+                    ctx.fillRect(-canvasWidth / (2*zoom), y - (canvasHeight / (2*zoom*steps)), canvasWidth / zoom, canvasHeight / (zoom*steps));
+                }
+            }
+            ctx.restore();
+
+            // --- Draw Stars ---
+            ctx.save();
+            ctx.translate(canvasWidth / 2, canvasHeight / 2);
+            ctx.scale(zoom, zoom);
+
+            stars.forEach(star => {
+                const parallaxFactor = star.depth;
+                const apparentX = star.x - viewX * parallaxFactor;
+                const apparentY = star.y - viewY * parallaxFactor;
+
+                // Twinkling effect: use twinkleIntensity parameter
+                const twinkleRange = twinkleIntensity; // Use the parameter
+                star.brightness = star.baseBrightness * (1 - twinkleRange/2 + Math.random() * twinkleRange);
+
+                // Color is already set during generation based on useTemperatureColor
+                ctx.fillStyle = `${star.color}${Math.round(star.brightness * 255).toString(16).padStart(2, '0')}`;
+                ctx.beginPath();
+                const apparentSize = star.size;
+                ctx.arc(apparentX, apparentY, apparentSize, 0, Math.PI * 2);
+                ctx.fill();
+                if (star === selectedStar) {
+                    ctx.strokeStyle = 'cyan';
+                    ctx.lineWidth = 1.5 / zoom;
+                    ctx.stroke();
+                }
+            });
+            ctx.restore();
+
+            // Draw custom cursor
+            if (currentMouseX !== -1) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(currentMouseX, currentMouseY, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Draw selected star info (Enhanced UI)
+            if (selectedStar) {
+                const boxWidth = 300;
+                const boxHeight = 130;
+                const infoX = 15;
+                const infoY = canvasHeight - boxHeight - 15;
+                const padding = 10;
+                const cornerRadius = 8;
+                const lineHeight = 18;
+
+                ctx.fillStyle = 'rgba(20, 20, 40, 0.85)';
+                ctx.strokeStyle = 'rgba(100, 100, 200, 0.9)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(infoX + cornerRadius, infoY);
+                ctx.lineTo(infoX + boxWidth - cornerRadius, infoY);
+                ctx.arcTo(infoX + boxWidth, infoY, infoX + boxWidth, infoY + cornerRadius, cornerRadius);
+                ctx.lineTo(infoX + boxWidth, infoY + boxHeight - cornerRadius);
+                ctx.arcTo(infoX + boxWidth, infoY + boxHeight, infoX + boxWidth - cornerRadius, infoY + boxHeight, cornerRadius);
+                ctx.lineTo(infoX + cornerRadius, infoY + boxHeight);
+                ctx.arcTo(infoX, infoY + boxHeight, infoX, infoY + boxHeight - cornerRadius, cornerRadius);
+                ctx.lineTo(infoX, infoY + cornerRadius);
+                ctx.arcTo(infoX, infoY, infoX + cornerRadius, infoY, cornerRadius);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#E0E0FF';
+                ctx.font = 'bold 14px Arial';
+                let currentY = infoY + padding + lineHeight * 0.7;
+                ctx.fillText(`${selectedStar.name}`, infoX + padding, currentY);
+                currentY += lineHeight * 1.2;
+                ctx.font = '13px Arial';
+                ctx.fillText(`Type: ${selectedStar.type}`, infoX + padding, currentY);
+                currentY += lineHeight;
+                ctx.fillText(`Population: ${selectedStar.population}`, infoX + padding, currentY);
+                currentY += lineHeight;
+                ctx.fillText(`Economy: ${selectedStar.economy}`, infoX + padding, currentY);
+                currentY += lineHeight;
+                if (selectedStar.feature !== "None") {
+                     ctx.fillText(`Feature: ${selectedStar.feature}`, infoX + padding, currentY);
+                } else {
+                     ctx.fillText(`Feature: None Noteworthy`, infoX + padding, currentY);
+                }
+            }
+        }
+
+        // --- Event Listeners ---
+
+        // Panning Logic
+        canvas.addEventListener('mousedown', (e) => {
+            isPanning = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            // Update mouse position for custom cursor
+            currentMouseX = e.clientX;
+            currentMouseY = e.clientY;
+
+            if (!isPanning) {
+                requestAnimationFrame(draw); // Redraw needed to move cursor
+                return;
+            }
+            const dx = (e.clientX - lastMouseX) / zoom; // Adjust speed by zoom
+            const dy = (e.clientY - lastMouseY) / zoom;
+            viewX -= dx;
+            viewY -= dy;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            requestAnimationFrame(draw); // Redraw on pan
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isPanning) {
+                isPanning = false;
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            // Hide custom cursor when mouse leaves canvas
+            currentMouseX = -1;
+            currentMouseY = -1;
+            if (isPanning) {
+                isPanning = false;
+            }
+            requestAnimationFrame(draw); // Redraw to remove cursor
+        });
+
+        // Zoom Logic
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault(); // Prevent default page scrolling
+
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+
+            // Get world coordinates before zoom
+            const worldBeforeZoom = screenToWorld(mouseX, mouseY);
+
+            // Calculate new zoom level
+            const delta = -e.deltaY * zoomSensitivity;
+            const newZoom = Math.max(minZoom, Math.min(maxZoom, zoom * (1 + delta))); // Clamp zoom level
+
+            if (newZoom !== zoom) {
+                zoom = newZoom;
+
+                viewX = worldBeforeZoom.x - (mouseX - canvasWidth / 2) / zoom;
+                viewY = worldBeforeZoom.y - (mouseY - canvasHeight / 2) / zoom;
+
+                requestAnimationFrame(draw); // Redraw on zoom
+            }
+        }, { passive: false });
+
+        // Click Logic
+        canvas.addEventListener('click', (e) => {
+            // Prevent click detection during panning
+            if (Math.abs(e.clientX - lastMouseX) > 2 || Math.abs(e.clientY - lastMouseY) > 2 && isPanning) {
+                return;
+            }
+            if (isPanning) return; // Don't select if panning just ended
+
+            const clickX = e.clientX;
+            const clickY = e.clientY;
+            let clickedStar = null;
+            const clickRadius = 12; // Slightly larger click radius due to bigger stars
+
+            // Iterate backwards (visible top stars first)
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+
+                // Calculate apparent screen position
+                const parallaxFactor = star.depth;
+                const apparentWorldX = star.x - viewX * parallaxFactor;
+                const apparentWorldY = star.y - viewY * parallaxFactor;
+
+                // Apply zoom and translate to screen space
+                const screenX = (apparentWorldX * zoom) + canvasWidth / 2;
+                const screenY = (apparentWorldY * zoom) + canvasHeight / 2;
+
+                // Calculate distance in screen space
+                const dx = clickX - screenX;
+                const dy = clickY - screenY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Check if click is within radius
+                if (distance < clickRadius) {
+                    clickedStar = star;
+                    break; // Found the topmost clicked star
+                }
+            }
+
+            selectedStar = clickedStar; // Update selected star (null if nothing clicked)
+            requestAnimationFrame(draw); // Redraw to show/hide info & highlight
+        });
+
+        // UI Control Listeners
+        numStarsInput.addEventListener('change', () => {
+            numStars = parseInt(numStarsInput.value) || 5000;
+        });
+
+        worldSizeInput.addEventListener('change', () => {
+            worldSize = parseInt(worldSizeInput.value) || 30000;
+        });
+
+        starSizeInput.addEventListener('input', () => { // Use 'input' for live update
+            starSizeMultiplier = parseFloat(starSizeInput.value) || 1.0;
+            starSizeValueSpan.textContent = starSizeMultiplier.toFixed(1);
+            // Optional: Regenerate immediately on slider change? Or wait for button?
+            // For now, we wait for the button press.
+        });
+
+        // New Listeners
+        bandDensityInput.addEventListener('input', () => {
+            galacticBandDensity = parseFloat(bandDensityInput.value) || 0.08;
+            bandDensityValueSpan.textContent = galacticBandDensity.toFixed(2);
+            requestAnimationFrame(draw); // Redraw background immediately
+        });
+
+        twinkleInput.addEventListener('input', () => {
+            twinkleIntensity = parseFloat(twinkleInput.value) || 0.2;
+            twinkleValueSpan.textContent = twinkleIntensity.toFixed(2);
+            // No redraw needed here, takes effect next frame anyway
+        });
+
+        tempColorCheckbox.addEventListener('change', () => {
+            useTemperatureColor = tempColorCheckbox.checked;
+            // Requires regeneration to take effect
+        });
+
+        regenerateButton.addEventListener('click', () => {
+            // Reset view slightly? Optional.
+            // viewX = 0;
+            // viewY = 0;
+            // zoom = 1.0;
+            generateStars(); // Regenerate with new parameters
+            requestAnimationFrame(draw); // Redraw the new universe
+        });
+
+        // --- Initialization ---
+        function initializeUI() {
+            numStarsInput.value = numStars;
+            worldSizeInput.value = worldSize;
+            starSizeInput.value = starSizeMultiplier;
+            starSizeValueSpan.textContent = starSizeMultiplier.toFixed(1);
+            // Init new controls
+            bandDensityInput.value = galacticBandDensity;
+            bandDensityValueSpan.textContent = galacticBandDensity.toFixed(2);
+            twinkleInput.value = twinkleIntensity;
+            twinkleValueSpan.textContent = twinkleIntensity.toFixed(2);
+            tempColorCheckbox.checked = useTemperatureColor;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initial setup
+        initializeUI(); // Set initial UI values
+        generateStars(); // Generate initial stars
+        resizeCanvas(); // Set initial size and draw
+    </script>
+</body>
+</html>
