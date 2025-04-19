@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chaos Evolution Simulator</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NL58F4JL3F"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-NL58F4JL3F');
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #0f0f1a;
+            color: #eef;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 2.5rem;
+            color: #72f1b8;
+            text-shadow: 0 0 10px rgba(114, 241, 184, 0.5);
+            animation: glow 3s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px rgba(114, 241, 184, 0.5);
+            }
+            to {
+                text-shadow: 0 0 20px rgba(114, 241, 184, 0.8), 0 0 30px rgba(114, 241, 184, 0.6);
+            }
+        }
+
+        .simulation-container {
+            position: relative;
+            margin: 20px auto;
+            box-shadow: 0 0 30px rgba(114, 241, 184, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .simulation-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0;
+            border-radius: 0;
+            z-index: 1000;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            background-color: #000;
+            border-radius: 8px;
+        }
+
+        .simulation-container.fullscreen canvas {
+            border-radius: 0;
+        }
+
+        .overlay {
+            position: absolute;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #72f1b8;
+            background-color: rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+        }
+
+        #fpsCounter {
+            top: 10px;
+            right: 10px;
+        }
+
+        #particleCounter {
+            top: 10px;
+            left: 10px;
+        }
+
+        .overlay-controls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .overlay-controls button {
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            background-color: rgba(20, 20, 35, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .overlay-controls button:hover {
+            background-color: rgba(114, 241, 184, 0.5);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .control-group {
+            background-color: rgba(20, 20, 35, 0.8);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .control-group:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(114, 241, 184, 0.2);
+        }
+
+        h3 {
+            margin-bottom: 15px;
+            color: #72f1b8;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(114, 241, 184, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .control {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        label {
+            flex: 0 0 120px;
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #2a3a4a, #72f1b8);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #72f1b8;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(114, 241, 184, 0.7);
+        }
+
+        select {
+            flex: 1;
+            padding: 5px;
+            background-color: #2a3a4a;
+            border: 1px solid #72f1b8;
+            color: #eef;
+            border-radius: 3px;
+        }
+
+        input[type="number"], input[type="color"] {
+            background-color: #2a3a4a;
+            border: 1px solid #72f1b8;
+            color: #eef;
+            padding: 5px;
+            border-radius: 3px;
+            width: 100px;
+        }
+
+        .value {
+            width: 40px;
+            text-align: right;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+
+        .buttons, .preset-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            grid-column: 1 / -1;
+        }
+
+        button {
+            background-color: #2a3a4a;
+            color: #72f1b8;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            background-color: #3a4a5a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(114, 241, 184, 0.4);
+        }
+
+        button.preset {
+            background-color: rgba(114, 241, 184, 0.2);
+            border: 1px solid rgba(114, 241, 184, 0.5);
+            min-width: 120px;
+        }
+
+        button.recording {
+            background-color: #f17272;
+            color: white;
+        }
+
+        /* Info overlay styles */
+        #infoOverlay, #settingsDialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #infoOverlay.visible, #settingsDialog.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .info-content, .settings-content {
+            background-color: #1a1a2e;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(114, 241, 184, 0.5);
+        }
+
+        .info-content h2, .settings-content h2 {
+            color: #72f1b8;
+            margin-bottom: 15px;
+        }
+
+        .setting {
+            margin: 15px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .control {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            label {
+                margin-bottom: 5px;
+            }
+
+            .value {
+                position: absolute;
+                right: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chaos Evolution Simulator</h1>
+
+        <div class="simulation-container">
+            <canvas id="simulationCanvas"></canvas>
+            <div class="overlay" id="fpsCounter">FPS: 0</div>
+            <div class="overlay" id="particleCounter">Particles: 0</div>
+            <div class="overlay-controls">
+                <button id="fullscreenBtn" title="Fullscreen (Space)">⛶</button>
+                <button id="audioToggleBtn" title="Toggle Sound (M)">🔊</button>
+                <button id="infoBtn" title="Information">ℹ️</button>
+                <button id="settingsBtn" title="Settings">⚙️</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3>Physics Parameters</h3>
+                <div class="control">
+                    <label for="gravity">Gravity:</label>
+                    <input type="range" id="gravity" min="-10" max="10" step="0.1" value="1">
+                    <span class="value">1</span>
+                </div>
+                <div class="control">
+                    <label for="friction">Friction:</label>
+                    <input type="range" id="friction" min="0" max="0.5" step="0.01" value="0.02">
+                    <span class="value">0.02</span>
+                </div>
+                <div class="control">
+                    <label for="repulsion">Repulsion:</label>
+                    <input type="range" id="repulsion" min="0" max="2" step="0.01" value="0.5">
+                    <span class="value">0.5</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Evolution Parameters</h3>
+                <div class="control">
+                    <label for="mutationRate">Mutation Rate:</label>
+                    <input type="range" id="mutationRate" min="0" max="0.5" step="0.01" value="0.05">
+                    <span class="value">0.05</span>
+                </div>
+                <div class="control">
+                    <label for="reproductionRate">Reproduction:</label>
+                    <input type="range" id="reproductionRate" min="0" max="0.1" step="0.001" value="0.01">
+                    <span class="value">0.01</span>
+                </div>
+                <div class="control">
+                    <label for="energyTransfer">Energy Transfer:</label>
+                    <input type="range" id="energyTransfer" min="0" max="1" step="0.01" value="0.3">
+                    <span class="value">0.3</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Visual Effects</h3>
+                <div class="control">
+                    <label for="glowIntensity">Glow Intensity:</label>
+                    <input type="range" id="glowIntensity" min="0" max="30" step="1" value="10">
+                    <span class="value">10</span>
+                </div>
+                <div class="control">
+                    <label for="colorShift">Color Shift:</label>
+                    <input type="range" id="colorShift" min="0" max="10" step="0.1" value="2">
+                    <span class="value">2</span>
+                </div>
+                <div class="control">
+                    <label for="trailLength">Trail Length:</label>
+                    <input type="range" id="trailLength" min="0" max="60" step="1" value="10">
+                    <span class="value">10</span>
+                </div>
+                <div class="control">
+                    <label for="bloomEffect">Bloom Effect:</label>
+                    <input type="range" id="bloomEffect" min="0" max="1" step="0.01" value="0.5">
+                    <span class="value">0.5</span>
+                </div>
+                <div class="control">
+                    <label for="particleSize">Particle Size:</label>
+                    <input type="range" id="particleSize" min="0.5" max="3" step="0.1" value="1">
+                    <span class="value">1</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Environment</h3>
+                <div class="control">
+                    <label for="turbulence">Turbulence:</label>
+                    <input type="range" id="turbulence" min="0" max="10" step="0.1" value="0">
+                    <span class="value">0</span>
+                </div>
+                <div class="control">
+                    <label for="fieldStrength">Field Strength:</label>
+                    <input type="range" id="fieldStrength" min="0" max="5" step="0.1" value="0">
+                    <span class="value">0</span>
+                </div>
+                <div class="control">
+                    <label for="boundaryMode">Boundary:</label>
+                    <select id="boundaryMode">
+                        <option value="wrap">Wrap Around</option>
+                        <option value="bounce">Bounce</option>
+                        <option value="destroy">Destroy</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button id="resetBtn">Reset Simulation</button>
+                <button id="randomizeBtn">Randomize Parameters</button>
+                <button id="recordBtn">Start Recording</button>
+                <button id="shareBtn">Share Simulation</button>
+            </div>
+
+            <div class="preset-buttons">
+                <button class="preset" data-preset="calm">Calm Flow</button>
+                <button class="preset" data-preset="chaos">Pure Chaos</button>
+                <button class="preset" data-preset="galaxy">Galaxy Formation</button>
+                <button class="preset" data-preset="creatures">Creature Evolution</button>
+                <button class="preset" data-preset="explosion">Big Bang</button>
+                <button class="preset" data-preset="blackHole">Black Hole</button>
+                <button class="preset" data-preset="fireflies">Fireflies</button>
+                <button class="preset" data-preset="fluidDynamics">Fluid Dynamics</button>
+                <button class="preset" data-preset="magneticField">Magnetic Field</button>
+                <button class="preset" data-preset="fractal">Fractal Growth</button>
+            </div>
+        </div>
+
+        <div id="infoOverlay" class="hidden">
+            <div class="info-content">
+                <h2>About Chaos Evolution Simulator</h2>
+                <p>Explore emergent behavior and complex systems by manipulating various parameters. Watch as simple particle interactions lead to unexpected patterns!</p>
+                <p>Key features:</p>
+                <ul>
+                    <li>Interactive physics parameters alter how particles move and interact</li>
+                    <li>Evolution controls determine how traits are passed between generations</li>
+                    <li>Visual effects enhance the appearance of particles and their trails</li>
+                    <li>Environment settings create different conditions for unique behaviors</li>
+                </ul>
+                <p>Keyboard shortcuts: Space (fullscreen), R (reset), M (mute/unmute)</p>
+                <button id="closeInfoBtn">Close</button>
+            </div>
+        </div>
+
+        <div id="settingsDialog" class="hidden">
+            <div class="settings-content">
+                <h2>Advanced Settings</h2>
+                <div class="setting">
+                    <label for="maxParticles">Maximum Particles:</label>
+                    <input type="number" id="maxParticles" min="50" max="1000" step="50" value="300">
+                </div>
+                <div class="setting">
+                    <label for="backgroundColor">Background:</label>
+                    <input type="color" id="backgroundColor" value="#000000">
+                </div>
+                <div class="setting">
+                    <label for="showStats">Show Statistics:</label>
+                    <input type="checkbox" id="showStats" checked>
+                </div>
+                <div class="buttons">
+                    <button id="applySettingsBtn">Apply</button>
+                    <button id="closeSettingsBtn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Sound FX for Chaos Evolution Simulator
+         * Creates synthesized audio effects for better user experience
+         */
+
+        window.soundFX = (function() {
+            let audioContext;
+            let masterGain;
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioContext.createGain();
+                masterGain.connect(audioContext.destination);
+            } catch (e) {
+                console.warn('Web Audio API not supported in this browser');
+                return {
+                    play: () => {},
+                    setMasterVolume: () => {}
+                };
+            }
+
+            function generateSound(type, options = {}) {
+                const defaults = {
+                    frequency: 440,
+                    duration: 0.2,
+                    volume: 0.3,
+                    type: 'sine',
+                    attackTime: 0.01,
+                    releaseTime: 0.1,
+                    frequencySlide: 0,
+                    vibratoAmount: 0,
+                    vibratoSpeed: 0
+                };
+
+                const params = { ...defaults, ...options };
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(masterGain);
+
+                oscillator.type = params.type;
+                oscillator.frequency.setValueAtTime(params.frequency, audioContext.currentTime);
+
+                if (params.frequencySlide !== 0) {
+                    oscillator.frequency.exponentialRampToValueAtTime(
+                        params.frequency + params.frequencySlide,
+                        audioContext.currentTime + params.duration
+                    );
+                }
+
+                if (params.vibratoAmount > 0) {
+                    const vibratoOsc = audioContext.createOscillator();
+                    vibratoOsc.frequency.value = params.vibratoSpeed;
+
+                    const vibratoGain = audioContext.createGain();
+                    vibratoGain.gain.value = params.vibratoAmount;
+
+                    vibratoOsc.connect(vibratoGain);
+                    vibratoGain.connect(oscillator.frequency);
+
+                    vibratoOsc.start();
+                    vibratoOsc.stop(audioContext.currentTime + params.duration);
+                }
+
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(params.volume, audioContext.currentTime + params.attackTime);
+                gainNode.gain.setValueAtTime(params.volume, audioContext.currentTime + params.duration - params.releaseTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + params.duration);
+
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + params.duration);
+
+                return {
+                    oscillator,
+                    gainNode
+                };
+            }
+
+            const soundPresets = {
+                ui: {
+                    frequency: 800,
+                    duration: 0.1,
+                    volume: 0.2,
+                    type: 'sine',
+                    attackTime: 0.01,
+                    releaseTime: 0.05,
+                    frequencySlide: 200
+                },
+
+                click: {
+                    frequency: 300,
+                    duration: 0.15,
+                    volume: 0.15,
+                    type: 'sine',
+                    attackTime: 0.005,
+                    releaseTime: 0.05
+                },
+
+                slide: {
+                    frequency: 600 + Math.random() * 300,
+                    duration: 0.05,
+                    volume: 0.1,
+                    type: 'sine',
+                    attackTime: 0.01,
+                    releaseTime: 0.03
+                },
+
+                preset: {
+                    frequency: 400,
+                    duration: 0.5,
+                    volume: 0.3,
+                    type: 'triangle',
+                    attackTime: 0.01,
+                    releaseTime: 0.2,
+                    frequencySlide: 300,
+                    vibratoAmount: 20,
+                    vibratoSpeed: 10
+                },
+
+                reset: {
+                    frequency: 600,
+                    duration: 0.3,
+                    volume: 0.25,
+                    type: 'sawtooth',
+                    attackTime: 0.01,
+                    releaseTime: 0.1,
+                    frequencySlide: -200
+                },
+
+                randomize: {
+                    frequency: 200,
+                    duration: 0.6,
+                    volume: 0.3,
+                    type: 'square',
+                    attackTime: 0.01,
+                    releaseTime: 0.1,
+                    vibratoAmount: 50,
+                    vibratoSpeed: 15
+                },
+
+                startRecord: {
+                    frequency: 330,
+                    duration: 0.4,
+                    volume: 0.3,
+                    type: 'sine',
+                    attackTime: 0.05,
+                    releaseTime: 0.1,
+                    frequencySlide: 100
+                },
+
+                stopRecord: {
+                    frequency: 440,
+                    duration: 0.4,
+                    volume: 0.3,
+                    type: 'sine',
+                    attackTime: 0.05,
+                    releaseTime: 0.1,
+                    frequencySlide: -100
+                },
+
+                apply: {
+                    frequency: 600,
+                    duration: 0.3,
+                    volume: 0.25,
+                    type: 'triangle',
+                    attackTime: 0.01,
+                    releaseTime: 0.2,
+                    frequencySlide: 200
+                },
+
+                startup: {
+                    frequency: 300,
+                    duration: 0.8,
+                    volume: 0.3,
+                    type: 'triangle',
+                    attackTime: 0.1,
+                    releaseTime: 0.3,
+                    frequencySlide: 400,
+                    vibratoAmount: 30,
+                    vibratoSpeed: 8
+                }
+            };
+
+            return {
+                play: function(soundName) {
+                    try {
+                        if (audioContext.state === 'suspended') {
+                            audioContext.resume();
+                        }
+
+                        const preset = soundPresets[soundName] || soundPresets.ui;
+                        generateSound('effect', preset);
+                    } catch (e) {
+                        console.warn('Error playing sound:', e);
+                    }
+                    return this;
+                },
+
+                setMasterVolume: function(volume) {
+                    if (masterGain) {
+                        masterGain.gain.value = Math.max(0, Math.min(1, volume));
+                    }
+                    return this;
+                }
+            };
+        })();
+
+        /**
+         * Chaos Evolution Simulator
+         * A mesmerizing interactive simulation that evolves from simple to complex chaotic systems
+         */
+
+        class Particle {
+            constructor(x, y, simulation) {
+                this.sim = simulation;
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.ax = 0;
+                this.ay = 0;
+                this.radius = Math.random() * 3 + 2;
+                this.mass = this.radius * this.radius * Math.PI;
+                this.energy = Math.random() * 100;
+                this.lifespan = Math.random() * 1000 + 500;
+                this.age = 0;
+                this.hue = Math.random() * 360;
+                this.type = Math.floor(Math.random() * 4);
+                this.traits = {
+                    repulsionFactor: Math.random() * 2,
+                    attractionFactor: Math.random() * 2,
+                    velocityLimit: Math.random() * 10 + 5,
+                    metabolismRate: Math.random() * 0.1 + 0.01
+                };
+                this.history = [];
+                this.historyMax = simulation.params.trailLength;
+                this.charge = Math.random() < 0.5 ? -1 : 1;
+                this.lastInteractionTime = 0;
+            }
+
+            update(dt) {
+                this.vx += this.ax * dt;
+                this.vy += this.ay * dt;
+
+                this.vy += this.sim.params.gravity * dt;
+
+                this.vx *= (1 - this.sim.params.friction);
+                this.vy *= (1 - this.sim.params.friction);
+
+                if (this.sim.params.turbulence > 0) {
+                    const turbulenceStrength = this.sim.params.turbulence * 0.05;
+                    const time = performance.now() * 0.001;
+                    const noiseX = Math.sin(this.x * 0.01 + time) * Math.cos(this.y * 0.01 - time * 0.5);
+                    const noiseY = Math.sin(this.y * 0.01 - time) * Math.cos(this.x * 0.01 + time * 0.5);
+
+                    this.vx += noiseX * turbulenceStrength;
+                    this.vy += noiseY * turbulenceStrength;
+                }
+
+                if (this.sim.params.fieldStrength > 0) {
+                    const fieldStrength = this.sim.params.fieldStrength * 0.1;
+                    const forceX = -this.vy * fieldStrength * this.charge;
+                    const forceY = this.vx * fieldStrength * this.charge;
+
+                    this.vx += forceX * dt;
+                    this.vy += forceY * dt;
+                }
+
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                const speedLimit = this.traits.velocityLimit * this.sim.params.particleSize;
+                if (speed > speedLimit) {
+                    this.vx = (this.vx / speed) * speedLimit;
+                    this.vy = (this.vy / speed) * speedLimit;
+                }
+
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                switch(this.sim.params.boundaryMode || 'wrap') {
+                    case 'wrap':
+                        if (this.x < 0) this.x = this.sim.width;
+                        if (this.x > this.sim.width) this.x = 0;
+                        if (this.y < 0) this.y = this.sim.height;
+                        if (this.y > this.sim.height) this.y = 0;
+                        break;
+
+                    case 'bounce':
+                        if (this.x < this.radius) {
+                            this.x = this.radius;
+                            this.vx = Math.abs(this.vx) * 0.8;
+                        } else if (this.x > this.sim.width - this.radius) {
+                            this.x = this.sim.width - this.radius;
+                            this.vx = -Math.abs(this.vx) * 0.8;
+                        }
+
+                        if (this.y < this.radius) {
+                            this.y = this.radius;
+                            this.vy = Math.abs(this.vy) * 0.8;
+                        } else if (this.y > this.sim.height - this.radius) {
+                            this.y = this.sim.height - this.radius;
+                            this.vy = -Math.abs(this.vy) * 0.8;
+                        }
+                        break;
+
+                    case 'destroy':
+                        if (this.x < -50 || this.x > this.sim.width + 50 ||
+                            this.y < -50 || this.y > this.sim.height + 50) {
+                            this.energy = 0;
+                        }
+                        break;
+                }
+
+                if (this.sim.params.trailLength > 0) {
+                    this.history.push({x: this.x, y: this.y});
+                    if (this.history.length > this.historyMax) {
+                        this.history.shift();
+                    }
+                } else {
+                    this.history = [];
+                }
+
+                this.age += dt;
+                this.energy -= this.traits.metabolismRate * dt;
+
+                this.historyMax = this.sim.params.trailLength;
+                this.radius = (Math.random() * 3 + 2) * this.sim.params.particleSize;
+
+                this.ax = 0;
+                this.ay = 0;
+            }
+
+            applyForce(fx, fy) {
+                this.ax += fx / this.mass;
+                this.ay += fy / this.mass;
+            }
+
+            interact(other) {
+                const now = performance.now();
+                if (now - this.lastInteractionTime < 16 && Math.random() < 0.7) return;
+                this.lastInteractionTime = now;
+
+                const dx = other.x - this.x;
+                const dy = other.y - this.y;
+                const distSq = dx * dx + dy * dy;
+
+                if (distSq > 10000) return;
+
+                const dist = Math.sqrt(distSq);
+                if (dist < 0.1) return;
+
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                let force = 0;
+
+                if ((this.type + other.type) % 4 === 0) {
+                    force = -this.traits.attractionFactor * other.mass / distSq;
+                } else if ((this.type + other.type) % 4 === 1) {
+                    force = this.traits.repulsionFactor * other.mass / distSq * this.sim.params.repulsion;
+                } else if ((this.type + other.type) % 4 === 2) {
+                    const orbitalStrength = 0.5;
+                    const tangentX = -ny;
+                    const tangentY = nx;
+                    this.vx += tangentX * orbitalStrength * 0.1 / dist;
+                    this.vy += tangentY * orbitalStrength * 0.1 / dist;
+                    return;
+                } else {
+                    force = (dist < this.radius + other.radius) ?
+                        this.traits.repulsionFactor * other.mass / distSq * this.sim.params.repulsion :
+                        -this.traits.attractionFactor * other.mass / (distSq * 2);
+                }
+
+                this.applyForce(force * nx, force * ny);
+
+                if (dist < this.radius + other.radius) {
+                    const energyExchange = this.sim.params.energyTransfer * Math.min(this.energy, other.energy) * 0.1;
+                    if (this.energy > other.energy) {
+                        this.energy -= energyExchange;
+                        other.energy += energyExchange;
+                    }
+
+                    const overlap = 0.5 * (this.radius + other.radius - dist);
+                    this.x -= overlap * nx;
+                    this.y -= overlap * ny;
+
+                    const p1 = this.mass * this.vx;
+                    const p2 = other.mass * other.vx;
+                    this.vx = p2 / this.mass * 0.8 + this.vx * 0.2;
+                    other.vx = p1 / other.mass * 0.8 + other.vx * 0.2;
+                }
+            }
+
+            reproduce() {
+                if (this.energy < 50 || Math.random() > this.sim.params.reproductionRate) return null;
+
+                const offspring = new Particle(
+                    this.x + (Math.random() - 0.5) * 10,
+                    this.y + (Math.random() - 0.5) * 10,
+                    this.sim
+                );
+
+                const mutationRate = this.sim.params.mutationRate;
+                offspring.type = Math.random() < 0.2 ? Math.floor(Math.random() * 4) : this.type;
+                offspring.hue = this.hue + (Math.random() - 0.5) * 40 * mutationRate;
+                offspring.charge = Math.random() < 0.1 ? -this.charge : this.charge;
+
+                for (const trait in this.traits) {
+                    offspring.traits[trait] = this.traits[trait] * (1 + (Math.random() - 0.5) * mutationRate * 2);
+                }
+
+                this.energy -= 30;
+
+                return offspring;
+            }
+
+            render(ctx) {
+                if (this.history.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.history[0].x, this.history[0].y);
+
+                    for (let i = 1; i < this.history.length; i++) {
+                        ctx.lineTo(this.history[i].x, this.history[i].y);
+                    }
+
+                    ctx.strokeStyle = `hsla(${this.hue}, 100%, 70%, ${0.3 * Math.min(1, this.energy / 50)})`;
+                    ctx.lineWidth = this.radius * 0.5;
+                    ctx.stroke();
+                }
+
+                const glow = this.sim.params.glowIntensity;
+                const bloom = this.sim.params.bloomEffect || 0;
+
+                if (glow > 0 || bloom > 0) {
+                    const outerRadius = this.radius * (1 + glow * 0.1 + bloom * 2);
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, this.radius * 0.5,
+                        this.x, this.y, outerRadius
+                    );
+
+                    gradient.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${0.8 * Math.min(1, this.energy / 100)})`);
+                    gradient.addColorStop(0.3, `hsla(${this.hue}, 100%, 60%, ${0.5 * Math.min(1, this.energy / 100) * bloom})`);
+                    gradient.addColorStop(1, `hsla(${this.hue}, 100%, 50%, 0)`);
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, outerRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = `hsl(${this.hue}, 100%, ${50 + this.energy * 0.2}%)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (this.sim.params.fieldStrength > 0 && this.radius > 3) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.font = `${Math.max(8, this.radius)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.charge > 0 ? '+' : '-', this.x, this.y);
+                }
+            }
+        }
+
+        class ChaosSimulation {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.width = canvas.width;
+                this.height = canvas.height;
+                this.lastTime = 0;
+                this.fpsUpdateInterval = 500;
+                this.lastFpsUpdate = 0;
+                this.framesSinceLastFpsUpdate = 0;
+                this.fps = 0;
+
+                this.params = {
+                    gravity: 1,
+                    friction: 0.02,
+                    repulsion: 0.5,
+                    mutationRate: 0.05,
+                    reproductionRate: 0.01,
+                    energyTransfer: 0.3,
+                    glowIntensity: 10,
+                    colorShift: 2,
+                    trailLength: 10,
+                    bloomEffect: 0.5,
+                    particleSize: 1,
+                    turbulence: 0,
+                    fieldStrength: 0,
+                    boundaryMode: 'wrap',
+                    maxParticles: 300,
+                    backgroundColor: '#000000',
+                    showStats: true
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.particles = [];
+                for (let i = 0; i < 150; i++) {
+                    this.particles.push(new Particle(
+                        Math.random() * this.width,
+                        Math.random() * this.height,
+                        this
+                    ));
+                }
+
+                requestAnimationFrame(this.animate.bind(this));
+            }
+
+            animate(timestamp) {
+                if (!this.lastTime) this.lastTime = timestamp;
+                const dt = Math.min(32, timestamp - this.lastTime) / 16;
+                this.lastTime = timestamp;
+
+                this.framesSinceLastFpsUpdate++;
+                if (timestamp - this.lastFpsUpdate > this.fpsUpdateInterval) {
+                    this.fps = Math.round(this.framesSinceLastFpsUpdate * 1000 / (timestamp - this.lastFpsUpdate));
+                    this.lastFpsUpdate = timestamp;
+                    this.framesSinceLastFpsUpdate = 0;
+
+                    const fpsCounter = document.getElementById('fpsCounter');
+                    if (fpsCounter) fpsCounter.textContent = `FPS: ${this.fps}`;
+                }
+
+                this.update(dt);
+
+                this.render();
+
+                requestAnimationFrame(this.animate.bind(this));
+            }
+
+            update(dt) {
+                for (let i = 0; i < this.particles.length; i++) {
+                    const maxInteractions = Math.min(this.particles.length - 1, 20);
+                    const indicesToCheck = new Set();
+
+                    while (indicesToCheck.size < maxInteractions) {
+                        const randomIndex = Math.floor(Math.random() * this.particles.length);
+                        if (randomIndex !== i) {
+                           indicesToCheck.add(randomIndex);
+                        }
+                    }
+
+                    indicesToCheck.forEach(j => {
+                       this.particles[i].interact(this.particles[j]);
+                    });
+                }
+
+                const newParticles = [];
+                for (let i = 0; i < this.particles.length; i++) {
+                   const p = this.particles[i];
+                   p.update(dt);
+
+                   if (p.energy > 0 && p.age < p.lifespan) {
+                       newParticles.push(p);
+
+                       const offspring = p.reproduce();
+                       if (offspring && this.particles.length < (this.params.maxParticles || 300)) {
+                           newParticles.push(offspring);
+                       }
+                   }
+                }
+
+                this.particles = newParticles;
+
+                while (this.particles.length < 50) {
+                    this.particles.push(new Particle(
+                        Math.random() * this.width,
+                        Math.random() * this.height,
+                        this
+                    ));
+                }
+
+                const maxParticles = this.params.maxParticles || 300;
+                if (this.particles.length > maxParticles) {
+                    this.particles.sort((a, b) => a.energy - b.energy);
+                    this.particles.splice(0, this.particles.length - maxParticles);
+                }
+
+                if (this.params.colorShift > 0) {
+                    for (const p of this.particles) {
+                        p.hue = (p.hue + this.params.colorShift * dt) % 360;
+                    }
+                }
+            }
+
+            render() {
+                const bgColor = this.params.backgroundColor || '#000000';
+                this.ctx.fillStyle = bgColor.startsWith('#') ? bgColor + '1A' : bgColor.replace(')', ', 0.1)').replace('rgb', 'rgba');
+                this.ctx.fillRect(0, 0, this.width, this.height);
+
+                for (const p of this.particles) {
+                    p.render(this.ctx);
+                }
+            }
+
+            resize(width, height) {
+                this.width = width;
+                this.height = height;
+                this.canvas.width = width;
+                this.canvas.height = height;
+            }
+
+            setParams(params) {
+                Object.assign(this.params, params);
+            }
+
+            reset() {
+                this.init();
+            }
+
+            loadPreset(preset) {
+                const baseParams = {
+                    gravity: 1, friction: 0.02, repulsion: 0.5, mutationRate: 0.05, reproductionRate: 0.01,
+                    energyTransfer: 0.3, glowIntensity: 10, colorShift: 2, trailLength: 10, bloomEffect: 0.5,
+                    particleSize: 1, turbulence: 0, fieldStrength: 0, boundaryMode: 'wrap'
+                };
+
+                let presetParams = {};
+                switch(preset) {
+                    case 'calm':
+                        presetParams = { gravity: 0, friction: 0.05, repulsion: 0.2, reproductionRate: 0.005, trailLength: 20, bloomEffect: 0.3, turbulence: 1 };
+                        break;
+                    case 'chaos':
+                        presetParams = { gravity: 0, friction: 0.01, repulsion: 1.5, mutationRate: 0.2, reproductionRate: 0.05, energyTransfer: 0.8, glowIntensity: 20, colorShift: 5, trailLength: 5, bloomEffect: 0.8, particleSize: 1.2, turbulence: 5 };
+                        break;
+                    case 'galaxy':
+                        presetParams = { gravity: 0.1, friction: 0.01, repulsion: 0.1, reproductionRate: 0.001, energyTransfer: 0.1, glowIntensity: 15, colorShift: 1, trailLength: 30, bloomEffect: 0.6, particleSize: 0.8, boundaryMode: 'wrap' };
+                        break;
+                    case 'creatures':
+                        presetParams = { gravity: 0, friction: 0.1, repulsion: 0.8, mutationRate: 0.1, reproductionRate: 0.02, energyTransfer: 0.5, glowIntensity: 5, colorShift: 0.5, trailLength: 15, bloomEffect: 0.2, particleSize: 1.5, boundaryMode: 'bounce' };
+                        break;
+                    case 'explosion':
+                        presetParams = { gravity: -2, friction: 0.05, repulsion: 1.0, reproductionRate: 0, energyTransfer: 0.9, glowIntensity: 25, colorShift: 10, trailLength: 8, bloomEffect: 1.0, particleSize: 1.3, boundaryMode: 'destroy' };
+                        this.reset();
+                        break;
+                    case 'blackHole':
+                        presetParams = { gravity: 5, friction: 0.01, repulsion: 0, reproductionRate: 0, energyTransfer: 0, glowIntensity: 5, colorShift: 0, trailLength: 40, bloomEffect: 0.1, particleSize: 0.7, boundaryMode: 'destroy' };
+                        break;
+                    case 'fireflies':
+                        presetParams = { gravity: -0.5, friction: 0.2, repulsion: 0.3, reproductionRate: 0.002, energyTransfer: 0.2, glowIntensity: 18, colorShift: 0.1, trailLength: 5, bloomEffect: 0.7, particleSize: 1.1, turbulence: 2 };
+                        break;
+                    case 'fluidDynamics':
+                        presetParams = { gravity: 0, friction: 0.03, repulsion: 0.1, reproductionRate: 0.001, energyTransfer: 0.1, glowIntensity: 8, colorShift: 3, trailLength: 25, bloomEffect: 0.4, particleSize: 0.9, turbulence: 8 };
+                        break;
+                    case 'magneticField':
+                        presetParams = { gravity: 0, friction: 0.02, repulsion: 0.1, reproductionRate: 0.005, energyTransfer: 0.2, glowIntensity: 12, colorShift: 1, trailLength: 15, bloomEffect: 0.5, particleSize: 1, fieldStrength: 3, boundaryMode: 'bounce' };
+                        break;
+                    case 'fractal':
+                         presetParams = { gravity: 0, friction: 0.15, repulsion: 1.2, mutationRate: 0.01, reproductionRate: 0.03, energyTransfer: 0.4, glowIntensity: 7, colorShift: 0.2, trailLength: 3, bloomEffect: 0.1, particleSize: 1.8, boundaryMode: 'bounce' };
+                        break;
+                }
+                this.setParams({...baseParams, ...presetParams});
+            }
+        }
+
+        /**
+         * Chaos Evolution Simulator - UI Controls
+         */
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('simulationCanvas');
+            const container = document.querySelector('.simulation-container');
+            let simulation = null;
+            let soundEnabled = true;
+
+            window.addEventListener('resize', function() {
+                resizeCanvas();
+                if (simulation) {
+                    simulation.resize(canvas.width, canvas.height);
+                }
+            });
+
+            function resizeCanvas() {
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+
+                if (container.classList.contains('fullscreen')) {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                } else {
+                    canvas.width = containerWidth;
+                    canvas.height = Math.floor(containerWidth * 9 / 16);
+                }
+            }
+
+            resizeCanvas();
+
+            simulation = new ChaosSimulation(canvas);
+
+            setInterval(() => {
+                document.getElementById('particleCounter').textContent = `Particles: ${simulation.particles.length}`;
+            }, 500);
+
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                const valueDisplay = slider.nextElementSibling;
+                if (valueDisplay) valueDisplay.textContent = slider.value;
+
+                slider.addEventListener('input', function() {
+                    if (valueDisplay) valueDisplay.textContent = this.value;
+
+                    simulation.params[this.id] = parseFloat(this.value);
+
+                    if (soundEnabled && window.soundFX && Math.random() < 0.2) {
+                        window.soundFX.play('slide');
+                    }
+                });
+            });
+
+            document.getElementById('boundaryMode')?.addEventListener('change', function() {
+                simulation.params.boundaryMode = this.value;
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('ui');
+                }
+            });
+
+            document.getElementById('fullscreenBtn')?.addEventListener('click', function() {
+                toggleFullscreen();
+            });
+
+            function toggleFullscreen() {
+                container.classList.toggle('fullscreen');
+                resizeCanvas();
+                if (simulation) {
+                    simulation.resize(canvas.width, canvas.height);
+                }
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('ui');
+                }
+            }
+
+            document.getElementById('audioToggleBtn')?.addEventListener('click', function() {
+                soundEnabled = !soundEnabled;
+                this.innerHTML = soundEnabled ? '🔊' : '🔇';
+
+                if (window.soundFX) {
+                    if (soundEnabled) {
+                        window.soundFX.play('ui');
+                    }
+                    window.soundFX.setMasterVolume(soundEnabled ? 1 : 0);
+                }
+            });
+
+            document.getElementById('infoBtn')?.addEventListener('click', function() {
+                document.getElementById('infoOverlay').classList.remove('hidden');
+                document.getElementById('infoOverlay').classList.add('visible');
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('ui');
+                }
+            });
+
+            document.getElementById('closeInfoBtn')?.addEventListener('click', function() {
+                document.getElementById('infoOverlay').classList.remove('visible');
+                setTimeout(() => {
+                    document.getElementById('infoOverlay').classList.add('hidden');
+                }, 300);
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('ui');
+                }
+            });
+
+            document.getElementById('settingsBtn')?.addEventListener('click', function() {
+                document.getElementById('maxParticles').value = simulation.params.maxParticles || 300;
+                document.getElementById('backgroundColor').value = simulation.params.backgroundColor || '#000000';
+                document.getElementById('showStats').checked = simulation.params.showStats !== false;
+
+                document.getElementById('settingsDialog').classList.remove('hidden');
+                document.getElementById('settingsDialog').classList.add('visible');
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('ui');
+                }
+            });
+
+            document.getElementById('closeSettingsBtn')?.addEventListener('click', function() {
+                document.getElementById('settingsDialog').classList.remove('visible');
+                setTimeout(() => {
+                    document.getElementById('settingsDialog').classList.add('hidden');
+                }, 300);
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('ui');
+                }
+            });
+
+            document.getElementById('applySettingsBtn')?.addEventListener('click', function() {
+                simulation.params.maxParticles = parseInt(document.getElementById('maxParticles').value);
+                simulation.params.backgroundColor = document.getElementById('backgroundColor').value;
+                simulation.params.showStats = document.getElementById('showStats').checked;
+
+                document.getElementById('fpsCounter').style.display = simulation.params.showStats ? 'block' : 'none';
+                document.getElementById('particleCounter').style.display = simulation.params.showStats ? 'block' : 'none';
+
+                document.getElementById('settingsDialog').classList.remove('visible');
+                setTimeout(() => {
+                    document.getElementById('settingsDialog').classList.add('hidden');
+                }, 300);
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('apply');
+                }
+            });
+
+            document.getElementById('shareBtn')?.addEventListener('click', function() {
+                const params = new URLSearchParams();
+                for (const key in simulation.params) {
+                    params.set(key, simulation.params[key]);
+                }
+
+                const shareUrl = window.location.href.split('?')[0] + '?' + params.toString();
+
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Chaos Evolution Simulator',
+                        text: 'Check out this awesome simulation I created!',
+                        url: shareUrl
+                    }).catch(console.error);
+                } else {
+                    navigator.clipboard.writeText(shareUrl)
+                        .then(() => {
+                            alert('Shareable URL copied to clipboard!');
+                        })
+                        .catch(err => {
+                            console.error('Failed to copy URL: ', err);
+                            prompt('Copy this URL to share your simulation:', shareUrl);
+                        });
+                }
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('ui');
+                }
+            });
+
+            document.getElementById('resetBtn')?.addEventListener('click', function() {
+                simulation.reset();
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('reset');
+                }
+            });
+
+            document.getElementById('randomizeBtn')?.addEventListener('click', function() {
+                sliders.forEach(slider => {
+                    const min = parseFloat(slider.min);
+                    const max = parseFloat(slider.max);
+                    const randomValue = Math.random() * (max - min) + min;
+                    const step = parseFloat(slider.step) || 1;
+
+                    const steppedValue = Math.round(randomValue / step) * step;
+
+                    slider.value = steppedValue.toFixed(step < 1 ? 2 : 0);
+
+                    if (slider.nextElementSibling && slider.nextElementSibling.className === 'value') {
+                        slider.nextElementSibling.textContent = slider.value;
+                    }
+
+                    simulation.params[slider.id] = parseFloat(slider.value);
+                });
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('randomize');
+                }
+            });
+
+            let mediaRecorder = null;
+            let recordedChunks = [];
+
+            document.getElementById('recordBtn')?.addEventListener('click', function() {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    this.textContent = 'Start Recording';
+                    this.classList.remove('recording');
+
+                    if (soundEnabled && window.soundFX) {
+                        window.soundFX.play('stopRecord');
+                    }
+                    return;
+                }
+
+                try {
+                    recordedChunks = [];
+                    const stream = canvas.captureStream(30);
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+
+                    mediaRecorder.ondataavailable = function(e) {
+                        if (e.data.size > 0) {
+                            recordedChunks.push(e.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = function() {
+                        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'chaos-evolution-simulation.webm';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    };
+
+                    mediaRecorder.start();
+                    this.textContent = 'Stop Recording';
+                    this.classList.add('recording');
+
+                    if (soundEnabled && window.soundFX) {
+                        window.soundFX.play('startRecord');
+                    }
+                } catch (error) {
+                    console.error('Recording failed:', error);
+                    alert('Recording is not supported in this browser or requires HTTPS.');
+                }
+            });
+
+            document.querySelectorAll('.preset').forEach(button => {
+                button.addEventListener('click', function() {
+                    const preset = this.getAttribute('data-preset');
+                    simulation.loadPreset(preset);
+
+                    for (const param in simulation.params) {
+                        const control = document.getElementById(param);
+                        if (control) {
+                            if (control.type === 'range' || control.type === 'number') {
+                                control.value = simulation.params[param];
+                                if (control.nextElementSibling && control.nextElementSibling.className === 'value') {
+                                    control.nextElementSibling.textContent = simulation.params[param];
+                                }
+                            } else if (control.tagName === 'SELECT') {
+                                control.value = simulation.params[param];
+                            }
+                        }
+                    }
+
+                    if (soundEnabled && window.soundFX) {
+                        window.soundFX.play('preset');
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.code === 'Space' && !event.target.matches('input, textarea, select')) {
+                    event.preventDefault();
+                    toggleFullscreen();
+                }
+
+                if (event.code === 'KeyR' && !event.target.matches('input, textarea, select')) {
+                    simulation.reset();
+                    if (soundEnabled && window.soundFX) {
+                        window.soundFX.play('reset');
+                    }
+                }
+
+                if (event.code === 'KeyM' && !event.target.matches('input, textarea, select')) {
+                    soundEnabled = !soundEnabled;
+                    document.getElementById('audioToggleBtn').innerHTML = soundEnabled ? '🔊' : '🔇';
+
+                    if (window.soundFX) {
+                        if (soundEnabled) {
+                            window.soundFX.play('ui');
+                        }
+                        window.soundFX.setMasterVolume(soundEnabled ? 1 : 0);
+                    }
+                }
+            });
+
+            canvas.addEventListener('click', function(event) {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                for (let i = 0; i < 5; i++) {
+                    simulation.particles.push(new Particle(
+                        x + (Math.random() - 0.5) * 20,
+                        y + (Math.random() - 0.5) * 20,
+                        simulation
+                    ));
+                }
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('click');
+                }
+            });
+
+            canvas.addEventListener('touchstart', function(event) {
+                event.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = event.touches[0];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                for (let i = 0; i < 5; i++) {
+                    simulation.particles.push(new Particle(
+                        x + (Math.random() - 0.5) * 20,
+                        y + (Math.random() - 0.5) * 20,
+                        simulation
+                    ));
+                }
+
+                if (soundEnabled && window.soundFX) {
+                    window.soundFX.play('click');
+                }
+            });
+
+            function loadURLParams() {
+                const urlParams = new URLSearchParams(window.location.search);
+                let paramLoaded = false;
+
+                for (const [key, value] of urlParams.entries()) {
+                    const control = document.getElementById(key);
+                    if (control && simulation.params.hasOwnProperty(key)) {
+                        const numValue = parseFloat(value);
+                        simulation.params[key] = isNaN(numValue) ? value : numValue;
+                        paramLoaded = true;
+
+                        if (control.type === 'range' || control.type === 'number') {
+                            control.value = simulation.params[key];
+                            if (control.nextElementSibling && control.nextElementSibling.className === 'value') {
+                                control.nextElementSibling.textContent = simulation.params[key];
+                            }
+                        } else if (control.tagName === 'SELECT') {
+                            control.value = simulation.params[key];
+                        }
+                    }
+                }
+
+                if (simulation.params.hasOwnProperty('showStats')) {
+                    document.getElementById('fpsCounter').style.display =
+                        simulation.params.showStats ? 'block' : 'none';
+                    document.getElementById('particleCounter').style.display =
+                        simulation.params.showStats ? 'block' : 'none';
+                }
+
+                if (paramLoaded && soundEnabled && window.soundFX) {
+                    window.soundFX.play('startup');
+                }
+            }
+
+            setTimeout(loadURLParams, 100);
+        });
+    </script>
+</body>
+</html>
