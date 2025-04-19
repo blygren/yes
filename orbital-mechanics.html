@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbital Mechanics Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #eef1f5; /* Light background */
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #2c3e50; /* Dark blue-grey */
+            margin-bottom: 1em;
+        }
+        h2 {
+            margin-top: 1.5em;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+
+        canvas {
+            background-color: #000010; /* Deep space blue */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            display: block; /* Prevents extra space below */
+            margin: 0 auto; /* Center canvas */
+            cursor: crosshair; /* Indicate click-to-add */
+        }
+
+        .controls-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 100%;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8f9fa; /* Slightly off-white */
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            min-width: 180px;
+            flex: 1; /* Allow groups to grow */
+            min-width: 150px; /* Prevent excessive shrinking */
+        }
+
+        .control-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: #555;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .control-group input[type="checkbox"] {
+             margin-right: 5px;
+        }
+        .control-group label span { /* For slider values */
+            font-weight: normal;
+            color: #007bff;
+        }
+
+        .planet-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        .planet-card {
+            background-color: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 240px;
+            position: relative;
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        .planet-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .planet-card h3 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .planet-card h3 input[type="text"] {
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            text-align: center;
+            width: 150px; /* Limit width */
+            padding: 2px 5px;
+            margin-left: 5px;
+            border-bottom: 1px solid transparent;
+        }
+        .planet-card h3 input[type="text"]:focus {
+            outline: none;
+            border-bottom: 1px solid #007bff;
+        }
+
+        .color-indicator {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-block; /* Use inline-block */
+            margin-right: 8px; /* Space between indicator and name */
+            border: 1px solid rgba(0,0,0,0.2);
+            vertical-align: middle; /* Align with text */
+        }
+
+        .planet-card label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            display: block;
+            font-size: 0.85em;
+            color: #555;
+        }
+        .planet-card label span { /* Slider values */
+             font-weight: normal;
+             color: #333;
+             float: right; /* Align value to the right */
+        }
+
+        .planet-card input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 18px;
+            background-color: #007bff; /* Primary blue */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #0056b3; /* Darker blue */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        button:active {
+            background-color: #004085;
+        }
+
+        button.remove {
+            background-color: #dc3545; /* Red for removal */
+            display: block;
+            width: calc(100% - 10px); /* Adjust width */
+            margin: 15px auto 5px auto; /* Center and add margin */
+        }
+        button.remove:hover {
+            background-color: #c82333;
+        }
+
+        .sim-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .description {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            line-height: 1.7;
+            font-size: 0.95em;
+            width: 95%;
+            max-width: 800px;
+        }
+        .description h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .description p {
+            margin-bottom: 1em;
+        }
+        .description ul {
+            margin-left: 20px;
+        }
+        .description code {
+            background-color: #e9ecef;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .info-panel {
+            background-color: rgba(0, 0, 0, 0.75);
+            color: #eee;
+            padding: 8px 12px;
+            border-radius: 5px;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-family: monospace;
+            font-size: 0.85em;
+            pointer-events: none; /* Prevent interaction */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 180px; /* Ensure enough space for energy */
+        }
+
+        /* Add glow effect for the star */
+        .star-glow {
+            filter: drop-shadow(0 0 10px #ffffaa) drop-shadow(0 0 20px #ffff00);
+        }
+
+        /* Style for CoM indicator */
+        .com-indicator {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border: 1px solid red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Orbital Mechanics Simulation</h1>
+
+        <div class="sim-controls">
+            <button id="start-pause">Pause</button>
+            <button id="reset">Reset</button>
+            <button id="addPlanetButton">Add Random</button>
+            <button id="clearTrailsButton">Clear Trails</button>
+            <button id="preset-binary">Load Binary</button>
+        </div>
+
+        <div class="controls-section">
+            <div class="control-group">
+                <label for="time-scale">Speed: <span id="time-value">1.0</span>x</label>
+                <input type="range" id="time-scale" min="0.1" max="5" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label for="gravity-const">Gravity: <span id="gravity-value">100</span></label>
+                <input type="range" id="gravity-const" min="10" max="500" step="5" value="100">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="show-trails" checked>
+                    Show Trails
+                </label>
+                <label>
+                    <input type="checkbox" id="show-vectors" checked>
+                    Show Vectors
+                </label>
+                <label>
+                    <input type="checkbox" id="lock-star">
+                    Lock Star (ID 0)
+                </label>
+            </div>
+        </div>
+
+        <div style="position: relative; width: 800px; height: 600px; overflow: hidden;">
+            <canvas id="simulationCanvas" width="800" height="600"></canvas>
+            <div class="info-panel" id="info-panel">
+                Time: 0.0s | Bodies: 0<br>
+                Energy: 0.00<br>
+                Zoom: 1.0x
+            </div>
+        </div>
+
+        <h2>Planet Properties</h2>
+        <div class="planet-controls" id="planet-controls">
+            <!-- Planet control cards will be added here dynamically -->
+        </div>
+
+        <div class="description">
+            <h3>About Orbital Mechanics</h3>
+            <p>
+                This simulation models the gravitational interactions between celestial bodies according to Newton's law of universal gravitation:
+                <code>F = G * (m₁ * m₂) / r²</code>.
+                Each body attracts every other body with a force proportional to the product of their masses and inversely proportional to the square
+                of the distance between their centers.
+            </p>
+            <p>
+                Use the controls to adjust the simulation speed and the strength of gravity. Add planets, modify their masses,
+                initial positions (by resetting and adjusting initial state in code if needed), and velocities to create stable orbits, binary systems, or chaotic interactions.
+            </p>
+             <p>
+                Try creating:
+                <ul>
+                    <li>A stable solar system with a central star and orbiting planets.</li>
+                    <li>A binary star system.</li>
+                    <li>A planet slingshotting around a larger body.</li>
+                </ul>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        const addPlanetButton = document.getElementById('addPlanetButton');
+        const clearTrailsButton = document.getElementById('clearTrailsButton');
+        const timeScaleSlider = document.getElementById('time-scale');
+        const gravityConstSlider = document.getElementById('gravity-const');
+        const timeValueSpan = document.getElementById('time-value');
+        const gravityValueSpan = document.getElementById('gravity-value');
+        const showTrailsCheckbox = document.getElementById('show-trails');
+        const showVectorsCheckbox = document.getElementById('show-vectors');
+        const startPauseButton = document.getElementById('start-pause');
+        const resetButton = document.getElementById('reset');
+        const planetControlsDiv = document.getElementById('planet-controls');
+        const infoPanel = document.getElementById('info-panel');
+        const lockStarCheckbox = document.getElementById('lock-star');
+        const presetBinaryButton = document.getElementById('preset-binary');
+
+        let planets = [];
+        let nextPlanetId = 0;
+        let scaledG = 100;
+        let timeScale = 1.0;
+        let simTime = 0;
+        let isRunning = true;
+        let showTrails = true;
+        let showVectors = true;
+        let totalEnergy = 0;
+        let planetsToRemove = [];
+        let isStarLocked = false;
+        let centerOfMass = { x: 0, y: 0 };
+        let zoomLevel = 1.0;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isPanning = false;
+        let lastPanX = 0;
+        let lastPanY = 0;
+        const planetColors = [
+            '#FFFF00', '#3498DB', '#E74C3C', '#2ECC71', '#9B59B6',
+            '#F39C12', '#1ABC9C', '#34495E', '#D35400', '#7F8C8D'
+        ];
+        const softeningFactor = 50;
+
+        class Planet {
+            constructor(id, name, mass, x, y, vx, vy, color) {
+                this.id = id;
+                this.name = name;
+                this.mass = mass;
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.ax = 0;
+                this.ay = 0;
+                this.color = color;
+                this.updateRadius();
+                this.trail = [];
+                this.trailMaxLength = 300;
+                this.merged = false;
+                this.initialState = { name, mass, x, y, vx, vy };
+            }
+
+            updateRadius() {
+                this.radius = Math.max(3, Math.pow(this.mass, 1/3) * 1.5);
+            }
+
+            updatePosition(dt) {
+                if (isStarLocked && this.id === 0) {
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.ax = 0;
+                    this.ay = 0;
+                    return;
+                }
+
+                this.vx += this.ax * dt;
+                this.vy += this.ay * dt;
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                if (showTrails) {
+                    if (Math.random() < 0.5) {
+                        this.trail.push({ x: this.x, y: this.y });
+                        if (this.trail.length > this.trailMaxLength) {
+                            this.trail.shift();
+                        }
+                    }
+                } else if (this.trail.length > 0) {
+                    this.trail = [];
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.scale(1 / zoomLevel, 1 / zoomLevel);
+
+                let glowApplied = false;
+                if (this.id === 0 && this.mass > 500) {
+                    const scaledRadius = this.radius * zoomLevel;
+                    ctx.filter = `drop-shadow(0 0 ${scaledRadius * 0.8}px ${this.color}) drop-shadow(0 0 ${scaledRadius * 1.5}px ${this.color}aa)`;
+                    glowApplied = true;
+                }
+
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+
+                if (glowApplied) {
+                    ctx.filter = 'none';
+                }
+
+                if (showVectors) {
+                    const vectorScale = 3;
+                    const endX = (this.vx * vectorScale);
+                    const endY = (this.vy * vectorScale);
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 1 * zoomLevel;
+                    ctx.stroke();
+
+                    const angle = Math.atan2(this.vy, this.vx);
+                    const arrowSize = 5 * zoomLevel;
+                    ctx.save();
+                    ctx.translate(endX, endY);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(-arrowSize, -arrowSize / 2);
+                    ctx.lineTo(-arrowSize, arrowSize / 2);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                ctx.restore();
+
+                if (showTrails && this.trail.length > 1) {
+                    ctx.beginPath();
+                    const startTransformed = worldToScreen(this.trail[0].x, this.trail[0].y);
+                    ctx.moveTo(startTransformed.x, startTransformed.y);
+
+                    for (let i = 1; i < this.trail.length; i++) {
+                        const alpha = (i / this.trail.length) * 0.5 + 0.1;
+                        ctx.strokeStyle = this.color + Math.round(alpha * 255).toString(16).padStart(2, '0');
+                        ctx.lineWidth = 1;
+
+                        const pointTransformed = worldToScreen(this.trail[i].x, this.trail[i].y);
+                        ctx.lineTo(pointTransformed.x, pointTransformed.y);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(pointTransformed.x, pointTransformed.y);
+                    }
+                    ctx.closePath();
+                }
+            }
+
+            reset() {
+                this.name = this.initialState.name;
+                this.mass = this.initialState.mass;
+                this.x = this.initialState.x;
+                this.y = this.initialState.y;
+                this.vx = this.initialState.vx;
+                this.vy = this.initialState.vy;
+                this.ax = 0;
+                this.ay = 0;
+                this.updateRadius();
+                this.trail = [];
+                this.merged = false;
+                updatePlanetUI(this);
+
+                if (isStarLocked && this.id === 0) {
+                    this.x = canvas.width / 2;
+                    this.y = canvas.height / 2;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.initialState.x = this.x;
+                    this.initialState.y = this.y;
+                    this.initialState.vx = 0;
+                    this.initialState.vy = 0;
+                }
+            }
+        }
+
+        function calculateForcesAndCollisions() {
+            planets.forEach(planet => {
+                if (!planet.merged) {
+                    planet.ax = 0;
+                    planet.ay = 0;
+                }
+            });
+
+            planetsToRemove = [];
+
+            for (let i = 0; i < planets.length; i++) {
+                const p1 = planets[i];
+                if (p1.merged) continue;
+
+                for (let j = i + 1; j < planets.length; j++) {
+                    const p2 = planets[j];
+                    if (p2.merged) continue;
+
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const distSq = dx * dx + dy * dy;
+                    const dist = Math.sqrt(distSq);
+
+                    if (dist < p1.radius + p2.radius) {
+                        const smaller = p1.mass < p2.mass ? p1 : p2;
+                        const larger = p1.mass >= p2.mass ? p1 : p2;
+
+                        const totalMass = larger.mass + smaller.mass;
+                        larger.vx = (larger.mass * larger.vx + smaller.mass * smaller.vx) / totalMass;
+                        larger.vy = (larger.mass * larger.vy + smaller.mass * smaller.vy) / totalMass;
+
+                        larger.mass = totalMass;
+                        larger.updateRadius();
+
+                        smaller.merged = true;
+                        planetsToRemove.push(smaller.id);
+
+                        updatePlanetUI(larger);
+                        continue;
+                    }
+
+                    const forceMag = (scaledG * p1.mass * p2.mass) / (distSq + softeningFactor);
+                    const forceX = forceMag * (dx / dist);
+                    const forceY = forceMag * (dy / dist);
+
+                    if (!(isStarLocked && p1.id === 0)) {
+                        p1.ax += forceX / p1.mass;
+                        p1.ay += forceY / p1.mass;
+                    }
+                    if (!(isStarLocked && p2.id === 0)) {
+                        p2.ax -= forceX / p2.mass;
+                        p2.ay -= forceY / p2.mass;
+                    }
+                }
+            }
+
+            if (planetsToRemove.length > 0) {
+                planets = planets.filter(p => !p.merged);
+                planetsToRemove.forEach(id => {
+                    const planetCard = document.getElementById(`planet-card-${id}`);
+                    if (planetCard) planetCard.remove();
+                });
+            }
+        }
+
+        function calculateCenterOfMass() {
+            let totalMass = 0;
+            let weightedX = 0;
+            let weightedY = 0;
+
+            planets.forEach(p => {
+                if (!p.merged) {
+                    totalMass += p.mass;
+                    weightedX += p.mass * p.x;
+                    weightedY += p.mass * p.y;
+                }
+            });
+
+            if (totalMass > 0) {
+                centerOfMass.x = weightedX / totalMass;
+                centerOfMass.y = weightedY / totalMass;
+            } else {
+                centerOfMass.x = canvas.width / 2;
+                centerOfMass.y = canvas.height / 2;
+            }
+        }
+
+        function calculateEnergy() {
+            let kineticEnergy = 0;
+            let potentialEnergy = 0;
+
+            planets.forEach(p => {
+                const vSq = p.vx * p.vx + p.vy * p.vy;
+                kineticEnergy += 0.5 * p.mass * vSq;
+            });
+
+            for (let i = 0; i < planets.length; i++) {
+                for (let j = i + 1; j < planets.length; j++) {
+                    const p1 = planets[i];
+                    const p2 = planets[j];
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy + softeningFactor);
+                    potentialEnergy -= (scaledG * p1.mass * p2.mass) / dist;
+                }
+            }
+
+            totalEnergy = kineticEnergy + potentialEnergy;
+        }
+
+        function updatePositions(dt) {
+            planets.forEach(planet => planet.updatePosition(dt));
+        }
+
+        function drawStarfield() {
+            ctx.save();
+            ctx.translate(-offsetX * 0.1, -offsetY * 0.1);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            for (let i = 0; i < 150; i++) {
+                const baseX = (Math.sin(i * 1.23) * 0.5 + 0.5) * canvas.width * 2 - canvas.width / 2;
+                const baseY = (Math.cos(i * 3.45) * 0.5 + 0.5) * canvas.height * 2 - canvas.height / 2;
+                const size = ((Math.sin(i * 5.67) * 0.5 + 0.5) * 1.2 + 0.3);
+
+                const parallaxFactor = 0.05;
+                const starX = baseX + offsetX * parallaxFactor;
+                const starY = baseY + offsetY * parallaxFactor;
+
+                const viewCenterX = canvas.width / 2;
+                const viewCenterY = canvas.height / 2;
+
+                const zoomedX = viewCenterX + (starX - viewCenterX) * zoomLevel;
+                const zoomedY = viewCenterY + (starY - viewCenterY) * zoomLevel;
+
+                ctx.beginPath();
+                ctx.arc(zoomedX, zoomedY, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function worldToScreen(worldX, worldY) {
+            const screenX = (worldX + offsetX) * zoomLevel;
+            const screenY = (worldY + offsetY) * zoomLevel;
+            return { x: screenX, y: screenY };
+        }
+
+        function screenToWorld(screenX, screenY) {
+            // Correctly invert the view transformation (zoom around center + pan)
+            const worldX = (screenX - canvas.width / 2) / zoomLevel + canvas.width / 2 - offsetX;
+            const worldY = (screenY - canvas.height / 2) / zoomLevel + canvas.height / 2 - offsetY;
+            return { x: worldX, y: worldY };
+        }
+
+        function drawSimulation() {
+            ctx.save();
+
+            ctx.fillStyle = 'rgba(0, 0, 16, 1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(zoomLevel, zoomLevel);
+            ctx.translate(-canvas.width / 2 + offsetX, -canvas.height / 2 + offsetY);
+
+            drawStarfield();
+
+            planets.filter(p => !p.merged).forEach(planet => planet.draw());
+
+            // Draw Center of Mass indicator in world space
+            // This red crosshair shows the calculated center of mass for the system
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2 / zoomLevel;
+            ctx.beginPath();
+            const comSize = 10 / zoomLevel;
+            ctx.moveTo(centerOfMass.x - comSize, centerOfMass.y);
+            ctx.lineTo(centerOfMass.x + comSize, centerOfMass.y);
+            ctx.moveTo(centerOfMass.x, centerOfMass.y - comSize);
+            ctx.lineTo(centerOfMass.x, centerOfMass.y + comSize);
+            ctx.stroke();
+
+            ctx.restore();
+
+            infoPanel.innerHTML = `
+                Time: ${simTime.toFixed(1)}s | Bodies: ${planets.length}<br>
+                Energy: ${totalEnergy.toExponential(2)}<br>
+                Zoom: ${zoomLevel.toFixed(2)}x | Lock: ${isStarLocked ? 'ON' : 'OFF'}
+            `;
+        }
+
+        function createPlanet(name, mass, x, y, vx, vy) {
+            const colorIndex = nextPlanetId % planetColors.length;
+            const planet = new Planet(
+                nextPlanetId++,
+                name, mass, x, y, vx, vy,
+                planetColors[colorIndex]
+            );
+            planets.push(planet);
+            createPlanetControls(planet);
+            return planet;
+        }
+
+        function createPlanetControls(planet) {
+            const planetCard = document.createElement('div');
+            planetCard.className = 'planet-card';
+            planetCard.id = `planet-card-${planet.id}`;
+
+            planetCard.innerHTML = `
+                <h3>
+                    <span class="color-indicator" style="background-color: ${planet.color};"></span>
+                    <input type="text" value="${planet.name}" id="name-${planet.id}" placeholder="Planet Name">
+                </h3>
+                <label for="mass-${planet.id}">Mass: <span id="mass-value-${planet.id}">${planet.mass}</span></label>
+                <input type="range" id="mass-${planet.id}" min="1" max="2000" step="1" value="${planet.mass}">
+
+                <label for="vx-${planet.id}">Velocity X: <span id="vx-value-${planet.id}">${planet.vx.toFixed(2)}</span></label>
+                <input type="range" id="vx-${planet.id}" min="-10" max="10" step="0.1" value="${planet.vx}">
+
+                <label for="vy-${planet.id}">Velocity Y: <span id="vy-value-${planet.id}">${planet.vy.toFixed(2)}</span></label>
+                <input type="range" id="vy-${planet.id}" min="-10" max="10" step="0.1" value="${planet.vy}">
+                ${planet.id > 0 ? '<button class="remove" data-id="' + planet.id + '">Remove</button>' : ''}
+            `;
+
+            planetControlsDiv.appendChild(planetCard);
+
+            const nameInput = document.getElementById(`name-${planet.id}`);
+            const massSlider = document.getElementById(`mass-${planet.id}`);
+            const vxSlider = document.getElementById(`vx-${planet.id}`);
+            const vySlider = document.getElementById(`vy-${planet.id}`);
+            const massValueSpan = document.getElementById(`mass-value-${planet.id}`);
+            const vxValueSpan = document.getElementById(`vx-value-${planet.id}`);
+            const vyValueSpan = document.getElementById(`vy-value-${planet.id}`);
+
+            nameInput.addEventListener('change', () => {
+                planet.name = nameInput.value;
+                planet.initialState.name = nameInput.value;
+            });
+            massSlider.addEventListener('input', () => {
+                const newMass = parseInt(massSlider.value);
+                planet.mass = newMass;
+                planet.updateRadius();
+                massValueSpan.textContent = newMass;
+            });
+            vxSlider.addEventListener('input', () => {
+                const newVx = parseFloat(vxSlider.value);
+                planet.vx = newVx;
+                vxValueSpan.textContent = newVx.toFixed(2);
+                planet.initialState.vx = newVx;
+            });
+            vySlider.addEventListener('input', () => {
+                const newVy = parseFloat(vySlider.value);
+                planet.vy = newVy;
+                vyValueSpan.textContent = newVy.toFixed(2);
+                planet.initialState.vy = newVy;
+            });
+
+            const removeButton = planetCard.querySelector('.remove');
+            if (removeButton) {
+                removeButton.addEventListener('click', () => removePlanet(planet.id));
+            }
+        }
+
+        function updatePlanetUI(planet) {
+            const nameInput = document.getElementById(`name-${planet.id}`);
+            const massSlider = document.getElementById(`mass-${planet.id}`);
+            const vxSlider = document.getElementById(`vx-${planet.id}`);
+            const vySlider = document.getElementById(`vy-${planet.id}`);
+            const massValueSpan = document.getElementById(`mass-value-${planet.id}`);
+            const vxValueSpan = document.getElementById(`vx-value-${planet.id}`);
+            const vyValueSpan = document.getElementById(`vy-value-${planet.id}`);
+
+            if (nameInput) nameInput.value = planet.name;
+            if (massSlider) massSlider.value = planet.mass;
+            if (vxSlider) vxSlider.value = planet.vx;
+            if (vySlider) vySlider.value = planet.vy;
+            if (massValueSpan) massValueSpan.textContent = planet.mass;
+            if (vxValueSpan) vxValueSpan.textContent = planet.vx.toFixed(2);
+            if (vyValueSpan) vyValueSpan.textContent = planet.vy.toFixed(2);
+        }
+
+        function removePlanet(id) {
+            planets = planets.filter(p => p.id !== id);
+            const planetCard = document.getElementById(`planet-card-${id}`);
+            if (planetCard) {
+                planetCard.remove();
+            }
+        }
+
+        function setupInitialSystem() {
+            createPlanet('Star', 1000, canvas.width / 2, canvas.height / 2, 0, 0);
+            const planet1X = canvas.width / 2;
+            const planet1Y = canvas.height / 2 - 180;
+            const starMass = planets[0].mass;
+            const r1 = Math.abs(planet1Y - planets[0].y);
+            const orbitalV1 = Math.sqrt(scaledG * starMass / (r1 + Math.sqrt(softeningFactor)));
+            createPlanet('Planet A', 15, planet1X, planet1Y, orbitalV1, 0);
+
+            const planet2X = canvas.width / 2 + 250;
+            const planet2Y = canvas.height / 2;
+            const r2 = Math.sqrt(Math.pow(planet2X - planets[0].x, 2) + Math.pow(planet2Y - planets[0].y, 2));
+            const orbitalV2 = Math.sqrt(scaledG * starMass / (r2 + Math.sqrt(softeningFactor)));
+            createPlanet('Planet B', 25, planet2X, planet2Y, 0, -orbitalV2 * 0.8);
+        }
+
+        function loadBinaryPreset() {
+            planets = [];
+            planetControlsDiv.innerHTML = '';
+            nextPlanetId = 0;
+            const dist = 150;
+            const mass = 800;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const orbitalV = Math.sqrt(scaledG * mass / (4 * dist + softeningFactor));
+
+            createPlanet('Star A', mass, centerX - dist, centerY, 0, orbitalV);
+            createPlanet('Star B', mass, centerX + dist, centerY, 0, -orbitalV);
+            createPlanet('Planetoid', 5, centerX, centerY + dist * 2, -orbitalV * 1.5, 0);
+
+            calculateEnergy();
+            simTime = 0;
+        }
+
+        function initPlanets() {
+            planets = [];
+            planetControlsDiv.innerHTML = '';
+            nextPlanetId = 0;
+            setupInitialSystem();
+            calculateEnergy();
+            simTime = 0;
+            zoomLevel = 1.0;
+            offsetX = 0;
+            offsetY = 0;
+        }
+
+        timeScaleSlider.addEventListener('input', () => {
+            timeScale = parseFloat(timeScaleSlider.value);
+            timeValueSpan.textContent = timeScale.toFixed(1);
+        });
+
+        gravityConstSlider.addEventListener('input', () => {
+            scaledG = parseInt(gravityConstSlider.value);
+            gravityValueSpan.textContent = scaledG;
+        });
+
+        showTrailsCheckbox.addEventListener('change', () => {
+            showTrails = showTrailsCheckbox.checked;
+            if (!showTrails) {
+                planets.forEach(p => p.trail = []);
+            }
+        });
+
+        showVectorsCheckbox.addEventListener('change', () => {
+            showVectors = showVectorsCheckbox.checked;
+        });
+
+        startPauseButton.addEventListener('click', () => {
+            isRunning = !isRunning;
+            startPauseButton.textContent = isRunning ? 'Pause' : 'Start';
+        });
+
+        resetButton.addEventListener('click', () => {
+            simTime = 0;
+            zoomLevel = 1.0;
+            offsetX = 0;
+            offsetY = 0;
+            isStarLocked = lockStarCheckbox.checked;
+
+            planets.forEach(planet => planet.reset());
+
+            planets = planets.filter(p => p.initialState);
+
+            planetControlsDiv.innerHTML = '';
+            planets.forEach(p => createPlanetControls(p));
+
+            calculateEnergy();
+            calculateCenterOfMass();
+            isRunning = true;
+            startPauseButton.textContent = 'Pause';
+        });
+
+        addPlanetButton.addEventListener('click', () => {
+            const padding = 50;
+            const x = padding + Math.random() * (canvas.width - 2 * padding);
+            const y = padding + Math.random() * (canvas.height - 2 * padding);
+            const speed = 0.5 + Math.random() * 2;
+            const angle = Math.random() * Math.PI * 2;
+            const vx = speed * Math.cos(angle);
+            const vy = speed * Math.sin(angle);
+            const mass = 5 + Math.random() * 45;
+
+            createPlanet(`Planet ${nextPlanetId}`, mass, x, y, vx, vy);
+        });
+
+        clearTrailsButton.addEventListener('click', () => {
+            planets.forEach(planet => planet.trail = []);
+        });
+
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = event.clientX - rect.left;
+            const screenY = event.clientY - rect.top;
+
+            const worldCoords = screenToWorld(screenX, screenY);
+
+            const mass = 5 + Math.random() * 15;
+            createPlanet(`Planet ${nextPlanetId}`, mass, worldCoords.x, worldCoords.y, 0, 0);
+        });
+
+        canvas.addEventListener('wheel', (event) => {
+            event.preventDefault();
+
+            const zoomFactor = 1.1;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            const worldCoordsBefore = screenToWorld(mouseX, mouseY);
+
+            if (event.deltaY < 0) {
+                zoomLevel *= zoomFactor;
+            } else {
+                zoomLevel /= zoomFactor;
+            }
+            zoomLevel = Math.max(0.1, Math.min(zoomLevel, 10));
+
+            const worldCoordsAfter = screenToWorld(mouseX, mouseY);
+
+            offsetX += (worldCoordsAfter.x - worldCoordsBefore.x);
+            offsetY += (worldCoordsAfter.y - worldCoordsBefore.y);
+        });
+
+        canvas.addEventListener('mousedown', (event) => {
+            if (event.button === 0) {
+                isPanning = true;
+                lastPanX = event.clientX;
+                lastPanY = event.clientY;
+                canvas.style.cursor = 'grabbing';
+            }
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (isPanning) {
+                const dx = event.clientX - lastPanX;
+                const dy = event.clientY - lastPanY;
+
+                offsetX += dx / zoomLevel;
+                offsetY += dy / zoomLevel;
+
+                lastPanX = event.clientX;
+                lastPanY = event.clientY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = 'crosshair';
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = 'crosshair';
+            }
+        });
+
+        lockStarCheckbox.addEventListener('change', () => {
+            isStarLocked = lockStarCheckbox.checked;
+            if (isStarLocked && planets[0]) {
+                planets[0].x = canvas.width / 2;
+                planets[0].y = canvas.height / 2;
+                planets[0].vx = 0;
+                planets[0].vy = 0;
+                planets[0].ax = 0;
+                planets[0].ay = 0;
+            }
+        });
+
+        presetBinaryButton.addEventListener('click', loadBinaryPreset);
+
+        let lastTime = 0;
+        function simulationLoop(timestamp) {
+            const deltaTime = (timestamp - (lastTime || timestamp)) / 1000;
+            lastTime = timestamp;
+
+            if (isRunning) {
+                const scaledDeltaTime = deltaTime * timeScale;
+                simTime += scaledDeltaTime;
+
+                calculateForcesAndCollisions();
+                updatePositions(scaledDeltaTime);
+                calculateEnergy();
+                calculateCenterOfMass();
+            }
+
+            drawSimulation();
+            requestAnimationFrame(simulationLoop);
+        }
+
+        initPlanets();
+        requestAnimationFrame(simulationLoop);
+    </script>
+</body>
+</html>
