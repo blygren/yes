@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetterCoding 1.4</title> <!-- Renamed title -->
+    <!-- Add CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+    <!-- Add CodeMirror Addon CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/lint/lint.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/hint/show-hint.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldgutter.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/dialog/dialog.css"> <!-- Search/Dialog CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/search/matchesonscrollbar.css"> <!-- Search CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/display/fullscreen.css"> <!-- Fullscreen CSS -->
+    <!-- Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/eclipse.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/cobalt.min.css"> <!-- New Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/nord.min.css"> <!-- New Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/solarized.min.css"> <!-- New Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/bespin.css"> <!-- Hacker Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/ambiance.min.css"> <!-- New Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/base16-dark.min.css"> <!-- New Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/paraiso-light.min.css"> <!-- New Theme -->
+    <style>
+        /* Paste contents of style.css here */
+        body {
+            font-family: sans-serif;
+            padding: 10px; /* Reduced padding */
+            margin: 0; /* Remove default margin */
+            background-color: #212121; /* Darker background */
+            color: #eee; /* Lighter text */
+            height: 100vh; /* Full viewport height */
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent body scrollbars during resize */
+            display: flex; /* Use flex for overall layout */
+            flex-direction: column; /* Stack header, main, status bar */
+        }
+
+        /* Container for heading and help icon */
+        .header-container {
+            display: flex;
+            justify-content: space-between; /* Space out title and controls */
+            align-items: center;
+            padding: 5px 15px; /* Adjust padding */
+            height: auto; /* Allow header height to adjust */
+            min-height: 50px; /* Minimum height */
+            flex-shrink: 0; /* Prevent shrinking */
+            flex-wrap: wrap; /* Allow controls to wrap on small screens */
+        }
+
+        h1 {
+            color: #eee; /* Lighter heading */
+            text-align: left; /* Align left */
+            margin: 0; /* Remove margins */
+            margin-right: 20px; /* Add space between title and controls */
+        }
+
+        /* Container for header controls */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Increased gap for fewer items */
+            flex-wrap: wrap;
+        }
+
+        /* Remove label margin as they are now in modal */
+        .controls label {
+            margin-right: 0;
+        }
+
+        /* Base style for header icons */
+        .header-icon {
+            padding: 5px 12px;
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #666;
+            border-radius: 50%; /* Make icons circular */
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            user-select: none;
+            display: inline-flex; /* Align icon content */
+            justify-content: center;
+            align-items: center;
+            min-width: 20px; /* Ensure minimum size */
+            min-height: 20px;
+        }
+        .header-icon:hover {
+            background-color: #555;
+            border-color: #888;
+        }
+
+        /* Style for buttons using icons */
+        .icon-button {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px; /* Adjust padding for icon */
+            line-height: 1; /* Prevent extra space */
+        }
+        .icon-button svg {
+            vertical-align: middle; /* Align icon better */
+        }
+
+        /* Style for settings icon specifically if needed */
+        #settingsIcon {
+            /* font-size: 16px; */ /* Example adjustment */
+        }
+
+        /* General styles for controls moved to modal (can reuse header-button) */
+        .modal .header-button {
+            padding: 5px 10px;
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #666;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+            margin: 2px; /* Add slight margin for spacing in modal */
+        }
+        .modal .header-button:hover {
+            background-color: #555;
+            border-color: #888;
+        }
+        .modal select {
+            padding: 5px 10px;
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #666;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23BBB%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+            padding-right: 2em;
+        }
+        .modal select:hover {
+            background-color: #555;
+            border-color: #888;
+        }
+
+        /* Font controls specific layout in modal */
+        .font-controls-inline {
+            display: flex;
+            align-items: center;
+        }
+        .font-controls-inline .font-button {
+            min-width: 25px;
+            padding: 3px 6px;
+        }
+        .font-controls-inline #fontSizeDisplay {
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+            background-color: #333;
+            padding: 4px 0;
+            border-radius: 3px;
+            margin: 0 -5px;
+            z-index: 1;
+            position: relative;
+        }
+
+        /* Settings Modal Specific Layout */
+        .settings-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjust min width */
+            gap: 25px; /* Gap between sections */
+            margin-top: 15px;
+        }
+
+        .settings-section {
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #2f2f2f; /* Slightly different background for sections */
+        }
+
+        .settings-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #6fa8dc; /* Section header color */
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+        }
+
+        .modal-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px; /* Space between groups */
+        }
+        .modal-control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-control-group label:not(.checkbox-group label) { /* Style non-checkbox labels */
+            font-weight: bold;
+            color: #ccc;
+            margin-bottom: 4px;
+        }
+
+        /* Style for checkbox groups */
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: #eee;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        /* Style for small number input */
+        .small-input {
+            padding: 4px 8px;
+            background-color: #3a3a3a;
+            color: #eee;
+            border: 1px solid #666;
+            border-radius: 3px;
+            font-size: 13px;
+            width: 60px; /* Smaller width */
+        }
+
+        /* Device Toggle Buttons */
+        .device-toggle-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .device-toggle-buttons .device-button.active {
+            background-color: #6fa8dc; /* Highlight active device */
+            color: #111;
+            border-color: #6fa8dc;
+        }
+
+        /* Ensure buttons wrap nicely within a group if needed */
+        .modal-control-group > button,
+        .modal-control-group > select,
+        .modal-control-group > input[type="number"] {
+            margin-bottom: 5px;
+        }
+        .modal-control-group > .header-button {
+             align-self: flex-start; /* Align buttons to the start */
+        }
+
+        /* New container for layout */
+        .main-content {
+            flex-grow: 1; /* Take remaining vertical space */
+            display: flex;
+            flex-direction: column; /* Stack editor/preview and console */
+            overflow: hidden; /* Prevent overflow */
+            height: calc(100vh - 50px - 25px - 10px); /* Adjust height for header, status bar, body padding */
+            transition: height 0.2s ease-in-out; /* Smooth transition for status bar toggle */
+        }
+
+        /* Container for Editor and Preview panels */
+        .editor-preview-container {
+            display: flex;
+            flex-grow: 1; /* Take available space initially */
+            min-height: 100px; /* Minimum height */
+            width: 100%;
+            overflow: hidden;
+            transition: height 0.2s ease-in-out; /* Smooth transition for console toggle */
+        }
+
+        /* Horizontal Layout Variation */
+        .editor-preview-container.horizontal-layout {
+            flex-direction: column;
+        }
+        .editor-preview-container.horizontal-layout #editorContainer,
+        .editor-preview-container.horizontal-layout #outputFrame {
+            width: 100%; /* Let JS override height */
+            height: 50%; /* Default height, JS overrides */
+            min-height: 50px;
+        }
+        .editor-preview-container.horizontal-layout .resizer.vertical {
+            width: 100%;
+            height: 10px;
+            cursor: row-resize;
+        }
+
+        /* Vertical Layout (Default) */
+        .editor-preview-container.vertical-layout {
+            flex-direction: row;
+        }
+        .editor-preview-container.vertical-layout #editorContainer,
+        .editor-preview-container.vertical-layout #outputFrame {
+            height: 100%; /* Let JS override width */
+            width: 50%; /* Default width, JS overrides */
+            min-width: 50px;
+        }
+        .editor-preview-container.vertical-layout .resizer.vertical {
+            width: 10px;
+            height: 100%;
+            cursor: col-resize;
+        }
+
+        /* Style the CodeMirror container */
+        #editorContainer {
+            border: none; /* Remove individual border */
+            box-sizing: border-box;
+            overflow: hidden; /* Hide potential overflow */
+            display: flex; /* Needed for CodeMirror to fill */
+            flex-direction: column; /* Needed for CodeMirror to fill */
+            min-width: 50px;
+            /* width/height set by JS or layout classes */
+        }
+
+        /* Ensure CodeMirror editor fills the container */
+        .CodeMirror {
+            flex-grow: 1; /* Allow CM to grow */
+            font-size: 14px; /* Adjust font size */
+        }
+
+        /* Style the output iframe */
+        #outputFrame {
+            background-color: #fff; /* White background for HTML rendering */
+            border: none; /* Remove individual border */
+            box-sizing: border-box;
+            min-width: 50px;
+            transition: width 0.3s ease-in-out; /* Smooth transition for device width change */
+            /* width/height set by JS or layout classes */
+        }
+
+        /* Add a class to potentially disable vertical resizing when device width is set */
+        .editor-preview-container.device-width-active .resizer.vertical {
+            cursor: default; /* Indicate resizing is disabled */
+            /* pointer-events: none; */ /* Optionally disable mouse events */
+        }
+
+        /* Style for the resizer handles */
+        .resizer {
+            background-color: #3a3a3a;
+            flex-shrink: 0;
+        }
+        .resizer.vertical {
+            width: 10px;
+            height: 100%;
+            cursor: col-resize;
+        }
+        .resizer.horizontal {
+            width: 100%;
+            height: 10px;
+            cursor: row-resize;
+        }
+
+        /* Console Panel Styles */
+        #consoleContainer {
+            min-height: 30px; /* Minimum height */
+            display: flex;
+            flex-direction: column;
+            background-color: #2a2a2a; /* Slightly different background */
+            border-top: 1px solid #555;
+            box-sizing: border-box;
+            overflow: hidden; /* Hide overflow */
+            transition: height 0.2s ease-in-out, visibility 0.2s ease-in-out; /* Smooth transition */
+            visibility: visible; /* Default state */
+        }
+
+        /* Class to hide console */
+        #consoleContainer.collapsed {
+            height: 0 !important; /* Override inline style */
+            min-height: 0;
+            border-top: none;
+            visibility: hidden;
+        }
+        /* Hide horizontal resizer when console is collapsed */
+        #resizerH.collapsed {
+            height: 0 !important; /* Override inline style */
+            visibility: hidden;
+        }
+
+        .console-header {
+            padding: 4px 10px;
+            font-weight: bold;
+            background-color: #333;
+            color: #ccc;
+            font-size: 13px;
+            flex-shrink: 0; /* Prevent header shrinking */
+            display: flex; /* Layout for title and button */
+            justify-content: space-between; /* Space out title and button */
+            align-items: center;
+        }
+
+        .console-button {
+            padding: 2px 8px;
+            background-color: #555;
+            color: #ddd;
+            border: 1px solid #777;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .console-button:hover {
+            background-color: #666;
+        }
+
+        #consoleOutput {
+            flex-grow: 1; /* Take remaining space */
+            padding: 5px 10px;
+            margin: 0;
+            font-family: monospace;
+            font-size: 13px;
+            color: #ddd;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto; /* Allow vertical scrolling */
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+        }
+
+        .modal-content {
+            background-color: #333;
+            color: #eee;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+            max-width: 700px; /* Allow settings modal to be wider */
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+
+        .modal-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .modal-content li {
+            margin-bottom: 10px;
+        }
+
+        .modal-content code {
+            background-color: #444;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #eee;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* CodeMirror Fold Gutter */
+        .CodeMirror-foldgutter {
+          width: .7em;
+        }
+        .CodeMirror-foldgutter-open,
+        .CodeMirror-foldgutter-folded {
+          cursor: pointer;
+        }
+        .CodeMirror-foldgutter-open:after {
+          content: "\25BE"; /* Down arrow */
+        }
+        .CodeMirror-foldgutter-folded:after {
+          content: "\25B8"; /* Right arrow */
+        }
+
+        /* CodeMirror Matching Tag Highlight */
+        .CodeMirror-matchingtag {
+            background-color: rgba(74, 144, 226, 0.3); /* Light blue highlight */
+        }
+
+        /* Style for CodeMirror search matches on scrollbar */
+        .CodeMirror-search-match {
+          background: gold;
+          border-top: 1px solid orange;
+          border-bottom: 1px solid orange;
+          box-sizing: border-box;
+          opacity: .5;
+        }
+
+        /* Status Bar Styles */
+        #statusBar {
+            height: 25px; /* Fixed height */
+            background-color: #333;
+            color: #ccc;
+            font-size: 12px;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0; /* Prevent shrinking */
+            border-top: 1px solid #555;
+            transition: height 0.2s ease-in-out, visibility 0.2s ease-in-out; /* Smooth transition */
+            visibility: visible; /* Default state */
+        }
+        #statusLineCol, #statusChars {
+            padding: 0 10px;
+        }
+        /* Save Status Indicator */
+        .save-status {
+            margin-left: auto; /* Push to the right */
+            padding: 0 10px;
+            color: #4CAF50; /* Green */
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .save-status.visible {
+            opacity: 1;
+        }
+
+        /* Class to hide status bar */
+        #statusBar.collapsed {
+            height: 0 !important; /* Override inline style */
+            border-top: none;
+            visibility: hidden;
+            overflow: hidden; /* Prevent content visibility */
+        }
+
+        /* Zen Mode Styles */
+        body.zen-mode .header-container,
+        body.zen-mode #consoleContainer,
+        body.zen-mode #statusBar,
+        body.zen-mode .resizer {
+            display: none; /* Hide elements */
+        }
+
+        body.zen-mode .main-content {
+            height: calc(100vh - 20px); /* Adjust height for body padding */
+            padding: 0; /* Remove padding around main content */
+        }
+
+        body.zen-mode .editor-preview-container {
+            height: 100% !important; /* Take full height */
+        }
+
+        /* Ensure editor takes full width in Zen Mode, regardless of layout */
+        body.zen-mode #editorContainer {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
+        }
+        body.zen-mode #outputFrame {
+            display: none; /* Hide preview in Zen mode */
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <h1>BetterCoding 1.4</h1> <!-- Renamed heading -->
+        <div class="controls"> <!-- Now holds only essential/trigger buttons -->
+            <label class="auto-update-label">
+                <input type="checkbox" id="autoUpdateCheckbox" checked> Auto-Update
+            </label>
+            <button id="runButton" class="header-button" style="display: none;">Run</button>
+            <button id="fullscreenPreviewButton" class="header-button icon-button" title="Fullscreen Preview">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M10 4V6H14V4H10ZM10 20V18H14V20H10ZM4 14V10H6V14H4ZM18 14V10H20V14H18ZM6 6H4V10H6V6ZM18 6V10H20V6H18ZM6 18H4V14H6V18ZM18 18V14H20V18H18Z"></path></svg>
+            </button> <!-- Fullscreen Icon Button -->
+            <span id="settingsIcon" class="header-icon" title="Settings">&#9881;</span> <!-- Settings Icon (Gear) -->
+            <span id="helpIcon" class="header-icon" title="Help">?</span> <!-- Changed help to header-icon class -->
+        </div>
+    </div>
+    <!-- Main content area -->
+    <div class="main-content">
+        <!-- Top panels (Editor + Preview) -->
+        <div class="editor-preview-container" id="editorPreviewContainer"> <!-- Added ID -->
+            <div id="editorContainer"></div>
+            <div id="resizerV" class="resizer vertical"></div> <!-- Vertical Resizer -->
+            <iframe id="outputFrame"></iframe>
+        </div>
+        <!-- Horizontal Resizer -->
+        <div id="resizerH" class="resizer horizontal"></div> <!-- Will be hidden/shown -->
+        <!-- Bottom panel (Console) -->
+        <div id="consoleContainer"> <!-- Will be hidden/shown -->
+            <div class="console-header">
+                <span>Console</span>
+                <button id="clearConsoleButton" class="console-button">Clear</button> <!-- Clear Console Button -->
+            </div>
+            <pre id="consoleOutput"></pre>
+        </div>
+    </div>
+    <!-- Status Bar -->
+    <div id="statusBar"> <!-- Will be hidden/shown -->
+        <span id="statusLineCol">Ln 1, Col 1</span>
+        <span id="statusChars">Chars: 0</span>
+        <span id="saveStatus" class="save-status"></span> <!-- Save Status Indicator -->
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button settings-close-button">&times;</span>
+            <h2>Settings & Controls</h2>
+            <div class="settings-sections">
+                <!-- Appearance Section -->
+                <section class="settings-section">
+                    <h3>Appearance</h3>
+                    <div class="modal-control-group">
+                        <label for="themeSelector">Theme:</label>
+                        <select id="themeSelector">
+                            <option value="material-darker">Material Darker</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="eclipse">Eclipse</option>
+                            <option value="cobalt">Cobalt</option>
+                            <option value="nord">Nord</option>
+                            <option value="solarized dark">Solarized Dark</option>
+                            <option value="solarized light">Solarized Light</option>
+                            <option value="bespin">Bespin (Hacker)</option>
+                            <option value="ambiance">Ambiance</option> <!-- New Theme -->
+                            <option value="base16-dark">Base16 Dark</option> <!-- New Theme -->
+                            <option value="paraiso-light">Paraiso Light</option> <!-- New Theme -->
+                        </select>
+                    </div>
+                    <div class="modal-control-group">
+                        <label>Font Size:</label>
+                        <div class="font-controls-inline">
+                            <button id="decreaseFont" class="header-button font-button">-</button>
+                            <span id="fontSizeDisplay">14px</span>
+                            <button id="increaseFont" class="header-button font-button">+</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Editor Behavior Section -->
+                <section class="settings-section">
+                    <h3>Editor Behavior</h3>
+                    <div class="modal-control-group checkbox-group">
+                        <label for="lineWrappingCheckbox">
+                            <input type="checkbox" id="lineWrappingCheckbox"> Line Wrapping
+                        </label>
+                    </div>
+                     <div class="modal-control-group checkbox-group">
+                        <label for="smartIndentCheckbox">
+                            <input type="checkbox" id="smartIndentCheckbox" checked> Smart Indent
+                        </label>
+                    </div>
+                    <div class="modal-control-group checkbox-group">
+                        <label for="indentWithTabsCheckbox">
+                            <input type="checkbox" id="indentWithTabsCheckbox"> Indent with Tabs
+                        </label>
+                    </div>
+                    <div class="modal-control-group">
+                        <label for="indentSizeInput">Indent Size:</label>
+                        <input type="number" id="indentSizeInput" min="1" max="16" value="2" class="small-input">
+                    </div>
+                    <div class="modal-control-group">
+                        <label>Format Code:</label>
+                         <button id="formatButton" class="header-button">Format</button>
+                    </div>
+                </section>
+
+                <!-- Layout Section -->
+                <section class="settings-section">
+                    <h3>Layout & View</h3>
+                     <div class="modal-control-group">
+                         <label>Editor/Preview Split:</label>
+                         <button id="layoutToggleButton" class="header-button" title="Toggle Vertical/Horizontal Layout">Toggle Layout</button>
+                     </div>
+                     <div class="modal-control-group">
+                         <label>Toggle Panels:</label>
+                         <button id="toggleConsoleButton" class="header-button">Console</button>
+                         <button id="toggleStatusBarButton" class="header-button">Status Bar</button>
+                     </div>
+                     <div class="modal-control-group">
+                         <label>Preview Size:</label>
+                         <div class="device-toggle-buttons">
+                             <button class="header-button device-button" data-width="375px">Mobile</button>
+                             <button class="header-button device-button" data-width="768px">Tablet</button>
+                             <button class="header-button device-button" data-width="100%">Desktop</button>
+                         </div>
+                     </div>
+                     <div class="modal-control-group">
+                        <label>Focus Mode:</label>
+                        <button id="zenModeButton" class="header-button">Toggle Zen Mode</button>
+                    </div>
+                </section>
+
+                 <!-- File Section -->
+                <section class="settings-section">
+                    <h3>File & Editor Content</h3>
+                    <div class="modal-control-group">
+                         <label>Save/Load Settings:</label>
+                         <button id="saveButton" class="header-button">Save</button>
+                         <button id="loadButton" class="header-button">Load</button>
+                    </div>
+                    <div class="modal-control-group">
+                         <label>Import/Export:</label>
+                         <button id="importButton" class="header-button">Import File</button>
+                         <input type="file" id="importFile" accept=".html,.htm,.txt" style="display: none;">
+                         <button id="downloadButton" class="header-button">Download HTML</button>
+                    </div>
+                     <div class="modal-control-group">
+                         <label>Clear Content:</label>
+                         <button id="clearButton" class="header-button">Clear Editor</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal Structure (Initially Hidden) -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Keyboard Shortcuts</h2>
+            <ul>
+                <li><code>Ctrl+S</code> / <code>Cmd+S</code>: Save (Browser default, triggers our save)</li>
+                <li><code>Ctrl+Space</code>: Autocomplete</li>
+                <li><code>Tab</code>: Emmet Expand / Indent</li>
+                <li><code>Shift+Tab</code>: De-indent</li>
+                <li><code>Ctrl+F</code> / <code>Cmd+F</code>: Find</li>
+                <li><code>Ctrl+H</code> / <code>Cmd+Alt+F</code>: Replace</li>
+                <li><code>Shift+Ctrl+H</code> / <code>Shift+Cmd+Alt+F</code>: Replace All</li>
+                <li><code>F11</code>: Toggle Editor Fullscreen</li>
+                <li><code>Esc</code>: Exit Editor Fullscreen / Close Dialogs</li>
+                <li><code>Ctrl+/</code> / <code>Cmd+/</code>: Toggle Comment</li>
+                <li><code>Ctrl+D</code> / <code>Cmd+D</code>: Select Next Occurrence</li>
+            </ul>
+            <h2>Common HTML Tags</h2>
+            <ul>
+                <li><code>&lt;h1&gt;</code> to <code>&lt;h6&gt;</code>: Headings</li>
+                <li><code>&lt;p&gt;</code>: Paragraph</li>
+                <li><code>&lt;a href="..."&gt;</code>: Link</li>
+                <li><code>&lt;img src="..." alt="..."&gt;</code>: Image</li>
+                <li><code>&lt;div&gt;</code>: Division/Container</li>
+                <li><code>&lt;span&gt;</code>: Inline Container</li>
+                <li><code>&lt;ul&gt;</code> / <code>&lt;ol&gt;</code> / <code>&lt;li&gt;</code>: Lists</li>
+                <li><code>&lt;table&gt;</code>, <code>&lt;tr&gt;</code>, <code>&lt;th&gt;</code>, <code>&lt;td&gt;</code>: Table</li>
+                <li><code>&lt;style&gt;</code>: Embed CSS</li>
+                <li><code>&lt;script&gt;</code>: Embed JavaScript</li>
+                <li><code>&lt;!-- ... --&gt;</code>: Comment</li>
+            </ul>
+            <h2>Common CSS Properties (inside <code>&lt;style&gt;</code>)</h2>
+            <ul>
+                <li><code>color: blue;</code>: Text color</li>
+                <li><code>background-color: #f0f0f0;</code>: Background color</li>
+                <li><code>font-size: 16px;</code>: Text size</li>
+                <li><code>font-family: sans-serif;</code>: Font type</li>
+                <li><code>margin: 10px;</code>: Outer spacing</li>
+                <li><code>padding: 10px;</code>: Inner spacing</li>
+                <li><code>border: 1px solid black;</code>: Element border</li>
+                <li><code>display: flex;</code>: Use Flexbox layout</li>
+            </ul>
+            <h2>Common JavaScript (inside <code>&lt;script&gt;</code>)</h2>
+            <ul>
+                <li><code>console.log("Message");</code>: Output to console</li>
+                <li><code>alert("Popup message");</code>: Show popup</li>
+                <li><code>let variable = value;</code>: Declare variable</li>
+                <li><code>function name() { ... }</code>: Define function</li>
+                <li><code>document.getElementById("id")</code>: Select element</li>
+                <li><code>element.innerHTML = "...";</code>: Change element content</li>
+                <li><code>element.style.color = "red";</code>: Change element style</li>
+                <li><code>element.addEventListener('click', func);</code>: Handle click</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Add CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+    <!-- Add HTML mode for CodeMirror -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js"></script>
+    <!-- Add CodeMirror Addons JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/selection/active-line.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/closetag.js"></script> <!-- Already had autoCloseTags -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/hint/show-hint.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/hint/xml-hint.js"></script> <!-- Dependency for html-hint -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/hint/html-hint.js"></script>
+    <!-- Load HTMLHint library BEFORE the CodeMirror HTML linter addon -->
+    <script src="https://unpkg.com/htmlhint@latest/dist/htmlhint.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.6/jshint.min.js"></script> <!-- JSHint -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/csslint/1.0.5/csslint.min.js"></script> <!-- CSSLint -->
+    <!-- CodeMirror Lint Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/lint/lint.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/lint/html-lint.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/lint/javascript-lint.js"></script> <!-- JS Lint Addon -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/lint/css-lint.js"></script> <!-- CSS Lint Addon -->
+    <!-- Code Folding Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldcode.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldgutter.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/brace-fold.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/xml-fold.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/comment-fold.js"></script>
+    <!-- Matching Tags Addon -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/matchtags.js"></script>
+    <!-- Add Emmet -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/emmet/2.3.6/emmet.min.js"></script>
+    <!-- Search/Dialog Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/dialog/dialog.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/search/searchcursor.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/search/search.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/search/jump-to-line.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/search/matchesonscrollbar.js"></script>
+    <!-- Fullscreen Addon -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/display/fullscreen.js"></script>
+    <!-- Prettier Standalone -->
+    <script src="https://unpkg.com/prettier@2.8.4/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.4/parser-html.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.4/parser-babel.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.4/parser-postcss.js"></script>
+
+    <script>
+        // Paste contents of script.js here
+        // --- DOM Element References ---
+        let editorContainer, outputFrame, resizerV, resizerH, container, helpIcon, helpModal,
+            closeModalButton, themeSelector, clearButton, saveButton, loadButton, downloadButton,
+            formatButton, editorPreviewContainer, consoleContainer, consoleOutput, mainContent, editor,
+            decreaseFontButton, increaseFontButton, fontSizeDisplay, autoUpdateCheckbox, runButton,
+            clearConsoleButton, statusBar, statusLineCol, statusChars, toggleConsoleButton, toggleStatusBarButton,
+            layoutToggleButton, importButton, importFile, saveStatus,
+            fullscreenPreviewButton, settingsIcon, settingsModal, settingsCloseButton,
+            lineWrappingCheckbox, indentSizeInput, indentWithTabsCheckbox, smartIndentCheckbox,
+            zenModeButton, deviceToggleButtonsContainer;
+
+        // --- Constants ---
+        const SETTINGS_STORAGE_KEY = 'betterCoding1.4_settings';
+        const CONSOLE_SCRIPT = `
+            <script>
+                // Console override script
+                (function() {
+                    const originalConsole = {};
+                    const methods = ['log', 'warn', 'error', 'info', 'debug', 'assert', 'clear', 'count', 'countReset', 'dir', 'dirxml', 'group', 'groupCollapsed', 'groupEnd', 'table', 'time', 'timeEnd', 'timeLog', 'trace'];
+
+                    function sendToParent(type, args) {
+                        try {
+                            // Basic serialization for simple types, handle complex objects carefully
+                            const serializedArgs = args.map(arg => {
+                                if (arg instanceof Error) {
+                                    return \`Error: \${arg.message} (Stack: \${arg.stack})\`;
+                                }
+                                try {
+                                    // Attempt stringify, fallback to String()
+                                    return JSON.stringify(arg);
+                                } catch (e) {
+                                    return String(arg);
+                                }
+                            });
+                            window.parent.postMessage({ type: 'console', level: type, message: serializedArgs.join(' ') }, '*');
+                        } catch (e) {
+                            // Fallback if serialization fails
+                            window.parent.postMessage({ type: 'console', level: 'error', message: 'Error sending console message to parent.' }, '*');
+                        }
+                    }
+
+                    methods.forEach(method => {
+                        if (typeof console[method] === 'function') {
+                            originalConsole[method] = console[method].bind(console);
+                            console[method] = function(...args) {
+                                // Call original console method
+                                originalConsole[method](...args);
+                                // Send message to parent window's console panel
+                                sendToParent(method, args);
+                            };
+                        }
+                    });
+
+                    // Capture unhandled errors and promise rejections
+                    window.addEventListener('error', function(event) {
+                        sendToParent('error', [\`Uncaught Error: \${event.message} at \${event.filename}:\${event.lineno}\`]);
+                        // originalConsole.error('Uncaught Error:', event.error || event.message); // Optionally log to browser console too
+                    });
+
+                    window.addEventListener('unhandledrejection', function(event) {
+                        sendToParent('error', [\`Unhandled Promise Rejection: \${event.reason}\`]);
+                        // originalConsole.error('Unhandled Promise Rejection:', event.reason); // Optionally log to browser console too
+                    });
+
+                    // Handle console.clear specifically if needed in the parent
+                    console.clear = function() {
+                         originalConsole.clear && originalConsole.clear();
+                         sendToParent('clear', []);
+                    };
+
+                })();
+            <\/script>
+        `;
+        const MIN_FONT_SIZE = 8;
+        const MAX_FONT_SIZE = 24;
+        const FONT_SIZE_STEP = 1;
+
+        // --- Function Definitions ---
+
+        // Initialize Emmet
+        function initializeEmmet() {
+            if (typeof emmetCodeMirror !== 'undefined') {
+                emmetCodeMirror(CodeMirror);
+            } else if (typeof emmet !== 'undefined') {
+                try {
+                    emmet.require('codemirror').setup(CodeMirror);
+                } catch (e) { console.error("Emmet integration failed:", e); }
+            } else {
+                console.warn("Emmet not found. Skipping integration.");
+            }
+        }
+
+        // Console logging
+        function logToConsolePanel(message, type = 'log') {
+            if (!consoleOutput) return; // Ensure console output element exists
+
+            // Handle 'clear' command from iframe
+            if (type === 'clear') {
+                consoleOutput.innerHTML = '';
+                return;
+            }
+
+            const entry = document.createElement('div');
+            // Ensure message is a string, limit length
+            const messageString = String(message).substring(0, 2000);
+            entry.textContent = `[${type}] ${messageString}`;
+            entry.classList.add(`console-${type}`); // Add class for potential styling
+
+            // Apply specific styling based on type
+            switch (type) {
+                case 'error':
+                    entry.style.color = '#ff8080'; // Light red
+                    break;
+                case 'warn':
+                    entry.style.color = '#ffffa0'; // Light yellow
+                    break;
+                case 'info':
+                    entry.style.color = '#90caf9'; // Light blue
+                    break;
+                case 'debug':
+                    entry.style.color = '#b0bec5'; // Greyish blue
+                    break;
+                case 'log':
+                default:
+                    entry.style.color = '#ddd'; // Default light grey/white
+                    break;
+            }
+
+            consoleOutput.appendChild(entry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight; // Auto-scroll
+        }
+
+
+        // Update preview iframe
+        function updatePreview(forceUpdate = false) {
+            // Only update if auto-update is checked OR if forced by Run button
+            if (!autoUpdateCheckbox || !editor || !outputFrame || !consoleOutput) return; // Ensure elements exist
+            if (!autoUpdateCheckbox.checked && !forceUpdate) return;
+
+            const code = editor.getValue();
+            // Don't clear console here, let the iframe's console.clear handle it via postMessage
+            // consoleOutput.innerHTML = '';
+            try {
+                // Inject the console override script along with the user's code
+                outputFrame.srcdoc = CONSOLE_SCRIPT + code;
+            } catch (e) {
+                console.error("Error setting srcdoc:", e);
+                logToConsolePanel("Error updating preview.", "error");
+            }
+        }
+
+        // Debounce utility
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            if (!editor || !editorContainer || !outputFrame || !editorPreviewContainer || !consoleContainer || !fontSizeDisplay || !autoUpdateCheckbox || !statusBar || !lineWrappingCheckbox || !indentSizeInput || !indentWithTabsCheckbox || !smartIndentCheckbox) {
+                console.warn("Cannot save settings: Elements not ready.");
+                return;
+            }
+            try {
+                const isHorizontal = editorPreviewContainer.classList.contains('horizontal-layout');
+                const settings = {
+                    code: editor.getValue(),
+                    theme: editor.getOption('theme'),
+                    editorWidth: isHorizontal ? '100%' : (editorContainer.style.width || window.getComputedStyle(editorContainer).width),
+                    previewWidth: isHorizontal ? '100%' : (outputFrame.style.width || window.getComputedStyle(outputFrame).width),
+                    editorHeight: isHorizontal ? (editorContainer.style.height || window.getComputedStyle(editorContainer).height) : '100%',
+                    previewHeight: isHorizontal ? (outputFrame.style.height || window.getComputedStyle(outputFrame).height) : '100%',
+                    topPanelHeight: editorPreviewContainer.style.height || window.getComputedStyle(editorPreviewContainer).height,
+                    consoleHeight: consoleContainer.style.height || window.getComputedStyle(consoleContainer).height,
+                    fontSize: parseInt(fontSizeDisplay.textContent, 10) || 14,
+                    autoUpdate: autoUpdateCheckbox.checked,
+                    consoleCollapsed: consoleContainer.classList.contains('collapsed'),
+                    statusBarCollapsed: statusBar.classList.contains('collapsed'),
+                    layout: isHorizontal ? 'horizontal' : 'vertical',
+                    lineWrapping: lineWrappingCheckbox.checked,
+                    indentUnit: parseInt(indentSizeInput.value, 10) || 2,
+                    indentWithTabs: indentWithTabsCheckbox.checked,
+                    smartIndent: smartIndentCheckbox.checked
+                };
+                // Note: Zen mode state is not saved, it's temporary.
+                // Note: Active device width is not saved, resets on load.
+                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+                showSaveStatus(); // Show feedback on save
+            } catch (error) {
+                console.error("Error saving settings to localStorage:", error);
+            }
+        }
+
+        // Show Save Status Indicator
+        let saveStatusTimeout;
+        function showSaveStatus() {
+            if (!saveStatus) return;
+            clearTimeout(saveStatusTimeout);
+            saveStatus.textContent = 'Saved';
+            saveStatus.classList.add('visible');
+            saveStatusTimeout = setTimeout(() => {
+                saveStatus.classList.remove('visible');
+            }, 1500); // Hide after 1.5 seconds
+        }
+
+        // Load settings from localStorage
+        function loadSettings() {
+            if (!editor || !themeSelector || !editorContainer || !outputFrame || !editorPreviewContainer || !consoleContainer || !fontSizeDisplay || !autoUpdateCheckbox || !statusBar || !resizerH || !resizerV || !lineWrappingCheckbox || !indentSizeInput || !indentWithTabsCheckbox || !smartIndentCheckbox) {
+                console.warn("Cannot load settings: Elements not ready.");
+                return false;
+            }
+            try {
+                const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+
+                    if (settings.code !== undefined) {
+                        editor.setValue(settings.code);
+                    } else {
+                        editor.setValue(`<!DOCTYPE html>\n<html>\n<head>\n  <title>Welcome</title>\n</head>\n<body>\n  <h1>BetterCoding 1.4</h1>\n</body>\n</html>`);
+                    }
+
+                    const savedTheme = settings.theme || 'material-darker';
+                    editor.setOption('theme', savedTheme);
+                    if ([...themeSelector.options].some(option => option.value === savedTheme)) {
+                        themeSelector.value = savedTheme;
+                    } else {
+                        themeSelector.value = 'material-darker';
+                        editor.setOption('theme', 'material-darker');
+                    }
+
+                    const savedLayout = settings.layout || 'vertical';
+                    setLayout(savedLayout);
+
+                    if (savedLayout === 'horizontal') {
+                        if (settings.editorHeight && typeof settings.editorHeight === 'string') editorContainer.style.height = settings.editorHeight;
+                        if (settings.previewHeight && typeof settings.previewHeight === 'string') outputFrame.style.height = settings.previewHeight;
+                    } else {
+                        if (settings.editorWidth && typeof settings.editorWidth === 'string') editorContainer.style.width = settings.editorWidth;
+                        if (settings.previewWidth && typeof settings.previewWidth === 'string') outputFrame.style.width = settings.previewWidth;
+                    }
+
+                    if (settings.topPanelHeight && typeof settings.topPanelHeight === 'string') editorPreviewContainer.style.height = settings.topPanelHeight;
+                    if (settings.consoleHeight && typeof settings.consoleHeight === 'string') consoleContainer.style.height = settings.consoleHeight;
+
+                    const savedFontSize = settings.fontSize || 14;
+                    setFontSize(savedFontSize);
+
+                    autoUpdateCheckbox.checked = settings.autoUpdate !== false;
+                    toggleRunButtonVisibility();
+
+                    if (settings.consoleCollapsed) {
+                        consoleContainer.classList.add('collapsed');
+                        resizerH.classList.add('collapsed');
+                        editorPreviewContainer.style.height = 'calc(100% - 0px)';
+                    } else {
+                        consoleContainer.classList.remove('collapsed');
+                        resizerH.classList.remove('collapsed');
+                    }
+
+                    if (settings.statusBarCollapsed) {
+                        statusBar.classList.add('collapsed');
+                        mainContent.style.height = `calc(100vh - ${document.querySelector('.header-container').offsetHeight}px - 10px)`;
+                    } else {
+                        statusBar.classList.remove('collapsed');
+                    }
+
+                    const lineWrapping = settings.lineWrapping === true;
+                    const indentUnit = settings.indentUnit || 2;
+                    const indentWithTabs = settings.indentWithTabs === true;
+                    const smartIndent = settings.smartIndent !== false;
+
+                    lineWrappingCheckbox.checked = lineWrapping;
+                    indentSizeInput.value = indentUnit;
+                    indentWithTabsCheckbox.checked = indentWithTabs;
+                    smartIndentCheckbox.checked = smartIndent;
+
+                    editor.setOption('lineWrapping', lineWrapping);
+                    editor.setOption('indentUnit', indentUnit);
+                    editor.setOption('tabSize', indentUnit);
+                    editor.setOption('indentWithTabs', indentWithTabs);
+                    editor.setOption('smartIndent', smartIndent);
+
+                    editor.refresh();
+                    resetDevicePreview(); // Reset device preview on load
+                    return true;
+                }
+            } catch (error) {
+                console.error("Error loading settings from localStorage:", error);
+                localStorage.removeItem(SETTINGS_STORAGE_KEY);
+            }
+            resetDevicePreview(); // Reset device preview even if load fails
+            return false;
+        }
+
+        // Set Editor Font Size
+        function setFontSize(newSize) {
+            const size = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, newSize));
+            const editorWrapper = editor.getWrapperElement();
+            if (editorWrapper) {
+                editorWrapper.style.fontSize = `${size}px`;
+                fontSizeDisplay.textContent = `${size}px`;
+                editor.refresh();
+                saveSettings();
+            }
+        }
+
+        // Toggle Run button visibility based on checkbox
+        function toggleRunButtonVisibility() {
+            if (runButton) {
+                runButton.style.display = autoUpdateCheckbox.checked ? 'none' : 'inline-block';
+            }
+        }
+
+        // Update Status Bar
+        function updateStatusBar() {
+            if (!editor || !statusLineCol || !statusChars) return;
+
+            const cursor = editor.getCursor();
+            const line = cursor.line + 1;
+            const col = cursor.ch + 1;
+            const charCount = editor.getValue().length;
+
+            statusLineCol.textContent = `Ln ${line}, Col ${col}`;
+            statusChars.textContent = `Chars: ${charCount}`;
+        }
+
+        // Set Layout (Vertical or Horizontal)
+        function setLayout(layout) {
+            if (!editorPreviewContainer || !resizerV || !editorContainer || !outputFrame) return;
+            const isHorizontal = layout === 'horizontal';
+
+            editorPreviewContainer.classList.toggle('horizontal-layout', isHorizontal);
+            editorPreviewContainer.classList.toggle('vertical-layout', !isHorizontal);
+            resizerV.classList.toggle('horizontal', isHorizontal);
+            resizerV.classList.toggle('vertical', !isHorizontal);
+
+            editorContainer.style.width = '';
+            editorContainer.style.height = '';
+            outputFrame.style.width = '';
+            outputFrame.style.height = '';
+
+            if (isHorizontal) {
+                editorContainer.style.height = '50%';
+                outputFrame.style.height = '50%';
+            } else {
+                editorContainer.style.width = '50%';
+                outputFrame.style.width = '50%';
+            }
+
+            resetDevicePreview(); // Reset device preview when layout changes
+            adjustLayoutHeights();
+            if (editor) editor.refresh();
+        }
+
+        // Adjust main layout heights based on collapsed states
+        function adjustLayoutHeights() {
+            if (document.body.classList.contains('zen-mode')) {
+                // In Zen mode, layout is fixed by CSS, just refresh editor
+                if (editor) editor.refresh();
+                return;
+            }
+
+            if (!mainContent || !statusBar || !editorPreviewContainer || !consoleContainer || !resizerH) return;
+
+            const headerHeight = document.querySelector('.header-container')?.offsetHeight || 50;
+            const bodyPadding = 10 * 2; // Assuming 10px padding top/bottom on body
+            const statusBarHeight = statusBar.classList.contains('collapsed') ? 0 : statusBar.offsetHeight;
+            const totalAvailableHeight = window.innerHeight - headerHeight - statusBarHeight - bodyPadding;
+
+            mainContent.style.height = `${totalAvailableHeight}px`;
+
+            const consoleIsCollapsed = consoleContainer.classList.contains('collapsed');
+            const resizerHHeight = consoleIsCollapsed ? 0 : resizerH.offsetHeight;
+            // Calculate console height based on its actual height or 0 if collapsed
+            const consoleHeight = consoleIsCollapsed ? 0 : (parseFloat(window.getComputedStyle(consoleContainer).height) || 0);
+
+            const editorPreviewHeight = totalAvailableHeight - consoleHeight - resizerHHeight;
+            editorPreviewContainer.style.height = `${Math.max(50, editorPreviewHeight)}px`; // Ensure minimum height
+
+            if (editor) {
+                editor.refresh();
+            }
+        }
+
+
+        // Initialize layout (called on window.load)
+        function initializeLayout() {
+            if (!mainContent || !editorPreviewContainer || !consoleContainer || !editorContainer || !outputFrame || !resizerV || !resizerH || !editor || !statusBar) {
+                console.error("Cannot initialize layout: Elements not ready.");
+                return;
+            }
+
+            if (!loadSettings()) {
+                console.log("No valid settings found, applying default layout.");
+                try {
+                    setLayout('vertical'); // Apply default layout first
+
+                    // Use calculated available height after setting layout
+                    const availableHeight = mainContent.offsetHeight;
+                    const availableWidth = editorPreviewContainer.offsetWidth; // Get width after layout applied
+
+                    const defaultEditorWidth = availableWidth / 2 - resizerV.offsetWidth / 2;
+                    const defaultFrameWidth = availableWidth / 2 - resizerV.offsetWidth / 2;
+                    editorContainer.style.width = `${defaultEditorWidth}px`;
+                    outputFrame.style.width = `${defaultFrameWidth}px`;
+
+                    const defaultTopHeight = availableHeight * 0.7 - resizerH.offsetHeight / 2;
+                    const defaultBottomHeight = availableHeight * 0.3 - resizerH.offsetHeight / 2;
+                    editorPreviewContainer.style.height = `${Math.max(50, defaultTopHeight)}px`;
+                    consoleContainer.style.height = `${Math.max(30, defaultBottomHeight)}px`;
+
+                    editor.setValue(`<!DOCTYPE html>\n<html>\n<head>\n  <title>Welcome</title>\n</head>\n<body>\n  <h1>BetterCoding 1.4</h1>\n  <p>Default Layout Loaded</p>\n</body>\n</html>`);
+
+                    const defaultIndent = 2;
+                    editor.setOption('lineWrapping', false);
+                    editor.setOption('indentUnit', defaultIndent);
+                    editor.setOption('tabSize', defaultIndent);
+                    editor.setOption('indentWithTabs', false);
+                    editor.setOption('smartIndent', true);
+
+                    lineWrappingCheckbox.checked = false;
+                    indentSizeInput.value = defaultIndent;
+                    indentWithTabsCheckbox.checked = false;
+                    smartIndentCheckbox.checked = true;
+                } catch (e) {
+                    console.error("Error applying default layout:", e);
+                }
+            }
+
+            adjustLayoutHeights(); // Adjust heights based on loaded or default settings
+            updatePreview(); // Initial preview update
+            editor.refresh(); // Ensure editor renders correctly
+            console.log("Layout Initialized.");
+        }
+
+
+        // --- New Feature Functions ---
+
+        // Toggle Zen Mode
+        function toggleZenMode() {
+            const isInZenMode = document.body.classList.toggle('zen-mode');
+
+            if (isInZenMode) {
+                // Entering Zen Mode
+                if (editor) {
+                    editor.refresh();
+                    editor.focus();
+                }
+                // Add listener to exit with Esc - Handled by CodeMirror extraKeys now
+                // document.addEventListener('keydown', handleZenModeExitKey);
+            } else {
+                // Exiting Zen Mode
+                adjustLayoutHeights();
+                // Remove listener - Handled by CodeMirror extraKeys now
+                // document.removeEventListener('keydown', handleZenModeExitKey);
+            }
+        }
+
+        // Handle Esc key press to exit Zen Mode - Now handled by CodeMirror extraKeys
+        // function handleZenModeExitKey(event) { ... }
+
+        // Set Preview Device Width
+        function setDevicePreview(width) {
+            if (!outputFrame || !editorPreviewContainer) return;
+
+            // Remove active class from all buttons
+            deviceToggleButtonsContainer.querySelectorAll('.device-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            if (width === '100%') {
+                // Reset to default behavior (allow resizing)
+                outputFrame.style.width = ''; // Let CSS/resizer handle it
+                editorPreviewContainer.classList.remove('device-width-active');
+                // Find the button for 100% and mark it active
+                const desktopButton = deviceToggleButtonsContainer.querySelector('.device-button[data-width="100%"]');
+                if (desktopButton) desktopButton.classList.add('active');
+            } else {
+                // Apply fixed width and mark button active
+                outputFrame.style.width = width;
+                editorPreviewContainer.classList.add('device-width-active');
+                const activeButton = deviceToggleButtonsContainer.querySelector(`.device-button[data-width="${width}"]`);
+                if (activeButton) activeButton.classList.add('active');
+            }
+            // Refresh editor in case its size needs recalculating (especially in vertical mode)
+            if (editor) editor.refresh();
+        }
+
+        // Reset Preview Device Width to default
+        function resetDevicePreview() {
+            setDevicePreview('100%'); // Use '100%' as the reset state
+        }
+
+        // --- Main Execution (after DOM loaded) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            editorContainer = document.getElementById('editorContainer');
+            outputFrame = document.getElementById('outputFrame');
+            resizerV = document.getElementById('resizerV');
+            resizerH = document.getElementById('resizerH');
+            // container = document.querySelector('.container'); // Not used?
+            helpIcon = document.getElementById('helpIcon');
+            helpModal = document.getElementById('helpModal');
+            closeModalButton = helpModal.querySelector('.close-button'); // Scope query to helpModal
+            themeSelector = document.getElementById('themeSelector');
+            clearButton = document.getElementById('clearButton');
+            saveButton = document.getElementById('saveButton');
+            loadButton = document.getElementById('loadButton');
+            downloadButton = document.getElementById('downloadButton');
+            formatButton = document.getElementById('formatButton');
+            editorPreviewContainer = document.querySelector('.editor-preview-container');
+            consoleContainer = document.getElementById('consoleContainer');
+            consoleOutput = document.getElementById('consoleOutput');
+            mainContent = document.querySelector('.main-content');
+            decreaseFontButton = document.getElementById('decreaseFont');
+            increaseFontButton = document.getElementById('increaseFont');
+            fontSizeDisplay = document.getElementById('fontSizeDisplay');
+            autoUpdateCheckbox = document.getElementById('autoUpdateCheckbox');
+            runButton = document.getElementById('runButton');
+            clearConsoleButton = document.getElementById('clearConsoleButton');
+            statusBar = document.getElementById('statusBar');
+            statusLineCol = document.getElementById('statusLineCol');
+            statusChars = document.getElementById('statusChars');
+            toggleConsoleButton = document.getElementById('toggleConsoleButton');
+            toggleStatusBarButton = document.getElementById('toggleStatusBarButton');
+            layoutToggleButton = document.getElementById('layoutToggleButton');
+            importButton = document.getElementById('importButton');
+            importFile = document.getElementById('importFile');
+            saveStatus = document.getElementById('saveStatus');
+            fullscreenPreviewButton = document.getElementById('fullscreenPreviewButton');
+            settingsIcon = document.getElementById('settingsIcon'); // Assign settings icon
+            settingsModal = document.getElementById('settingsModal'); // Assign settings modal
+            settingsCloseButton = settingsModal.querySelector('.settings-close-button'); // Assign settings close button
+            lineWrappingCheckbox = document.getElementById('lineWrappingCheckbox');
+            indentSizeInput = document.getElementById('indentSizeInput');
+            indentWithTabsCheckbox = document.getElementById('indentWithTabsCheckbox');
+            smartIndentCheckbox = document.getElementById('smartIndentCheckbox');
+            zenModeButton = document.getElementById('zenModeButton');
+            deviceToggleButtonsContainer = document.querySelector('.device-toggle-buttons');
+
+            if (!resizerV || !resizerH || !editorContainer || !outputFrame || !consoleContainer || !mainContent || !decreaseFontButton || !increaseFontButton || !fontSizeDisplay || !autoUpdateCheckbox || !runButton || !clearConsoleButton || !statusBar || !statusLineCol || !statusChars || !toggleConsoleButton || !toggleStatusBarButton || !layoutToggleButton || !importButton || !importFile || !saveStatus || !fullscreenPreviewButton || !helpIcon || !helpModal || !closeModalButton || !settingsIcon || !settingsModal || !settingsCloseButton || !lineWrappingCheckbox || !indentSizeInput || !indentWithTabsCheckbox || !smartIndentCheckbox || !zenModeButton || !deviceToggleButtonsContainer) {
+                console.error("Essential UI elements not found!");
+                return;
+            }
+
+            initializeEmmet();
+
+            editor = CodeMirror(editorContainer, {
+                value: `<!DOCTYPE html>
+        <html>
+        <head>
+            <title>My Page</title>
+            <style>
+                body { background-color: lightblue; font-family: sans-serif; }
+                h1 { color: navy; } .info { font-style: italic; }
+            </style>
+        </head>
+        <body>
+            <h1>Hello World!</h1> <p class="info">Resize panels!</p>
+            <div> <button onclick="alert('Clicked!')">Click Me</button> </div>
+            <script> function greet(name) { console.log('Hello, ' + name); } greet('User'); <\/script>
+        </body>
+        </html>`,
+                mode: "htmlmixed",
+                theme: "material-darker",
+                lineNumbers: true,
+                indentUnit: 2,
+                tabSize: 2,
+                lineWrapping: false,
+                indentWithTabs: false,
+                smartIndent: true,
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                autoCloseTags: true,
+                styleActiveLine: true,
+                lint: {},
+                gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+                foldGutter: true,
+                matchTags: { bothTags: true },
+                extraKeys: {
+                    "Ctrl-Space": "autocomplete",
+                    "Tab": "emmetExpandAbbreviation",
+                    "Enter": "emmetInsertLineBreak",
+                    "Ctrl-F": "findPersistent", "Cmd-F": "findPersistent",
+                    "Ctrl-H": "replace", "Cmd-Alt-F": "replace",
+                    "Shift-Ctrl-H": "replaceAll", "Shift-Cmd-Alt-F": "replaceAll",
+                    "F11": function(cm) { cm.setOption("fullScreen", !cm.getOption("fullScreen")); },
+                    "Esc": function(cm) {
+                        // Allow Esc to exit CodeMirror fullscreen first
+                        if (cm.getOption("fullScreen")) {
+                            cm.setOption("fullScreen", false);
+                        } else if (document.body.classList.contains('zen-mode')) {
+                            // If not CM fullscreen, but in Zen Mode, exit Zen Mode
+                            toggleZenMode();
+                        }
+                        // Add other Esc behaviors if needed (e.g., close dialogs)
+                    },
+                    "Ctrl-/": "toggleComment", "Cmd-/": "toggleComment",
+                    "Ctrl-D": "selectNextOccurrence", "Cmd-D": "selectNextOccurrence",
+                    ...CodeMirror.keyMap.sublime
+                }
+            });
+
+            // Listen for messages from the iframe (for console logging)
+            window.addEventListener('message', (event) => {
+                // Basic security check: Ensure the message is from the expected origin (the iframe)
+                // For 'srcdoc' iframes, the origin is typically 'null'. Be cautious with this.
+                // A more robust check might involve a unique token if possible.
+                if (event.origin === 'null' && event.data && event.data.type === 'console') {
+                    logToConsolePanel(event.data.message, event.data.level);
+                }
+            });
+
+
+            editor.on('change', debounce(() => updatePreview(false), 300));
+            editor.on('cursorActivity', debounce(updateStatusBar, 100));
+
+            let isResizingV = false;
+            let isResizingH = false;
+
+            resizerV.addEventListener('mousedown', (e) => {
+                // Prevent resize if device width is active and layout is vertical
+                if (editorPreviewContainer.classList.contains('device-width-active') && editorPreviewContainer.classList.contains('vertical-layout')) {
+                    return;
+                }
+                isResizingV = true;
+                const isHorizontalLayout = editorPreviewContainer.classList.contains('horizontal-layout');
+                document.body.style.cursor = isHorizontalLayout ? 'row-resize' : 'col-resize';
+                document.body.style.userSelect = 'none';
+                outputFrame.style.pointerEvents = 'none';
+                editor.getWrapperElement().style.pointerEvents = 'none';
+            });
+
+            resizerH.addEventListener('mousedown', (e) => {
+                isResizingH = true;
+                document.body.style.cursor = 'row-resize';
+                document.body.style.userSelect = 'none';
+                outputFrame.style.pointerEvents = 'none';
+                editor.getWrapperElement().style.pointerEvents = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isResizingV) {
+                    // Check again inside mousemove in case state changed
+                    if (editorPreviewContainer.classList.contains('device-width-active') && editorPreviewContainer.classList.contains('vertical-layout')) {
+                        isResizingV = false; // Stop resizing immediately
+                        return;
+                    }
+                    const isHorizontalLayout = editorPreviewContainer.classList.contains('horizontal-layout');
+                    const containerRect = editorPreviewContainer.getBoundingClientRect();
+
+                    if (isHorizontalLayout) {
+                        const mouseY = e.clientY - containerRect.top;
+                        // Add boundary checks (e.g., min 50px height)
+                        const minHeight = 50;
+                        if (mouseY > minHeight && mouseY < containerRect.height - minHeight) {
+                            const editorHeight = mouseY - (resizerV.offsetHeight / 2);
+                            const frameHeight = containerRect.height - editorHeight - resizerV.offsetHeight;
+                            editorContainer.style.height = `${editorHeight}px`;
+                            outputFrame.style.height = `${frameHeight}px`;
+                            editorContainer.style.width = '100%'; // Ensure full width in horizontal
+                            outputFrame.style.width = '100%';
+                            editor.refresh();
+                        }
+                    } else { // Vertical layout
+                        const mouseX = e.clientX - containerRect.left;
+                        // Add boundary checks (e.g., min 50px width)
+                        const minWidth = 50;
+                        if (mouseX > minWidth && mouseX < containerRect.width - minWidth) {
+                            const editorWidth = mouseX - (resizerV.offsetWidth / 2);
+                            const frameWidth = containerRect.width - editorWidth - resizerV.offsetWidth;
+                            editorContainer.style.width = `${editorWidth}px`;
+                            outputFrame.style.width = `${frameWidth}px`;
+                            editorContainer.style.height = '100%'; // Ensure full height in vertical
+                            outputFrame.style.height = '100%';
+                            editor.refresh();
+                        }
+                    }
+                } else if (isResizingH) {
+                    const containerRect = mainContent.getBoundingClientRect();
+                    const mouseY = e.clientY - containerRect.top;
+                    // Add boundary checks (e.g., min 50px top, min 30px bottom)
+                    const minTopHeight = 50;
+                    const minBottomHeight = 30;
+                    if (mouseY > minTopHeight && mouseY < containerRect.height - minBottomHeight) {
+                        const topHeight = mouseY - (resizerH.offsetHeight / 2);
+                        const bottomHeight = containerRect.height - topHeight - resizerH.offsetHeight;
+                        editorPreviewContainer.style.height = `${topHeight}px`;
+                        consoleContainer.style.height = `${bottomHeight}px`;
+                        editor.refresh(); // Refresh editor after container resize
+                    }
+                }
+            });
+
+
+            document.addEventListener('mouseup', () => {
+                if (isResizingV || isResizingH) {
+                    isResizingV = false;
+                    isResizingH = false;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    outputFrame.style.pointerEvents = '';
+                    editor.getWrapperElement().style.pointerEvents = '';
+                    saveSettings();
+                }
+            });
+
+            helpIcon.addEventListener('click', () => {
+                helpModal.style.display = 'block';
+            });
+
+            closeModalButton.addEventListener('click', () => {
+                helpModal.style.display = 'none';
+            });
+
+            settingsIcon.addEventListener('click', () => {
+                settingsModal.style.display = 'block';
+            });
+
+            settingsCloseButton.addEventListener('click', () => {
+                settingsModal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target == helpModal) {
+                    helpModal.style.display = 'none';
+                }
+                if (event.target == settingsModal) {
+                    settingsModal.style.display = 'none';
+                }
+            });
+
+            themeSelector.addEventListener('change', (e) => {
+                const selectedTheme = e.target.value;
+                editor.setOption("theme", selectedTheme);
+                saveSettings();
+            });
+
+            formatButton.addEventListener('click', () => {
+                try {
+                    if (typeof prettier === 'undefined' || typeof prettier.format === 'undefined' || typeof prettierPlugins === 'undefined') {
+                        alert("Prettier library not loaded correctly.");
+                        console.error("Prettier or plugins not found:", { prettier, prettierPlugins });
+                        return;
+                    }
+                    const currentCode = editor.getValue();
+                    const formattedCode = prettier.format(currentCode, {
+                        parser: "html",
+                        plugins: prettierPlugins,
+                        printWidth: 80, tabWidth: 2, useTabs: false, semi: true,
+                        singleQuote: false, bracketSpacing: true,
+                        // Add other prettier options as needed
+                    });
+                    const cursor = editor.getCursor(); // Save cursor position
+                    editor.setValue(formattedCode);
+                    editor.setCursor(cursor); // Restore cursor position
+                    logToConsolePanel("Code formatted successfully.", "info");
+                } catch (error) {
+                    console.error("Formatting error:", error);
+                    logToConsolePanel(`Formatting Error: ${error.message || error}`, "error");
+                    alert(`Code formatting failed:\n${error.message || error}`);
+                }
+            });
+
+
+            clearButton.addEventListener('click', () => {
+                if (confirm("Are you sure you want to clear the editor?")) {
+                    editor.setValue('');
+                    saveSettings();
+                }
+            });
+
+            saveButton.addEventListener('click', () => {
+                saveSettings();
+                alert('Settings (including code) saved successfully!');
+            });
+
+            loadButton.addEventListener('click', () => {
+                if (confirm("Load saved settings? This will replace the current code, theme, and layout.")) {
+                    if (!loadSettings()) {
+                        alert('No saved settings found.');
+                    } else {
+                        updatePreview(); // Update preview after loading
+                    }
+                }
+            });
+
+            downloadButton.addEventListener('click', () => {
+                const code = editor.getValue();
+                const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'bettercoding_file.html');
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            });
+
+            decreaseFontButton.addEventListener('click', () => {
+                const currentSize = parseInt(fontSizeDisplay.textContent, 10);
+                setFontSize(currentSize - FONT_SIZE_STEP);
+            });
+
+            increaseFontButton.addEventListener('click', () => {
+                const currentSize = parseInt(fontSizeDisplay.textContent, 10);
+                setFontSize(currentSize + FONT_SIZE_STEP);
+            });
+
+            autoUpdateCheckbox.addEventListener('change', () => {
+                toggleRunButtonVisibility();
+                saveSettings();
+                if (autoUpdateCheckbox.checked) {
+                    updatePreview(false); // Trigger update if auto-update is turned on
+                }
+            });
+
+            runButton.addEventListener('click', () => {
+                updatePreview(true); // Force update when Run is clicked
+            });
+
+            clearConsoleButton.addEventListener('click', () => {
+                consoleOutput.innerHTML = ''; // Clear the visual console panel
+            });
+
+            toggleConsoleButton.addEventListener('click', () => {
+                consoleContainer.classList.toggle('collapsed');
+                resizerH.classList.toggle('collapsed');
+                adjustLayoutHeights();
+                saveSettings();
+            });
+
+            toggleStatusBarButton.addEventListener('click', () => {
+                statusBar.classList.toggle('collapsed');
+                adjustLayoutHeights();
+                saveSettings();
+            });
+
+            layoutToggleButton.addEventListener('click', () => {
+                const isHorizontal = editorPreviewContainer.classList.contains('horizontal-layout');
+                setLayout(isHorizontal ? 'vertical' : 'horizontal');
+                saveSettings(); // Save layout change
+            });
+
+            importButton.addEventListener('click', () => {
+                importFile.click(); // Trigger hidden file input
+            });
+
+            importFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        editor.setValue(event.target.result);
+                        saveSettings(); // Save imported content
+                        updatePreview(true); // Update preview with imported content
+                    };
+                    reader.onerror = (error) => {
+                         console.error("Error reading file:", error);
+                         alert("Error reading file.");
+                    };
+                    reader.readAsText(file);
+                }
+                // Reset file input value to allow importing the same file again
+                e.target.value = null;
+            });
+
+
+            fullscreenPreviewButton.addEventListener('click', () => {
+                if (!outputFrame) return;
+
+                if (document.fullscreenElement) {
+                     // Already fullscreen, exit
+                     if (document.exitFullscreen) {
+                         document.exitFullscreen();
+                     } else if (document.mozCancelFullScreen) { /* Firefox */
+                         document.mozCancelFullScreen();
+                     } else if (document.webkitExitFullscreen) { /* Chrome, Safari & Opera */
+                         document.webkitExitFullscreen();
+                     } else if (document.msExitFullscreen) { /* IE/Edge */
+                         document.msExitFullscreen();
+                     }
+                } else {
+                     // Request fullscreen for the iframe
+                     if (outputFrame.requestFullscreen) {
+                         outputFrame.requestFullscreen();
+                     } else if (outputFrame.mozRequestFullScreen) { /* Firefox */
+                         outputFrame.mozRequestFullScreen();
+                     } else if (outputFrame.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                         outputFrame.webkitRequestFullscreen();
+                     } else if (outputFrame.msRequestFullscreen) { /* IE/Edge */
+                         outputFrame.msRequestFullscreen();
+                     } else {
+                         alert("Fullscreen API is not supported by your browser.");
+                     }
+                }
+            });
+
+
+            lineWrappingCheckbox.addEventListener('change', () => {
+                editor.setOption('lineWrapping', lineWrappingCheckbox.checked);
+                saveSettings();
+            });
+
+            indentSizeInput.addEventListener('change', () => {
+                const newSize = parseInt(indentSizeInput.value, 10) || 2;
+                indentSizeInput.value = newSize; // Ensure value is updated if invalid input was corrected
+                editor.setOption('indentUnit', newSize);
+                editor.setOption('tabSize', newSize); // Keep tabSize synced
+                saveSettings();
+            });
+
+            indentWithTabsCheckbox.addEventListener('change', () => {
+                editor.setOption('indentWithTabs', indentWithTabsCheckbox.checked);
+                saveSettings();
+            });
+
+            smartIndentCheckbox.addEventListener('change', () => {
+                editor.setOption('smartIndent', smartIndentCheckbox.checked);
+                saveSettings();
+            });
+
+            zenModeButton.addEventListener('click', toggleZenMode);
+
+            deviceToggleButtonsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('device-button') && e.target.dataset.width) {
+                    // Don't allow device width change in horizontal layout or zen mode? (Optional restriction)
+                    if (editorPreviewContainer.classList.contains('horizontal-layout')) {
+                        alert("Device preview size works best in vertical layout.");
+                        return;
+                    }
+                    if (document.body.classList.contains('zen-mode')) {
+                        alert("Exit Zen Mode to change preview size.");
+                        return;
+                    }
+                    setDevicePreview(e.target.dataset.width);
+                    // Optionally close settings modal after selection
+                    // settingsModal.style.display = 'none';
+                }
+            });
+
+            // Remove redundant mousemove listener - resizing logic is handled in the main mousemove listener
+            // const originalMouseMove = document.onmousemove;
+            // document.addEventListener('mousemove', (e) => {
+            //     if (isResizingV && editorPreviewContainer.classList.contains('device-width-active')) {
+            //         return;
+            //     }
+            // });
+        });
+
+        // --- Initial Layout Setup (on window load) ---
+        window.addEventListener('load', () => {
+            initializeLayout(); // This now calls resetDevicePreview
+            updateStatusBar(); // Initial status bar update
+            window.addEventListener('resize', debounce(adjustLayoutHeights, 150)); // Adjust layout on window resize
+        });
+    </script>
+
+</body>
+</html>
