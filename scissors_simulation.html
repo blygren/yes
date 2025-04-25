@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scissors Cutting Paper Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #121212;
+            font-family: Arial, sans-serif;
+            color: #f0f0f0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        canvas {
+            background-color: #1e1e1e;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            cursor: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: #2a2a2a;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #3b78e7;
+        }
+
+        .size-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            background: #444;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4285f4;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="simulation"></canvas>
+        <div class="controls">
+            <button id="reset">Reset Paper</button>
+            <!-- Scissors size controls will be added by JavaScript -->
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+    <script>
+        // Set up Matter.js modules
+        const Engine = Matter.Engine,
+              Render = Matter.Render,
+              Runner = Matter.Runner,
+              Body = Matter.Body,
+              Composite = Matter.Composite,
+              Composites = Matter.Composites,
+              Constraint = Matter.Constraint,
+              MouseConstraint = Matter.MouseConstraint,
+              Mouse = Matter.Mouse,
+              Bodies = Matter.Bodies,
+              Vector = Matter.Vector;
+
+        // Create engine and runner
+        const engine = Engine.create();
+        const runner = Runner.create();
+
+        // Canvas setup
+        const canvas = document.getElementById('simulation');
+        const container = document.querySelector('.container');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight - document.querySelector('.controls').clientHeight;
+
+        // Create renderer
+        const render = Render.create({
+            canvas: canvas,
+            engine: engine,
+            options: {
+                width: canvas.width,
+                height: canvas.height,
+                wireframes: false,
+                background: '#1e1e1e'
+            }
+        });
+
+        // Start the renderer and runner
+        Render.run(render);
+        Runner.run(runner, engine);
+
+        // Variables
+        let paper;
+        let scissors = { 
+            top: null, 
+            bottom: null, 
+            pivot: null,
+            angle: 0,
+            isOpen: true,
+            width: 20,
+            length: 120,
+            opening: 0.3
+        };
+        let isScissorsCutting = false;
+        let particlesToRemove = [];
+        let constraints = [];
+        let particleRadius = 5;
+        let paperWidth = 30;
+        let paperHeight = 30;
+        let paperStiffness = 0.5;
+        let cuts = [];
+        let floor;
+
+        // Scissors size controls
+        let scissorsSize = {
+            width: 20,
+            length: 120,
+            handleWidth: 20,
+            handleHeight: 40
+        };
+
+        // Scissors cutting settings
+        let scissorsStrength = 1; // Default strength (1 = normal, higher = stronger cutting)
+
+        // Create floor
+        function createFloor() {
+            floor = Bodies.rectangle(
+                canvas.width / 2,
+                canvas.height - 10,
+                canvas.width,
+                20,
+                { 
+                    isStatic: true,
+                    render: {
+                        fillStyle: '#333333',
+                        strokeStyle: '#444444',
+                        lineWidth: 1
+                    }
+                }
+            );
+            
+            Composite.add(engine.world, floor);
+        }
+
+        // Function to create paper
+        function createPaper() {
+            const group = Body.nextGroup(true);
+            const particleOptions = {
+                friction: 0.05,
+                frictionStatic: 0.1,
+                render: { 
+                    fillStyle: '#f5f5dc', // Light beige color for paper nodes
+                    strokeStyle: '#dcdcaa', // Slightly darker outline
+                    visible: true 
+                },
+                collisionFilter: { 
+                    group: group,  // Negative group means no collision within the group
+                    category: 0x0002,
+                    mask: 0x0001   // Only collide with the floor (category 0x0001)
+                }
+            };
+
+            // Create cloth-like paper with constraints
+            paper = Composites.softBody(
+                canvas.width / 2 - (paperWidth * particleRadius), 
+                50, 
+                paperWidth, 
+                paperHeight, 
+                5, 
+                5, 
+                true, 
+                particleRadius, 
+                particleOptions
+            );
+            
+            // Store constraints separately for easier removal during cutting
+            constraints = [...paper.constraints];
+            
+            // Set floor collision category
+            floor.collisionFilter.category = 0x0001;
+            
+            // Pin the top row of the paper to keep it hanging
+            for (let i = 0; i < paperWidth; i++) {
+                if (i % 5 === 0 || i === 0 || i === paperWidth - 1) {
+                    const pinPoint = paper.bodies[i];
+                    const constraint = Constraint.create({
+                        pointA: { x: pinPoint.position.x, y: pinPoint.position.y },
+                        bodyB: pinPoint,
+                        stiffness: 1,
+                        length: 0,
+                        render: {
+                            strokeStyle: '#888888', // Grey color for pins
+                            visible: true,
+                            lineWidth: 1
+                        }
+                    });
+                    constraints.push(constraint);
+                    Composite.add(paper, constraint);
+                }
+            }
+            
+            Composite.add(engine.world, paper);
+        }
+
+        // Create scissors following the mouse
+        function createScissors() {
+            const group = Body.nextGroup(true);
+            
+            // Create two blades that will act as scissors
+            scissors.top = Bodies.rectangle(0, 0, scissorsSize.length, scissorsSize.width, {
+                chamfer: { radius: 2 },
+                render: {
+                    fillStyle: '#d3d3d3',
+                    lineWidth: 1
+                },
+                collisionFilter: { group: group },
+                isStatic: true
+            });
+            
+            scissors.bottom = Bodies.rectangle(0, 0, scissorsSize.length, scissorsSize.width, {
+                chamfer: { radius: 2 },
+                render: {
+                    fillStyle: '#d3d3d3',
+                    lineWidth: 1
+                },
+                collisionFilter: { group: group },
+                isStatic: true
+            });
+            
+            scissors.pivot = { x: 0, y: 0 };
+            
+            Composite.add(engine.world, [scissors.top, scissors.bottom]);
+        }
+
+        // Function to update scissors position based on mouse
+        function updateScissorsPosition(x, y) {
+            scissors.pivot = { x, y };
+
+            // Calculate positions for the blades
+            const openingAngle = scissors.isOpen ? scissors.opening : 0.05;
+            
+            // Top blade
+            const topAngleOffset = scissors.angle - openingAngle;
+            const topX = scissors.pivot.x + Math.cos(topAngleOffset) * scissorsSize.length/2;
+            const topY = scissors.pivot.y + Math.sin(topAngleOffset) * scissorsSize.length/2;
+            
+            Body.setPosition(scissors.top, {
+                x: topX,
+                y: topY
+            });
+            Body.setAngle(scissors.top, topAngleOffset);
+            
+            // Bottom blade
+            const bottomAngleOffset = scissors.angle + openingAngle;
+            const bottomX = scissors.pivot.x + Math.cos(bottomAngleOffset) * scissorsSize.length/2;
+            const bottomY = scissors.pivot.y + Math.sin(bottomAngleOffset) * scissorsSize.length/2;
+            
+            Body.setPosition(scissors.bottom, {
+                x: bottomX,
+                y: bottomY
+            });
+            Body.setAngle(scissors.bottom, bottomAngleOffset);
+        }
+
+        // Function to check if scissors are cutting the paper
+        function checkCutting() {
+            if (!paper) return;
+            
+            const topBlade = scissors.top;
+            const bottomBlade = scissors.bottom;
+            
+            // Only cut when scissors are closing
+            if (!scissors.isOpen) {
+                // Calculate cutting area based on scissorsStrength
+                let cuttingArea = {
+                    top: { ...topBlade.bounds },
+                    bottom: { ...bottomBlade.bounds }
+                };
+                
+                // Expand the cutting area based on scissorsStrength
+                if (scissorsStrength > 1) {
+                    const expansion = (scissorsStrength - 1) * 5;
+                    cuttingArea.top.min.x -= expansion;
+                    cuttingArea.top.min.y -= expansion;
+                    cuttingArea.top.max.x += expansion;
+                    cuttingArea.top.max.y += expansion;
+                    
+                    cuttingArea.bottom.min.x -= expansion;
+                    cuttingArea.bottom.min.y -= expansion;
+                    cuttingArea.bottom.max.x += expansion;
+                    cuttingArea.bottom.max.y += expansion;
+                }
+                
+                for (let i = 0; i < paper.bodies.length; i++) {
+                    const particle = paper.bodies[i];
+                    
+                    // Check if particle is in the expanded cutting area
+                    if (Matter.Bounds.contains(cuttingArea.top, particle.position) || 
+                        Matter.Bounds.contains(cuttingArea.bottom, particle.position)) {
+                        // Mark the particle and nearby constraints for removal
+                        if (!particle.isRemoved) {
+                            particlesToRemove.push(particle);
+                            particle.isRemoved = true;
+                            
+                            // Create visual cut effect
+                            cuts.push({
+                                x: particle.position.x,
+                                y: particle.position.y,
+                                life: 10
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Remove marked particles and their constraints
+            if (particlesToRemove.length > 0) {
+                removeParticlesAndConstraints();
+                particlesToRemove = [];
+            }
+        }
+
+        // Remove particles and their associated constraints
+        function removeParticlesAndConstraints() {
+            for (let i = 0; i < particlesToRemove.length; i++) {
+                const particle = particlesToRemove[i];
+                
+                // Remove all constraints connected to this particle
+                for (let j = constraints.length - 1; j >= 0; j--) {
+                    const constraint = constraints[j];
+                    if ((constraint.bodyA === particle) || (constraint.bodyB === particle)) {
+                        Composite.remove(paper, constraint);
+                        constraints.splice(j, 1);
+                    }
+                }
+                
+                // Remove the particle itself
+                Composite.remove(paper, particle);
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('mousemove', (e) => {
+            // Calculate position relative to canvas
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Point scissors in the direction of movement
+            if (e.movementX !== 0 || e.movementY !== 0) {
+                scissors.angle = Math.atan2(e.movementY, e.movementX);
+            }
+            
+            updateScissorsPosition(x, y);
+        });
+
+        document.addEventListener('mousedown', () => {
+            scissors.isOpen = false;
+        });
+
+        document.addEventListener('mouseup', () => {
+            scissors.isOpen = true;
+        });
+
+        // Reset button functionality
+        document.getElementById('reset').addEventListener('click', () => {
+            // Remove old paper
+            if (paper) {
+                Composite.remove(engine.world, paper);
+            }
+            
+            // Reset variables
+            particlesToRemove = [];
+            constraints = [];
+            cuts = [];
+            
+            // Create new paper
+            createPaper();
+        });
+
+        // Animation loop for visual effects
+        function animateCuts() {
+            const ctx = render.context;
+            
+            // Draw cuts
+            ctx.save();
+            for (let i = cuts.length - 1; i >= 0; i--) {
+                const cut = cuts[i];
+                const radius = (10 - cut.life) * 1.5;
+                
+                ctx.beginPath();
+                ctx.arc(cut.x, cut.y, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = `rgba(255, 255, 255, ${cut.life / 10})`;
+                ctx.fill();
+                
+                cut.life--;
+                if (cut.life <= 0) {
+                    cuts.splice(i, 1);
+                }
+            }
+            ctx.restore();
+            
+            requestAnimationFrame(animateCuts);
+        }
+
+        // Draw scissors custom shapes
+        Events = Matter.Events;
+        Events.on(render, 'afterRender', () => {
+            checkCutting();
+            
+            // Draw handle for scissors
+            const ctx = render.context;
+            ctx.save();
+            
+            // Draw handle
+            ctx.translate(scissors.pivot.x, scissors.pivot.y);
+            ctx.rotate(scissors.angle);
+            
+            ctx.beginPath();
+            ctx.rect(-scissorsSize.handleWidth/2, -scissorsSize.handleHeight/2, scissorsSize.handleWidth, scissorsSize.handleHeight);
+            ctx.fillStyle = '#a0a0a0';
+            ctx.fill();
+            
+            ctx.restore();
+        });
+
+        // Create UI controls for scissors size
+        function createControls() {
+            const controlsDiv = document.querySelector('.controls');
+            
+            // Create scissors size section
+            const sizeSection = document.createElement('div');
+            sizeSection.className = 'size-controls';
+            sizeSection.style.marginLeft = '20px';
+            sizeSection.style.display = 'flex';
+            sizeSection.style.alignItems = 'center';
+            
+            // Create blade length control
+            const lengthLabel = document.createElement('label');
+            lengthLabel.textContent = 'Blade Length:';
+            lengthLabel.style.marginRight = '5px';
+            lengthLabel.style.color = '#f0f0f0';
+            
+            const lengthSlider = document.createElement('input');
+            lengthSlider.type = 'range';
+            lengthSlider.min = '80';
+            lengthSlider.max = '200';
+            lengthSlider.value = scissorsSize.length;
+            lengthSlider.style.marginRight = '15px';
+            
+            lengthSlider.addEventListener('input', () => {
+                scissorsSize.length = parseInt(lengthSlider.value);
+                
+                // Update scissors
+                Composite.remove(engine.world, [scissors.top, scissors.bottom]);
+                createScissors();
+            });
+            
+            // Create blade width control
+            const widthLabel = document.createElement('label');
+            widthLabel.textContent = 'Blade Width:';
+            widthLabel.style.marginRight = '5px';
+            widthLabel.style.color = '#f0f0f0';
+            
+            const widthSlider = document.createElement('input');
+            widthSlider.type = 'range';
+            widthSlider.min = '10';
+            widthSlider.max = '40';
+            widthSlider.value = scissorsSize.width;
+            widthSlider.style.marginRight = '15px';
+            
+            widthSlider.addEventListener('input', () => {
+                scissorsSize.width = parseInt(widthSlider.value);
+                
+                // Update scissors
+                Composite.remove(engine.world, [scissors.top, scissors.bottom]);
+                createScissors();
+            });
+            
+            // Create scissors strength control
+            const strengthLabel = document.createElement('label');
+            strengthLabel.textContent = 'Cutting Strength:';
+            strengthLabel.style.marginRight = '5px';
+            strengthLabel.style.color = '#f0f0f0';
+            
+            const strengthSlider = document.createElement('input');
+            strengthSlider.type = 'range';
+            strengthSlider.min = '1';
+            strengthSlider.max = '5';
+            strengthSlider.step = '0.5';
+            strengthSlider.value = scissorsStrength;
+            
+            strengthSlider.addEventListener('input', () => {
+                scissorsStrength = parseFloat(strengthSlider.value);
+            });
+            
+            // Add to DOM
+            sizeSection.appendChild(lengthLabel);
+            sizeSection.appendChild(lengthSlider);
+            sizeSection.appendChild(widthLabel);
+            sizeSection.appendChild(widthSlider);
+            sizeSection.appendChild(strengthLabel);
+            sizeSection.appendChild(strengthSlider);
+            
+            controlsDiv.appendChild(sizeSection);
+        }
+
+        // Initialize
+        createFloor();
+        createPaper();
+        createScissors();
+        animateCuts();
+        createControls();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight - document.querySelector('.controls').clientHeight;
+            
+            // Remove and recreate floor with new dimensions
+            if (floor) {
+                Composite.remove(engine.world, floor);
+            }
+            createFloor();
+            
+            Render.setPixelRatio(render, window.devicePixelRatio);
+            Render.setSize(render, canvas.width, canvas.height);
+        });
+    </script>
+</body>
+</html>
