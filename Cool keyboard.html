@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Physics Fun</title>
+    <style>
+        /* Content from style.css */
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            background-color: #222;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: stretch; /* Align container below controls */
+            flex-direction: column;
+        }
+
+        #controls {
+            padding: 10px;
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            background-color: #333;
+            z-index: 10; /* Ensure controls are clickable */
+        }
+
+        #controls label {
+            margin-left: 5px;
+            margin-right: 15px; /* Add spacing between toggles */
+            user-select: none;
+        }
+
+        #controls br { /* Style the line break */
+            margin-bottom: 5px;
+        }
+
+        #controls input[type="range"] { /* Style the slider */
+            vertical-align: middle;
+            margin: 0 5px;
+        }
+
+        #controls span { /* Style the speed display */
+            display: inline-block;
+            min-width: 30px; /* Ensure space for text */
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1; /* Allow container to fill remaining space */
+        }
+
+        /* Consolidated key object styles */
+        .key-object {
+            position: absolute;
+            bottom: 10px;
+            color: white; /* Default color */
+            font-size: 2rem; /* Default size */
+            font-family: monospace;
+            user-select: none;
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7); /* Default subtle shadow */
+            animation-name: floatUpFadeOut;
+            animation-timing-function: ease-out;
+            animation-fill-mode: forwards;
+        }
+
+        /* Neon effect class */
+        .neon-effect {
+            text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+        }
+
+        @keyframes floatUpFadeOut {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-80vh); /* Float up significantly */
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="checkbox" id="randomColorCheckbox">
+        <label for="randomColorCheckbox">Random Colors</label>
+        <input type="checkbox" id="randomSizeCheckbox">
+        <label for="randomSizeCheckbox">Random Sizes</label>
+        <input type="checkbox" id="neonCheckbox">
+        <label for="neonCheckbox">Neon Effect</label>
+        <br> <!-- Add a line break for layout -->
+        <label for="speedSlider">Speed (1-10s):</label>
+        <input type="range" id="speedSlider" min="1" max="10" value="5" step="0.5">
+        <span id="speedValue">5s</span> <!-- Display current speed -->
+    </div>
+    <div id="container"></div>
+    <script>
+        // Content from script.js (DOMContentLoaded wrapper removed as script is at end of body)
+        const container = document.getElementById('container');
+        // Get checkboxes
+        const randomColorCheckbox = document.getElementById('randomColorCheckbox');
+        const randomSizeCheckbox = document.getElementById('randomSizeCheckbox');
+        const neonCheckbox = document.getElementById('neonCheckbox');
+        // Get speed slider and display span
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueSpan = document.getElementById('speedValue');
+
+        // Check if elements were found (optional but good practice)
+        if (!container || !randomColorCheckbox || !randomSizeCheckbox || !neonCheckbox || !speedSlider || !speedValueSpan) {
+            console.error("Initialization failed: One or more required elements not found.");
+            // No return here in case some elements load later, though unlikely with script at end
+        } else {
+             // Update speed display when slider changes - only add listener if slider exists
+            speedSlider.addEventListener('input', () => {
+                speedValueSpan.textContent = `${speedSlider.value}s`;
+            });
+        }
+
+
+        document.addEventListener('keydown', (event) => {
+            // Ensure controls are available before proceeding
+             if (!container || !randomColorCheckbox || !randomSizeCheckbox || !neonCheckbox || !speedSlider) {
+                 console.warn("Key pressed before controls fully initialized.");
+                 return;
+             }
+
+            // Ignore modifier keys if pressed alone
+            if (event.key.length > 1 && event.key !== 'Enter' && event.key !== 'Tab' && event.key !== ' ') return;
+
+            const keyObject = document.createElement('div');
+            keyObject.classList.add('key-object'); // Add the base class
+
+            // Use 'Space' for spacebar, otherwise the key character
+            keyObject.textContent = event.key === ' ' ? 'Space' : event.key;
+
+            // Apply random color if checked
+            if (randomColorCheckbox.checked) {
+                const randomHue = Math.floor(Math.random() * 360);
+                keyObject.style.color = `hsl(${randomHue}, 100%, 70%)`; // Bright HSL color
+            }
+
+            // Apply random size if checked
+            if (randomSizeCheckbox.checked) {
+                const randomSize = 1 + Math.random() * 2.5; // Size between 1rem and 3.5rem
+                keyObject.style.fontSize = `${randomSize}rem`;
+            }
+
+            // Add neon effect class if checked
+            if (neonCheckbox.checked) {
+                keyObject.classList.add('neon-effect');
+            }
+
+            // Get current speed from slider
+            const currentSpeed = speedSlider.value; // Value is in seconds
+
+            // Apply animation duration inline
+            keyObject.style.animationDuration = `${currentSpeed}s`;
+
+            // Random horizontal position
+            const randomX = Math.random() * 90 + 5; // % position from left (5% to 95%)
+            keyObject.style.left = `${randomX}vw`;
+
+            container.appendChild(keyObject);
+
+            // Remove the element after the animation duration (convert speed to milliseconds)
+            setTimeout(() => {
+                // Check if the element is still in the DOM before removing
+                if (keyObject.parentNode === container) {
+                    keyObject.remove();
+                }
+            }, currentSpeed * 1000); // Use slider value for timeout
+        });
+    </script>
+</body>
+</html>
