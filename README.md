@@ -77,3 +77,5 @@ The archive
 
 [Paper](https://blygren.github.io/yes/scissors_simulation.html)
 
+[Keyboard](https://blygren.github.io/yes/Cool%20keyboard.html)
+
