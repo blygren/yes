@@ -75,5 +75,5 @@ The archive
 
 [Trajectory](https://blygren.github.io/yes/Trajectory.html)
 
-
+[Paper](https://blygren.github.io/yes/scissors_simulation.html)
 
