@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Blackhole Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0a;
+            font-family: Arial, sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #f0f0f0;
+        }
+
+        canvas {
+            background-color: #000;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        .slider-container {
+            width: 80%;
+            max-width: 300px;
+            margin-top: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>2D Blackhole Simulation</h1>
+        <canvas id="blackholeCanvas"></canvas>
+        <div class="controls">
+            <button id="resetBtn">Reset Stars</button>
+            <div class="slider-container">
+                <label for="gravitySlider">Gravity Strength: <span id="gravityValue">5</span></label>
+                <input type="range" id="gravitySlider" min="1" max="10" value="5">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('blackholeCanvas');
+            const ctx = canvas.getContext('2d');
+            const resetBtn = document.getElementById('resetBtn');
+            const gravitySlider = document.getElementById('gravitySlider');
+            const gravityValue = document.getElementById('gravityValue');
+            
+            // Set canvas size
+            canvas.width = 800;
+            canvas.height = 600;
+            
+            // Blackhole properties
+            const blackhole = {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                mass: 10000,
+                radius: 20,
+                eventHorizon: 40
+            };
+            
+            let stars = [];
+            let gravityStrength = 5;
+            
+            // Update gravity strength based on slider
+            gravitySlider.addEventListener('input', () => {
+                gravityStrength = parseInt(gravitySlider.value);
+                gravityValue.textContent = gravityStrength;
+            });
+            
+            // Reset stars position
+            resetBtn.addEventListener('click', () => {
+                createStars();
+            });
+            
+            // Create stars
+            function createStars() {
+                stars = [];
+                const numStars = 200;
+                
+                for (let i = 0; i < numStars; i++) {
+                    addNewStar();
+                }
+            }
+            
+            // Function to add a single star
+            function addNewStar() {
+                // Place stars randomly, but not too close to the blackhole
+                let x, y, distFromCenter;
+                do {
+                    x = Math.random() * canvas.width;
+                    y = Math.random() * canvas.height;
+                    distFromCenter = Math.hypot(x - blackhole.x, y - blackhole.y);
+                } while (distFromCenter < blackhole.eventHorizon * 3);
+                
+                // Give each star a small random velocity
+                const vx = (Math.random() - 0.5) * 2;
+                const vy = (Math.random() - 0.5) * 2;
+                
+                stars.push({
+                    x,
+                    y,
+                    size: Math.random() * 2 + 1,
+                    vx,
+                    vy,
+                    color: `hsl(${Math.random() * 60 + 180}, 80%, 80%)`
+                });
+            }
+            
+            // Add stars from the edges
+            function addEdgeStar() {
+                if (stars.length < 500) { // Increased max star limit
+                    const edge = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+                    let x, y;
+                    
+                    switch(edge) {
+                        case 0: x = Math.random() * canvas.width; y = 0; break;
+                        case 1: x = canvas.width; y = Math.random() * canvas.height; break;
+                        case 2: x = Math.random() * canvas.width; y = canvas.height; break;
+                        case 3: x = 0; y = Math.random() * canvas.height; break;
+                    }
+                    
+                    const vx = (Math.random() - 0.5) * 2;
+                    const vy = (Math.random() - 0.5) * 2;
+                    
+                    stars.push({
+                        x,
+                        y,
+                        size: Math.random() * 2 + 1,
+                        vx,
+                        vy,
+                        color: `hsl(${Math.random() * 60 + 180}, 80%, 80%)`
+                    });
+                }
+            }
+            
+            // Update star positions based on blackhole gravity
+            function updateStars() {
+                stars.forEach((star, index) => {
+                    // Calculate distance and direction to blackhole
+                    const dx = blackhole.x - star.x;
+                    const dy = blackhole.y - star.y;
+                    const distSq = dx * dx + dy * dy;
+                    const dist = Math.sqrt(distSq);
+                    
+                    // Check if star is consumed by blackhole
+                    if (dist < blackhole.eventHorizon) {
+                        // Remove the star
+                        stars.splice(index, 1);
+                        return;
+                    }
+                    
+                    // Calculate gravitational force
+                    // F = G * m1 * m2 / r^2
+                    // Here we simplify by using a constant and the blackhole mass
+                    const force = (gravityStrength * blackhole.mass) / distSq;
+                    
+                    // Apply acceleration (force)
+                    star.vx += force * dx / dist;
+                    star.vy += force * dy / dist;
+                    
+                    // Update position
+                    star.x += star.vx;
+                    star.y += star.vy;
+                    
+                    // Add some damping to prevent extreme acceleration
+                    star.vx *= 0.99;
+                    star.vy *= 0.99;
+                    
+                    // If star goes beyond canvas, wrap it to the opposite side
+                    if (star.x > canvas.width) star.x = 0;
+                    if (star.x < 0) star.x = canvas.width;
+                    if (star.y > canvas.height) star.y = 0;
+                    if (star.y < 0) star.y = canvas.height;
+                });
+            }
+            
+            // Draw everything
+            function draw() {
+                // Clear canvas
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw stars (with trailing effect from partial clear)
+                stars.forEach(star => {
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fillStyle = star.color;
+                    ctx.fill();
+                });
+                
+                // Draw blackhole
+                ctx.beginPath();
+                // Draw event horizon
+                const gradient = ctx.createRadialGradient(
+                    blackhole.x, blackhole.y, blackhole.radius * 0.8,
+                    blackhole.x, blackhole.y, blackhole.eventHorizon * 1.5
+                );
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+                gradient.addColorStop(0.6, 'rgba(20, 20, 80, 0.6)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                ctx.arc(blackhole.x, blackhole.y, blackhole.eventHorizon * 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Draw core
+                ctx.beginPath();
+                ctx.arc(blackhole.x, blackhole.y, blackhole.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'black';
+                ctx.fill();
+            }
+            
+            // Animation loop
+            function animate() {
+                updateStars();
+                // Spawn stars continuously during animation
+                if (Math.random() > 0.7) { // 30% chance each frame to spawn a new star
+                    addEdgeStar();
+                }
+                draw();
+                requestAnimationFrame(animate);
+            }
+            
+            // Initialize
+            createStars();
+            animate();
+            
+            // Add many new stars frequently
+            setInterval(() => {
+                // Add 3-5 stars every 100ms for continuous spawning
+                const count = Math.floor(Math.random() * 3) + 3;
+                for (let i = 0; i < count; i++) {
+                    addEdgeStar();
+                }
+            }, 100); // Reduced interval to 100ms for faster spawning
+        });
+    </script>
+</body>
+</html>
