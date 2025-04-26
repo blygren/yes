@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Purple Blob - Paper.js Animation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        canvas {
+            background-color: #121212;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-image: 
+                linear-gradient(rgba(50, 50, 50, 0.5) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(50, 50, 50, 0.5) 1px, transparent 1px);
+            background-size: 20px 20px;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+    <!-- Load the Paper.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.15/paper-full.min.js"></script>
+    
+    <!-- Include all code directly in the HTML file -->
+    <script type="text/paperscript" canvas="blobCanvas">
+        // The number of points in the rope:
+        var points = 12;
+        // The distance between the points:
+        var radius = 50;
+
+        // Variables to store initial and current view dimensions
+        var initialViewWidth, initialViewHeight;
+        var constraintRadius = 150; // Default constraint radius
+        
+        // Gravity direction variables
+        var gravityX = 0;
+        var gravityY = 1; // Default gravity pulls downward
+        var gravityStrength = 1.0;
+        
+        // Interactive variables
+        var mousePos = view.center;
+        var mouseColliding = false;
+        var interactionRadius = 40; // Radius for mouse/touch interaction
+
+        // Blob variables
+        var blob, blobOld, accumulatedDisplacements = [], normals = [], circle;
+        
+        function initializeBlob() {
+            // Store the initial view dimensions
+            initialViewWidth = view.size.width;
+            initialViewHeight = view.size.height;
+            
+            // Adjust radius based on screen size
+            radius = Math.min(view.size.width, view.size.height) * 0.08;
+            constraintRadius = Math.min(view.size.width, view.size.height) * 0.25;
+            
+            // Update the interactionRadius based on screen size
+            interactionRadius = Math.min(view.size.width, view.size.height) * 0.06;
+            
+            //Precalculate certain intrinsics
+            area = radius * radius * 3.14159;
+            circumfrence = radius * 2 * 3.14159;
+            length = circumfrence * 1.15 / points;
+
+            // Clear any existing paths
+            if (blob) blob.remove();
+            if (blobOld) blobOld.remove();
+            if (circle) circle.remove();
+            if (normals) {
+                for (var i = 0; i < normals.length; i++) {
+                    if (normals[i]) normals[i].remove();
+                }
+            }
+            
+            //The Purple Blob
+            blob = new Path();
+            blobOld = new Path();
+            accumulatedDisplacements = [];
+            normals = [];
+            blob.closed = true;
+            for (var i = 0; i < points; i++) {
+                var delta = new Point({ length: radius, angle: (360 / points) * i });
+                blob.add(view.center + delta);
+                blobOld.add(view.center + delta);
+                normals[i] = (new Path.Line(view.center + delta, view.center + (delta * 1.5)));
+                //normals[i].strokeColor = '#9C27B0'; //Uncomment to visualize the surface normals
+            }
+            blob.fillColor = '#9C27B0';  // Purple color
+            blob.strokeColor = '#9C27B0'; // Purple outline
+            blob.strokeWidth = 5;
+
+            //The White Circle
+            circle = new Path.Circle(view.center, constraintRadius);
+            circle.strokeWidth = 5;
+            circle.strokeColor = 'white';
+        }
+        
+        // Initialize the blob when the view is ready
+        initializeBlob();
+        
+        // Handle window resize events
+        view.onResize = function(event) {
+            initializeBlob();
+            mousePos = view.center;
+        };
+
+        //Integrates the points forward in time based off their current and previous positions
+        function verletIntegrate(curPt, prevPt) {
+            var temp = new Point(curPt);
+            curPt.set(curPt + (curPt - prevPt));
+            prevPt.set(temp);
+        }
+
+        //Projects 'currentPoint' to be within 'distance' of 'anchor'
+        function setDistance(currentPoint, anchor, distance) {
+            var toAnchor = currentPoint - anchor;
+            toAnchor.length = distance;
+            return toAnchor + anchor;
+        }
+
+        // Revised mouse and touch handling with a single tool
+        var interactionTool = new Tool();
+        
+        // Mouse event handlers
+        interactionTool.onMouseDown = function(event) {
+            mouseColliding = true;
+            mousePos = event.point;
+        };
+        
+        interactionTool.onMouseDrag = function(event) {
+            mouseColliding = true;
+            mousePos = event.point;
+        };
+        
+        interactionTool.onMouseUp = function(event) {
+            mouseColliding = false;
+        };
+        
+        // Touch event handlers for mobile support
+        interactionTool.onTouchStart = function(event) {
+            mouseColliding = true;
+            mousePos = event.point;
+            event.preventDefault();
+        };
+        
+        interactionTool.onTouchMove = function(event) {
+            mousePos = event.point;
+            event.preventDefault();
+        };
+        
+        interactionTool.onTouchEnd = function(event) {
+            mouseColliding = false;
+            event.preventDefault();
+        };
+
+        function onFrame(event) {
+            for (var i = 0; i < points; i++) {
+                //Verlet Integration
+                verletIntegrate(blob.segments[i].point, blobOld.segments[i].point);
+                
+                //Add gravity based on accelerometer or default gravity
+                blob.segments[i].point += new Point(
+                    gravityX * Math.min(gravityStrength, event.delta * 30),
+                    gravityY * Math.min(gravityStrength, event.delta * 30)
+                );
+            }
+
+            //Iterate 10 times to resolve the constraints
+            for (var j = 0; j < 10; j++) {
+                for (var i = 0; i < points; i++) {
+                    var segment = blob.segments[i];
+                    var nextIndex = (i == points - 1) ? 0 : i + 1;
+                    var nextSegment = blob.segments[nextIndex];
+
+                    //Pull the segments toward eachother
+                    var toNext = segment.point - nextSegment.point;
+                    if (toNext.length > length) {
+                        toNext.length = length;
+                        var offset = (segment.point - nextSegment.point) - toNext;
+                        accumulatedDisplacements[(i * 3)] -= offset.x / 2;
+                        accumulatedDisplacements[(i * 3) + 1] -= offset.y / 2;
+                        accumulatedDisplacements[(i * 3) + 2] += 1.0;
+                        accumulatedDisplacements[(nextIndex * 3)] += offset.x / 2;
+                        accumulatedDisplacements[(nextIndex * 3) + 1] += offset.y / 2;
+                        accumulatedDisplacements[(nextIndex * 3) + 2] += 1.0;
+                    }
+                }
+
+                //Calculate area of The Purple Blob and compare to desired area
+                var deltaArea = (blob.area < area * 2) ? area - blob.area : 0;
+                var dilationDistance = deltaArea / circumfrence;
+
+                //Dilate The Purple Blob by the distance required to achieve the desired area
+                for (var i = 0; i < points; i++) {
+                    var prevIndex = i == 0 ? points - 1 : i - 1;
+                    var nextIndex = i == points - 1 ? 0 : i + 1;
+                    var normal = blob.segments[nextIndex].point - blob.segments[prevIndex].point;
+                    normal.angle -= 90; normal.length = 1;
+                    normals[i].segments[0].point = blob.segments[i].point;
+                    normals[i].segments[1].point = blob.segments[i].point + (normal * 20);
+                    accumulatedDisplacements[(i * 3)] += normal.x * dilationDistance;
+                    accumulatedDisplacements[(i * 3) + 1] += normal.y * dilationDistance;
+                    accumulatedDisplacements[(i * 3) + 2] += 1.0;
+                }
+
+                //Apply Accumulated Forces
+                for (var i = 0; i < points; i++) {
+                    if (accumulatedDisplacements[(i * 3) + 2] > 0) {
+                        blob.segments[i].point += new Point(accumulatedDisplacements[(i * 3)],
+                            accumulatedDisplacements[(i * 3) + 1]) / accumulatedDisplacements[(i * 3) + 2];
+                    }
+                }
+                //Reset the accumulated forces for the next frame
+                for (var i = 0; i < points * 3; i++) { accumulatedDisplacements[i] = 0; }
+
+                //Handle collisions
+                for (var i = 0; i < points; i++) {
+                    if (mouseColliding && (blob.segments[i].point - mousePos).length < interactionRadius) {
+                        blob.segments[i].point = setDistance(blob.segments[i].point, mousePos, interactionRadius);
+                    }
+                    if ((blob.segments[i].point - view.center).length > constraintRadius) {
+                        blob.segments[i].point = setDistance(blob.segments[i].point, view.center, constraintRadius);
+                    }
+                }
+            }
+            //Ensure The White Circle stays centered in the view
+            circle.position = view.center;
+
+            //Give The Purple Blob its buttery form
+            blob.smooth({ type: 'continuous' });
+        }
+    </script>
+</head>
+<body>
+    <!-- Create canvas for Paper.js to draw on -->
+    <canvas id="blobCanvas" resize touch-action="none"></canvas>
+    
+    <script>
+        // Better touch handling for the entire canvas
+        var canvas = document.getElementById('blobCanvas');
+        
+        // Prevent all default touch actions to make dragging work better
+        canvas.style.touchAction = "none";
+        
+        // Prevent default for touch events to ensure mobile drag works
+        ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function(eventType) {
+            canvas.addEventListener(eventType, function(e) {
+                e.preventDefault();
+            }, { passive: false });
+        });
+        
+        // Accelerometer support
+        function setupAccelerometer() {
+            if (window.DeviceOrientationEvent !== undefined) {
+                window.addEventListener('deviceorientation', function(e) {
+                    // Access the accelerometer data from the deviceorientation event
+                    if (e.beta !== null && e.gamma !== null) {
+                        // Convert degrees to a normalized gravity vector
+                        // beta controls front-to-back tilt (x-axis rotation)
+                        // gamma controls left-to-right tilt (y-axis rotation)
+                        var beta = e.beta * Math.PI / 180;  // front-back tilt
+                        var gamma = e.gamma * Math.PI / 180; // left-right tilt
+                        
+                        // Update global gravity values that will be used by Paper.js
+                        if (window.innerHeight > window.innerWidth) {
+                            // Portrait mode
+                            window.gravityX = Math.sin(gamma) * 2;
+                            window.gravityY = Math.sin(beta) * 2;
+                        } else {
+                            // Landscape mode
+                            window.gravityX = Math.sin(gamma) * 2;
+                            window.gravityY = Math.sin(beta) * 2;
+                        }
+                    }
+                }, true);
+                
+                console.log("Accelerometer initialized");
+            } else if (window.DeviceMotionEvent !== undefined) {
+                // Fallback to device motion for devices that don't support orientation
+                window.addEventListener('devicemotion', function(e) {
+                    if (e.accelerationIncludingGravity) {
+                        var acceleration = e.accelerationIncludingGravity;
+                        // Normalize and scale the acceleration values
+                        window.gravityX = -acceleration.x * 0.1;
+                        window.gravityY = acceleration.y * 0.1;
+                    }
+                }, true);
+                
+                console.log("Device motion initialized");
+            } else {
+                console.log("No accelerometer support");
+            }
+        }
+        
+        // Call setupAccelerometer when the page loads
+        document.addEventListener('DOMContentLoaded', setupAccelerometer);
+        
+        // Request permission for motion and orientation on iOS 13+
+        function requestMotionPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            setupAccelerometer();
+                        }
+                    })
+                    .catch(console.error);
+            } else if (typeof DeviceMotionEvent !== 'undefined' && 
+                       typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            setupAccelerometer();
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                setupAccelerometer();
+            }
+        }
+        
+        // Add a click/touch event to request permission (needed for iOS)
+        document.getElementById('blobCanvas').addEventListener('click', requestMotionPermission);
+        document.getElementById('blobCanvas').addEventListener('touchstart', requestMotionPermission);
+    </script>
+</body>
+</html>
