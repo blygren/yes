@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rope Simulation</title>
+    <style>
+        /* CSS from style.css */
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        canvas {
+            border: 1px solid black;
+            background-color: #f8f8f8; /* Light background for grid */
+            background-image:
+                linear-gradient(to right, grey 1px, transparent 1px),
+                linear-gradient(to bottom, grey 1px, transparent 1px);
+            background-size: 20px 20px; /* Adjust grid size here */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="simulationCanvas"></canvas>
+    <script>
+        // JavaScript from script.js
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const PADDING = 50; // Space from window edges
+        const ROPE_SEGMENTS = 15;
+        const ROPE_COLOR = '#555';
+        const WEIGHT_COLOR = '#A00';
+        const WEIGHT_RADIUS = 15;
+        const GRAVITY = 0.5;
+        const BOUNCE = 0.7; // Energy loss on collision
+        const FRICTION = 0.99; // Air friction
+        const STICK_ITERATIONS = 15; // Constraint solver iterations
+        const WEIGHT_REPEL_BUFFER = 2; // Extra distance to keep weights apart
+        const POINT_REPEL_BUFFER = 1.5; // Extra distance for general point repulsion
+        const PLATFORM_RADIUS = 50; // Radius of the center platform
+        const PLATFORM_COLOR = '#888888'; // Darker grey color for the platform
+
+        let points = [];
+        let sticks = [];
+        let draggedPoint = null;
+        let mouse = { x: 0, y: 0 };
+
+        // --- Point Class ---
+        class Point {
+            constructor(x, y, isWeight = false) {
+                this.x = x;
+                this.y = y;
+                this.oldX = x; // For Verlet integration
+                this.oldY = y;
+                this.isPinned = false;
+                this.isDragged = false;
+                this.isWeight = isWeight;
+                this.radius = isWeight ? WEIGHT_RADIUS : 2;
+            }
+
+            update() {
+                if (this.isPinned || this.isDragged) return;
+
+                const vx = (this.x - this.oldX) * FRICTION;
+                const vy = (this.y - this.oldY) * FRICTION;
+
+                this.oldX = this.x;
+                this.oldY = this.y;
+
+                this.x += vx;
+                this.y += vy;
+                this.y += GRAVITY; // Apply gravity
+            }
+
+            constrain(width, height) {
+                if (this.isPinned || this.isDragged) return;
+
+                const vx = (this.x - this.oldX) * FRICTION;
+                const vy = (this.y - this.oldY) * FRICTION;
+
+                const r = this.radius;
+                // Boundary constraints
+                if (this.x > width - r) {
+                    this.x = width - r;
+                    this.oldX = this.x + vx * BOUNCE;
+                } else if (this.x < r) {
+                    this.x = r;
+                    this.oldX = this.x + vx * BOUNCE;
+                }
+                if (this.y > height - r) {
+                    this.y = height - r;
+                    this.oldY = this.y + vy * BOUNCE;
+                } else if (this.y < r) {
+                    this.y = r;
+                    this.oldY = this.y + vy * BOUNCE;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.isWeight ? WEIGHT_COLOR : ROPE_COLOR;
+                ctx.fill();
+            }
+        }
+
+        // --- Stick Class ---
+        class Stick {
+            constructor(p1, p2, length) {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.length = length;
+            }
+
+            update() {
+                const dx = this.p2.x - this.p1.x;
+                const dy = this.p2.y - this.p1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                // Avoid division by zero if points are exactly coincident
+                if (distance === 0) return;
+                const difference = this.length - distance;
+                const percent = difference / distance / 2; // Divide by 2 because each point moves half the difference
+                const offsetX = dx * percent;
+                const offsetY = dy * percent;
+
+                if (!this.p1.isPinned && !this.p1.isDragged) {
+                    this.p1.x -= offsetX;
+                    this.p1.y -= offsetY;
+                }
+                if (!this.p2.isPinned && !this.p2.isDragged) {
+                    this.p2.x += offsetX;
+                    this.p2.y += offsetY;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.p1.x, this.p1.y);
+                ctx.lineTo(this.p2.x, this.p2.y);
+                ctx.strokeStyle = ROPE_COLOR;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        // --- Simulation Setup ---
+        function setup() {
+            canvas.width = window.innerWidth - PADDING * 2;
+            canvas.height = window.innerHeight - PADDING * 2;
+
+            points = [];
+            sticks = [];
+            draggedPoint = null;
+
+            const startX = canvas.width / 2;
+            const startY = 50;
+            const segmentLength = 20;
+
+            // Create rope points
+            for (let i = 0; i <= ROPE_SEGMENTS; i++) {
+                const isWeight = (i === 0 || i === ROPE_SEGMENTS);
+                const point = new Point(startX + (i - ROPE_SEGMENTS / 2) * segmentLength * 0.5, startY + i * 5, isWeight);
+                points.push(point);
+            }
+
+            // Create sticks connecting the points
+            for (let i = 0; i < ROPE_SEGMENTS; i++) {
+                sticks.push(new Stick(points[i], points[i + 1], segmentLength));
+            }
+
+            // Optional: Pin the first point initially
+            // points[0].isPinned = true;
+        }
+
+        // --- Repel Weights ---
+        function repelWeights(p1, p2) {
+            if (!p1 || !p2 || !p1.isWeight || !p2.isWeight) return; // Ensure both are weights
+
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const distanceSq = dx * dx + dy * dy;
+            const minDistance = p1.radius + p2.radius + WEIGHT_REPEL_BUFFER;
+            const minDistanceSq = minDistance * minDistance;
+
+            if (distanceSq < minDistanceSq && distanceSq > 0.001) { // Check for overlap and avoid division by zero
+                const distance = Math.sqrt(distanceSq);
+                const overlap = minDistance - distance;
+                const percent = overlap / distance / 2; // Each point moves half the overlap
+                const offsetX = dx * percent;
+                const offsetY = dy * percent;
+
+                // Push points apart, respecting pinned/dragged status
+                if (!p1.isPinned && !p1.isDragged) {
+                    p1.x -= offsetX;
+                    p1.y -= offsetY;
+                }
+                if (!p2.isPinned && !p2.isDragged) {
+                    p2.x += offsetX;
+                    p2.y += offsetY;
+                }
+            }
+        }
+
+        // --- Repel Points (for self-collision) ---
+        function repelPoints(p1, p2) {
+            // Don't repel if either point is being dragged or pinned
+            if (p1.isDragged || p1.isPinned || p2.isDragged || p2.isPinned) return;
+
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const distanceSq = dx * dx + dy * dy;
+            // Use individual radii + buffer. Weights have larger radii.
+            const minDistance = p1.radius + p2.radius + POINT_REPEL_BUFFER;
+            const minDistanceSq = minDistance * minDistance;
+
+            if (distanceSq < minDistanceSq && distanceSq > 0.001) { // Check for overlap
+                const distance = Math.sqrt(distanceSq);
+                const overlap = minDistance - distance;
+                const percent = overlap / distance / 2; // Each point moves half the overlap
+                const offsetX = dx * percent;
+                const offsetY = dy * percent;
+
+                // Push points apart
+                p1.x -= offsetX;
+                p1.y -= offsetY;
+                p2.x += offsetX;
+                p2.y += offsetY;
+            }
+        }
+
+        // --- Platform Constraint ---
+        function constrainPlatform(point, platformX, platformY) {
+            if (point.isPinned || point.isDragged) return;
+
+            const dx = point.x - platformX;
+            const dy = point.y - platformY;
+            const distanceSq = dx * dx + dy * dy;
+            const minDistance = PLATFORM_RADIUS + point.radius;
+            const minDistanceSq = minDistance * minDistance;
+
+            if (distanceSq < minDistanceSq && distanceSq > 0.001) {
+                const distance = Math.sqrt(distanceSq);
+                const overlap = minDistance - distance;
+                const nx = dx / distance; // Normalized direction vector x
+                const ny = dy / distance; // Normalized direction vector y
+
+                // Push the point out of the platform
+                point.x += nx * overlap;
+                point.y += ny * overlap;
+
+                // Simple stop - adjust old position to prevent gaining energy from collision resolution
+                point.oldX = point.x;
+                point.oldY = point.y;
+            }
+        }
+
+        // --- Update Loop ---
+        function update() {
+            // Update points (Verlet integration)
+            points.forEach(p => p.update());
+
+            // Update dragged point position
+            if (draggedPoint) {
+                draggedPoint.x = mouse.x;
+                draggedPoint.y = mouse.y;
+            }
+
+            // Update sticks, repel weights, handle self-collision, and platform collision (constraints) multiple times
+            const weight1 = points[0];
+            const weight2 = points[points.length - 1];
+            const platformX = canvas.width / 2; // Calculate platform center once per update
+            const platformY = canvas.height / 2;
+
+            for (let i = 0; i < STICK_ITERATIONS; i++) {
+                // Apply stick constraints first
+                sticks.forEach(s => s.update());
+
+                // Apply self-collision repulsion between non-adjacent points
+                for (let j = 0; j < points.length; j++) {
+                    for (let k = j + 1; k < points.length; k++) {
+                        // Don't repel points directly connected by a stick
+                        if (Math.abs(j - k) === 1) continue;
+                        repelPoints(points[j], points[k]);
+                    }
+                }
+
+                // Apply specific weight repulsion (can sometimes help stability)
+                repelWeights(weight1, weight2);
+
+                // Apply platform and boundary constraints last
+                points.forEach(p => {
+                    constrainPlatform(p, platformX, platformY); // Add platform constraint check
+                    p.constrain(canvas.width, canvas.height);
+                });
+            }
+        }
+
+        // --- Render Loop ---
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the platform first (background element)
+            const platformX = canvas.width / 2;
+            const platformY = canvas.height / 2;
+            ctx.beginPath();
+            ctx.arc(platformX, platformY, PLATFORM_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = PLATFORM_COLOR;
+            ctx.fill();
+
+            // Draw sticks
+            sticks.forEach(s => s.draw());
+
+            // Draw points (weights on top)
+            points.forEach(p => p.draw());
+        }
+
+        // --- Main Loop ---
+        function animate() {
+            update();
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        // --- Interaction ---
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            // Handle both mouse and touch events
+            const clientX = evt.clientX ?? evt.touches[0]?.clientX;
+            const clientY = evt.clientY ?? evt.touches[0]?.clientY;
+            if (clientX === undefined || clientY === undefined) {
+                // Handle cases where event data might be missing (e.g., touchend)
+                return { x: mouse.x, y: mouse.y }; // Return last known position
+            }
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function findPointAt(x, y) {
+            let closestPoint = null;
+            let minDistSq = Infinity;
+
+            points.forEach(p => {
+                if (!p.isWeight) return; // Only allow dragging weights
+                const dx = p.x - x;
+                const dy = p.y - y;
+                const distSq = dx * dx + dy * dy;
+                if (distSq < p.radius * p.radius * 4 && distSq < minDistSq) { // Check within radius squared * 4 (easier to grab)
+                     minDistSq = distSq;
+                     closestPoint = p;
+                }
+            });
+            return closestPoint;
+        }
+
+        function handleInteractionStart(e) {
+            mouse = getMousePos(e);
+            draggedPoint = findPointAt(mouse.x, mouse.y);
+            if (draggedPoint) {
+                draggedPoint.isDragged = true;
+                // Set old position to current to prevent jumping
+                draggedPoint.oldX = draggedPoint.x;
+                draggedPoint.oldY = draggedPoint.y;
+            }
+        }
+
+        function handleInteractionMove(e) {
+             // Prevent scrolling/zooming on touch devices while dragging
+            if (e.touches) {
+                e.preventDefault();
+            }
+            mouse = getMousePos(e);
+            // Dragged point position is updated in the main update() loop
+        }
+
+        function handleInteractionEnd() {
+            if (draggedPoint) {
+                draggedPoint.isDragged = false;
+                // Set old position to current position to prevent "flying" on release
+                draggedPoint.oldX = draggedPoint.x;
+                draggedPoint.oldY = draggedPoint.y;
+                draggedPoint = null;
+            }
+        }
+
+        // Mouse Listeners
+        canvas.addEventListener('mousedown', handleInteractionStart);
+        canvas.addEventListener('mousemove', handleInteractionMove);
+        canvas.addEventListener('mouseup', handleInteractionEnd);
+        canvas.addEventListener('mouseleave', handleInteractionEnd); // Use same end handler
+
+        // Touch Listeners
+        canvas.addEventListener('touchstart', handleInteractionStart, { passive: false }); // Need passive: false for preventDefault
+        canvas.addEventListener('touchmove', handleInteractionMove, { passive: false });  // Need passive: false for preventDefault
+        canvas.addEventListener('touchend', handleInteractionEnd);
+        canvas.addEventListener('touchcancel', handleInteractionEnd); // Treat cancel the same as end
+
+        // --- Resize Handling ---
+        window.addEventListener('resize', setup);
+
+        // --- Start ---
+        setup();
+        animate();
+    </script>
+</body>
+</html>
