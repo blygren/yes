@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ball Trajectory Simulation</title>
+    <style>
+        /* CSS from style.css */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 10px;
+            touch-action: none; /* Prevent default touch actions */
+            overflow-x: hidden;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        canvas {
+            border: 1px solid black;
+            background-color: #fff;
+            cursor: grab;
+            max-width: 100%;
+            touch-action: none; /* Prevent scrolling/zooming on canvas */
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        #stats {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #e9e9e9;
+            border-radius: 5px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #stats p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        #stats span {
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        @media (max-width: 800px) {
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            #stats {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Ball Trajectory Simulation</h1>
+    <canvas id="physicsCanvas" width="800" height="600"></canvas>
+    <div id="stats">
+        <h2>Stats</h2>
+        <p>Position: <span id="position">x: 0, y: 0</span></p>
+        <p>Velocity: <span id="velocity">vx: 0, vy: 0</span></p>
+        <p>Dragging: <span id="draggingStatus">false</span></p>
+        <p>Kinetic Energy: <span id="kineticEnergy">0</span> J</p>
+        <p>Potential Energy: <span id="potentialEnergy">0</span> J</p>
+        <p>Total Energy: <span id="totalEnergy">0</span> J</p>
+        <p>Collisions: <span id="collisions">0</span></p>
+        <p>Last Throw: <span id="lastThrow">vx: 0, vy: 0</span></p>
+    </div>
+
+    <script>
+        // JavaScript from script.js
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        const statsPosition = document.getElementById('position');
+        const statsVelocity = document.getElementById('velocity');
+        const statsDragging = document.getElementById('draggingStatus');
+        const statsKineticEnergy = document.getElementById('kineticEnergy');
+        const statsPotentialEnergy = document.getElementById('potentialEnergy');
+        const statsTotalEnergy = document.getElementById('totalEnergy');
+        const statsCollisions = document.getElementById('collisions');
+        const statsLastThrow = document.getElementById('lastThrow');
+
+
+        const gravity = 0.5; // Represents acceleration (pixels/frame^2). For energy calcs, treat mass as 1 and g as this value.
+        const airResistance = 0.99; // Factor to multiply velocity by each frame
+        const bounceFactor = 0.7; // Energy retained after bounce
+        const trailLength = 30;
+        const trajectorySteps = 50; // Number of steps to predict for trajectory
+        const gridSpacing = 50; // Pixels between grid lines
+
+        let ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 20,
+            vx: 0,
+            vy: 0,
+            mass: 1, // Keep mass simple for now, affects energy calcs
+            color: 'blue',
+            isDragging: false,
+            trail: []
+        };
+
+        let mouse = {
+            x: 0,
+            y: 0,
+            isDown: false,
+            dx: 0, // Change in x during drag
+            dy: 0  // Change in y during drag
+        };
+
+        let collisionCount = 0;
+        let lastThrowVx = 0;
+        let lastThrowVy = 0;
+
+        function getMousePos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        function isMouseOverBall(mouseX, mouseY) {
+            const dx = mouseX - ball.x;
+            const dy = mouseY - ball.y;
+            return dx * dx + dy * dy < ball.radius * ball.radius;
+        }
+
+        // --- Event Handling Functions ---
+        // Unified event handler functions to work with both mouse and touch events
+        
+        function startDrag(clientX, clientY) {
+            const pos = getEventPos(clientX, clientY);
+            mouse.isDown = true;
+            mouse.x = pos.x;
+            mouse.y = pos.y;
+            
+            if (isMouseOverBall(mouse.x, mouse.y)) {
+                ball.isDragging = true;
+                ball.vx = 0; // Stop motion when grabbed
+                ball.vy = 0;
+                // Store initial offset from ball center
+                mouse.dx = mouse.x - ball.x;
+                mouse.dy = mouse.y - ball.y;
+                statsDragging.textContent = 'true';
+                canvas.style.cursor = 'grabbing';
+            }
+        }
+        
+        function moveDrag(clientX, clientY) {
+            const pos = getEventPos(clientX, clientY);
+            const prevMouseX = mouse.x;
+            const prevMouseY = mouse.y;
+            mouse.x = pos.x;
+            mouse.y = pos.y;
+
+            if (ball.isDragging) {
+                // Calculate velocity based on movement
+                ball.vx = (mouse.x - prevMouseX) * 0.5; 
+                ball.vy = (mouse.y - prevMouseY) * 0.5;
+
+                // Update ball position directly, maintaining offset
+                ball.x = mouse.x - mouse.dx;
+                ball.y = mouse.y - mouse.dy;
+
+                // Keep ball within bounds while dragging
+                ball.x = Math.max(ball.radius, Math.min(canvas.width - ball.radius, ball.x));
+                ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
+
+                // Clear trail when dragging starts to avoid weird jumps
+                if (ball.trail.length > 0 && ball.trail[ball.trail.length - 1].x !== ball.x) {
+                     ball.trail = [];
+                }
+            } else if (isMouseOverBall(mouse.x, mouse.y)) {
+                canvas.style.cursor = 'grab';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+        }
+        
+        function endDrag() {
+            if (ball.isDragging) {
+                ball.isDragging = false;
+                statsDragging.textContent = 'false';
+                // Store the velocity at the moment of release
+                lastThrowVx = ball.vx;
+                lastThrowVy = ball.vy;
+                statsLastThrow.textContent = `vx: ${lastThrowVx.toFixed(2)}, vy: ${lastThrowVy.toFixed(2)}`;
+            }
+            mouse.isDown = false;
+            canvas.style.cursor = isMouseOverBall(mouse.x, mouse.y) ? 'grab' : 'default';
+        }
+        
+        // Unified function to get position from either mouse or touch event
+        function getEventPos(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        // --- Event Listeners ---
+        
+        // Mouse Events
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startDrag(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            e.preventDefault();
+            moveDrag(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            endDrag();
+        });
+
+        canvas.addEventListener('mouseleave', (e) => {
+            canvas.style.cursor = 'default';
+        });
+        
+        // Touch Events - Fixed for mobile support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent scrolling when touching the canvas
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                startDrag(touch.clientX, touch.clientY);
+            }
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                moveDrag(touch.clientX, touch.clientY);
+            }
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            endDrag();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            endDrag();
+        }, { passive: false });
+
+        // --- Drawing Functions ---
+
+        function drawGrid() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#e0e0e0'; // Light grey for grid lines
+            ctx.lineWidth = 0.5;
+
+            // Vertical lines
+            for (let x = gridSpacing; x < canvas.width; x += gridSpacing) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+            }
+
+            // Horizontal lines
+            for (let y = gridSpacing; y < canvas.height; y += gridSpacing) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+            }
+
+            ctx.stroke();
+            ctx.lineWidth = 1; // Reset line width
+        }
+
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawTrail() {
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            for (let i = 0; i < ball.trail.length; i++) {
+                const pos = ball.trail[i];
+                const opacity = (i / ball.trail.length) * 0.5; // Fade out older points
+                ctx.strokeStyle = `rgba(0, 0, 255, ${opacity})`;
+                if (i === 0) {
+                    ctx.moveTo(pos.x, pos.y);
+                } else {
+                    ctx.lineTo(pos.x, pos.y);
+                }
+            }
+            ctx.stroke();
+            ctx.lineWidth = 1; // Reset line width
+        }
+
+        function drawTrajectory() {
+            if (ball.isDragging) return; // Don't draw trajectory while dragging
+
+            let projX = ball.x;
+            let projY = ball.y;
+            let projVX = ball.vx;
+            let projVY = ball.vy;
+
+            ctx.beginPath();
+            ctx.moveTo(projX, projY);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'; // Red dashed line for trajectory
+            ctx.setLineDash([5, 5]); // Dashed line style
+
+            for (let i = 0; i < trajectorySteps; i++) {
+                // Simulate one step of physics for projection
+                projVY += gravity;
+                projVX *= airResistance;
+                projVY *= airResistance;
+                projX += projVX;
+                projY += projVY;
+
+                // Simple boundary check for projection
+                if (projX < ball.radius || projX > canvas.width - ball.radius) {
+                     projVX *= -bounceFactor; // Reverse horizontal velocity on side bounce
+                     projX = Math.max(ball.radius, Math.min(canvas.width - ball.radius, projX)); // Clamp position
+                }
+                 if (projY < ball.radius || projY > canvas.height - ball.radius) {
+                     projVY *= -bounceFactor; // Reverse vertical velocity on floor/ceiling bounce
+                     projY = Math.max(ball.radius, Math.min(canvas.height - ball.radius, projY)); // Clamp position
+                 }
+
+
+                ctx.lineTo(projX, projY);
+            }
+
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash style
+        }
+
+
+        // --- Update Function ---
+
+        function update() {
+            let collided = false; // Track if a collision happened in this frame
+
+            if (!ball.isDragging) {
+                // Apply gravity
+                ball.vy += gravity;
+
+                // Apply air resistance
+                ball.vx *= airResistance;
+                ball.vy *= airResistance;
+
+                // Update position
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Collision detection with boundaries
+                // Left/Right walls
+                if (ball.x + ball.radius > canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.vx *= -bounceFactor;
+                    collided = true;
+                } else if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.vx *= -bounceFactor;
+                    collided = true;
+                }
+
+                // Floor/Ceiling
+                if (ball.y + ball.radius > canvas.height) {
+                    ball.y = canvas.height - ball.radius;
+                    ball.vy *= -bounceFactor;
+                    // Optional: Add friction on ground contact
+                    // ball.vx *= 0.95;
+                    collided = true;
+                } else if (ball.y - ball.radius < 0) {
+                    ball.y = ball.radius;
+                    ball.vy *= -bounceFactor;
+                    collided = true;
+                }
+
+                if (collided) {
+                    collisionCount++;
+                }
+            }
+
+            // Update trail
+            ball.trail.push({ x: ball.x, y: ball.y });
+            if (ball.trail.length > trailLength) {
+                ball.trail.shift(); // Remove the oldest point
+            }
+
+            // Calculate Energies
+            // Kinetic Energy = 0.5 * m * v^2
+            const speedSq = ball.vx * ball.vx + ball.vy * ball.vy;
+            const kineticEnergy = 0.5 * ball.mass * speedSq;
+
+            // Potential Energy = m * g * h (relative to bottom of canvas)
+            // Height 'h' is measured from the bottom edge upwards
+            const height = canvas.height - ball.y;
+            // Use the same 'gravity' value, treating it as acceleration g
+            const potentialEnergy = ball.mass * gravity * height;
+
+            const totalEnergy = kineticEnergy + potentialEnergy;
+
+
+            // Update stats display
+            statsPosition.textContent = `x: ${ball.x.toFixed(1)}, y: ${ball.y.toFixed(1)}`;
+            statsVelocity.textContent = `vx: ${ball.vx.toFixed(2)}, vy: ${ball.vy.toFixed(2)}`;
+            statsKineticEnergy.textContent = `${kineticEnergy.toFixed(2)}`;
+            statsPotentialEnergy.textContent = `${potentialEnergy.toFixed(2)}`;
+            statsTotalEnergy.textContent = `${totalEnergy.toFixed(2)}`;
+            statsCollisions.textContent = `${collisionCount}`;
+            // Last throw is updated on mouseup
+        }
+
+        // --- Animation Loop ---
+
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background grid
+            drawGrid();
+
+            // Update physics and state
+            update();
+
+            // Draw elements
+            drawTrail();
+            drawTrajectory();
+            drawBall();
+
+
+            // Request next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the simulation
+        gameLoop();
+    </script>
+</body>
+</html>
