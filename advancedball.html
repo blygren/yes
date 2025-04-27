@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Physics Ball Simulation (Combined)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ball Trajectory Simulation</title>
     <style>
         /* CSS from style.css */
         body {
@@ -12,6 +12,10 @@
             align-items: center;
             font-family: sans-serif;
             background-color: #f0f0f0;
+            margin: 0;
+            padding: 10px;
+            touch-action: none; /* Prevent default touch actions */
+            overflow-x: hidden;
         }
 
         h1, h2 {
@@ -22,6 +26,8 @@
             border: 1px solid black;
             background-color: #fff;
             cursor: grab;
+            max-width: 100%;
+            touch-action: none; /* Prevent scrolling/zooming on canvas */
         }
 
         canvas:active {
@@ -34,7 +40,8 @@
             border: 1px solid #ccc;
             background-color: #e9e9e9;
             border-radius: 5px;
-            min-width: 200px;
+            width: 90%;
+            max-width: 400px;
         }
 
         #stats p {
@@ -46,10 +53,25 @@
             font-weight: bold;
             font-family: monospace;
         }
+        
+        @media (max-width: 800px) {
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            #stats {
+                font-size: 0.9em;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Physics Ball Simulation</h1>
+    <h1>Ball Trajectory Simulation</h1>
     <canvas id="physicsCanvas" width="800" height="600"></canvas>
     <div id="stats">
         <h2>Stats</h2>
@@ -218,14 +240,14 @@
             canvas.style.cursor = 'default';
         });
         
-        // Touch Events
+        // Touch Events - Fixed for mobile support
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault(); // Prevent scrolling when touching the canvas
             if (e.touches.length === 1) {
                 const touch = e.touches[0];
                 startDrag(touch.clientX, touch.clientY);
             }
-        });
+        }, { passive: false });
         
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
@@ -233,17 +255,17 @@
                 const touch = e.touches[0];
                 moveDrag(touch.clientX, touch.clientY);
             }
-        });
+        }, { passive: false });
         
         canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
             endDrag();
-        });
+        }, { passive: false });
         
         canvas.addEventListener('touchcancel', (e) => {
             e.preventDefault();
             endDrag();
-        });
+        }, { passive: false });
 
         // --- Drawing Functions ---
 
