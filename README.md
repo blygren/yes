@@ -87,5 +87,5 @@ The archive
 
 [Advanced ball](https://blygren.github.io/yes/CoolBallsSimulation.html)
 
-[Beats](https://blygren.github.io/yes/Text%To%note.html)
+[Beats](https://blygren.github.io/yes/Beats.html)
 
