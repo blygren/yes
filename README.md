@@ -85,4 +85,4 @@ The archive
 
 [Connections](https://blygren.github.io/yes/Connection.html)
 
-[Advanced ball](https://blygren.github.io/yes/advancedball.html)
+[Advanced ball](https://blygren.github.io/yes/CoolBallsSimulation.html)
