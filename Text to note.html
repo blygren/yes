@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Piano Notes from Text</title>
+	<style>
+		body {
+			background: linear-gradient(135deg, #667eea, #764ba2);
+			font-family: Arial, sans-serif;
+			color: #fff;
+			margin: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+		}
+		.container {
+			background: rgba(0, 0, 0, 0.5);
+			padding: 20px;
+			border-radius: 10px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+			text-align: center;
+			max-width: 400px;
+			width: 90%;
+		}
+		textarea {
+			width: 100%;
+			height: 100px;
+			border: none;
+			margin-bottom: 10px;
+			padding: 10px;
+			border-radius: 5px;
+			resize: none;
+			font-size: 16px;
+			box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+		}
+		button {
+			background: #ff6f61;
+			border: none;
+			padding: 10px 20px;
+			border-radius: 5px;
+			font-size: 18px;
+			color: #fff;
+			cursor: pointer;
+			transition: background 0.3s ease;
+		}
+		button:hover {
+			background: #ff8f71;
+		}
+		.settings {
+			margin-bottom: 10px;
+		}
+		.settings label {
+			margin-right: 5px;
+		}
+		/* Collapsible settings styles */
+		#settings-header {
+			cursor: pointer;
+			font-size: 18px;
+			font-weight: bold;
+			padding: 5px;
+			background: #333;
+			border-radius: 3px;
+			user-select: none;
+		}
+		#settings-content {
+			overflow: hidden;
+			transition: max-height 0.3s ease;
+			max-height: 500px; /* large enough when expanded */
+		}
+		#settings-content.collapsed {
+			max-height: 0;
+		}
+		canvas {
+			display: block;
+			margin: 20px auto 0;
+			background: rgba(0,0,0,0.3);
+			border-radius: 5px;
+		}
+		#current-note {
+			margin: 10px 0;
+			font-size: 16px;
+			font-weight: bold;
+			color: #ff0;
+		}
+		/* New highlight style */
+		#current-note.highlight {
+			background-color: rgba(255, 255, 0, 0.3);
+			transition: background-color 0.3s ease;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<!-- Begin collapsible customization settings -->
+		<div class="settings">
+			<div id="settings-header">Settings &#x25BC;</div>
+			<div id="settings-content">
+				<label for="osc-type">Oscillator Type:</label>
+				<select id="osc-type">
+					<option value="sine">Sine</option>
+					<option value="square">Square</option>
+					<option value="sawtooth">Sawtooth</option>
+					<option value="triangle">Triangle</option>
+				</select>
+				<br/>
+				<label for="letter-duration">Letter Duration (sec):</label>
+				<input type="number" id="letter-duration" step="0.1" value="0.4" min="0.1" max="1.0" />
+				<br/>
+				<label for="attack-time">Attack Time (sec):</label>
+				<input type="number" id="attack-time" step="0.01" value="0.05" min="0.01" max="1.0" />
+				<br/>
+				<label for="gain-peak">Gain Peak:</label>
+				<input type="number" id="gain-peak" step="0.1" value="0.5" min="0.1" max="1.0" />
+				<br/>
+				<label for="viz-color">Visualizer Color:</label>
+				<input type="color" id="viz-color" value="#ff6f61" />
+				<br/>
+				<!-- New Reset Settings Button -->
+				<button id="reset-settings">Reset Settings</button>
+			</div>
+		</div>
+		<!-- End customization settings -->
+		<div id="current-note">Idle</div>
+		<textarea id="text-input" placeholder="Enter text here"></textarea>
+		<button id="play-button">Play as Piano Notes</button>
+		<canvas id="visualizer" width="400" height="100"></canvas>
+	</div>
+	<script>
+		const defaultDuration = 0.4; // seconds per letter
+
+		// Make settings collapsible.
+		const settingsHeader = document.getElementById('settings-header');
+		const settingsContent = document.getElementById('settings-content');
+		settingsHeader.addEventListener('click', function() {
+			if (settingsContent.classList.contains('collapsed')) {
+				settingsContent.classList.remove('collapsed');
+				settingsHeader.innerHTML = 'Settings &#x25BC;';
+			} else {
+				settingsContent.classList.add('collapsed');
+				settingsHeader.innerHTML = 'Settings &#x25B2;';
+			}
+		});
+
+		document.getElementById('play-button').addEventListener('click', function() {
+			const text = document.getElementById('text-input').value.toLowerCase();
+			const letterDuration = parseFloat(document.getElementById('letter-duration').value) || 0.4;
+			const oscType = document.getElementById('osc-type').value || 'sine';
+			const attackTime = parseFloat(document.getElementById('attack-time').value) || 0.05;
+			const gainPeak = parseFloat(document.getElementById('gain-peak').value) || 0.5;
+			const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			let currentTime = audioCtx.currentTime;
+			const baseTime = currentTime; // capture start time.
+			
+			 // Setup analyser node for visualization.
+			const analyser = audioCtx.createAnalyser();
+			analyser.fftSize = 256;
+			const bufferLength = analyser.frequencyBinCount;
+			const dataArray = new Uint8Array(bufferLength);
+			
+			// Connect analyser to destination.
+			analyser.connect(audioCtx.destination);
+			
+			// Visualizer animation loop.
+			const canvas = document.getElementById('visualizer');
+			const canvasCtx = canvas.getContext('2d');
+			function draw() {
+				requestAnimationFrame(draw);
+				analyser.getByteFrequencyData(dataArray);
+				canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+				canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+				const barWidth = (canvas.width / bufferLength);
+				let barHeight;
+				let x = 0;
+				const vizColor = document.getElementById('viz-color').value;
+				for (let i = 0; i < bufferLength; i++) {
+					barHeight = dataArray[i];
+					canvasCtx.fillStyle = vizColor;
+					canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+					x += barWidth + 1;
+				}
+			}
+			draw();
+
+			// Map any letter a-z to a frequency
+			function getFrequency(letter) {
+				let index = letter.charCodeAt(0) - 96; // a=1, b=2, etc.
+				if (index < 1 || index > 26) return null;
+				const baseFrequency = 220; // frequency for 'a'
+				return baseFrequency * Math.pow(2, (index - 1)/12);
+			}
+
+			// Process each word
+			const words = text.split(' ');
+			words.forEach(word => {
+				if (!word) { 
+					currentTime += letterDuration; 
+					return;
+				}
+				const wordDuration = word.length * letterDuration;
+				const oscillator = audioCtx.createOscillator();
+				oscillator.type = oscType;
+				const gainNode = audioCtx.createGain();
+				oscillator.connect(gainNode);
+				// Connect gain node to analyser instead of directly to destination.
+				gainNode.connect(analyser);
+				
+				// Apply a gain envelope
+				gainNode.gain.setValueAtTime(0, currentTime);
+				gainNode.gain.linearRampToValueAtTime(gainPeak, currentTime + attackTime);
+				gainNode.gain.setValueAtTime(gainPeak, currentTime + wordDuration - 0.1);
+				gainNode.gain.linearRampToValueAtTime(0, currentTime + wordDuration);
+				
+				// Set frequency automation to glide between letters and schedule note highlights.
+				let firstFreq = getFrequency(word[0]);
+				oscillator.frequency.setValueAtTime(firstFreq || 220, currentTime);
+				// For each letter in this word.
+				for (let i = 0; i < word.length; i++) {
+					const char = word[i];
+					const freq = getFrequency(char) || 220;
+					if (i > 0) {
+						oscillator.frequency.linearRampToValueAtTime(freq, currentTime + i * letterDuration);
+					}
+					// Schedule highlighting of the current note.
+					let noteTime = currentTime + i * letterDuration;
+					setTimeout(() => {
+						const noteElem = document.getElementById('current-note');
+						noteElem.innerText = `Playing: ${char.toUpperCase()} (${freq.toFixed(2)} Hz)`;
+						noteElem.classList.add('highlight');
+						setTimeout(() => {
+							noteElem.classList.remove('highlight');
+						}, 200);
+					}, (noteTime - baseTime) * 1000);
+				}
+				// Clear note display after the word finishes.
+				setTimeout(() => {
+					document.getElementById('current-note').innerText = 'Idle';
+				}, (currentTime + wordDuration - baseTime) * 1000);
+				
+				oscillator.start(currentTime);
+				oscillator.stop(currentTime + wordDuration);
+				// Add extra pause between words
+				currentTime += wordDuration + letterDuration;
+			});
+		});
+
+		document.getElementById('reset-settings').addEventListener('click', function() {
+			// Reset fields to default values
+			document.getElementById('osc-type').value = 'sine';
+			document.getElementById('letter-duration').value = 0.4;
+			document.getElementById('attack-time').value = 0.05;
+			document.getElementById('gain-peak').value = 0.5;
+			document.getElementById('viz-color').value = '#ff6f61';
+		});
+	</script>
+</body>
+</html>
