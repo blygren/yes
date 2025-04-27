@@ -122,13 +122,15 @@
             return dx * dx + dy * dy < ball.radius * ball.radius;
         }
 
-        // --- Event Listeners ---
-
-        canvas.addEventListener('mousedown', (e) => {
+        // --- Event Handling Functions ---
+        // Unified event handler functions to work with both mouse and touch events
+        
+        function startDrag(clientX, clientY) {
+            const pos = getEventPos(clientX, clientY);
             mouse.isDown = true;
-            const pos = getMousePos(canvas, e);
             mouse.x = pos.x;
             mouse.y = pos.y;
+            
             if (isMouseOverBall(mouse.x, mouse.y)) {
                 ball.isDragging = true;
                 ball.vx = 0; // Stop motion when grabbed
@@ -139,19 +141,18 @@
                 statsDragging.textContent = 'true';
                 canvas.style.cursor = 'grabbing';
             }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            const pos = getMousePos(canvas, e);
+        }
+        
+        function moveDrag(clientX, clientY) {
+            const pos = getEventPos(clientX, clientY);
             const prevMouseX = mouse.x;
             const prevMouseY = mouse.y;
             mouse.x = pos.x;
             mouse.y = pos.y;
 
             if (ball.isDragging) {
-                // Calculate velocity based on mouse movement *during* the drag
-                // This gives a better feel when releasing
-                ball.vx = (mouse.x - prevMouseX) * 0.5; // Adjust multiplier for sensitivity
+                // Calculate velocity based on movement
+                ball.vx = (mouse.x - prevMouseX) * 0.5; 
                 ball.vy = (mouse.y - prevMouseY) * 0.5;
 
                 // Update ball position directly, maintaining offset
@@ -171,9 +172,9 @@
             } else {
                 canvas.style.cursor = 'default';
             }
-        });
-
-        canvas.addEventListener('mouseup', (e) => {
+        }
+        
+        function endDrag() {
             if (ball.isDragging) {
                 ball.isDragging = false;
                 statsDragging.textContent = 'false';
@@ -184,18 +185,65 @@
             }
             mouse.isDown = false;
             canvas.style.cursor = isMouseOverBall(mouse.x, mouse.y) ? 'grab' : 'default';
+        }
+        
+        // Unified function to get position from either mouse or touch event
+        function getEventPos(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        // --- Event Listeners ---
+        
+        // Mouse Events
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startDrag(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            e.preventDefault();
+            moveDrag(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            endDrag();
         });
 
         canvas.addEventListener('mouseleave', (e) => {
-            // Optional: Stop dragging if mouse leaves canvas
-            // if (ball.isDragging) {
-            //     ball.isDragging = false;
-            //     statsDragging.textContent = 'false';
-            // }
-            // mouse.isDown = false;
             canvas.style.cursor = 'default';
         });
-
+        
+        // Touch Events
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent scrolling when touching the canvas
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                startDrag(touch.clientX, touch.clientY);
+            }
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                moveDrag(touch.clientX, touch.clientY);
+            }
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            endDrag();
+        });
+        
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            endDrag();
+        });
 
         // --- Drawing Functions ---
 
