@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel War Simulation</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --surface-color: #2c2c2c;
+            --primary-color: #6200ea;
+            --text-color: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #03dac6;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px; /* Reduced padding for mobile */
+        }
+        #simulation-container {
+            margin: 20px auto;
+            max-width: 800px; /* Limit max width */
+            width: 95%; /* Allow shrinking */
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+        }
+        canvas {
+            border: 1px solid #444;
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+            background-color: #000;
+            max-width: 100%; /* Ensure canvas scales down */
+            height: auto; /* Maintain aspect ratio */
+            display: block; /* Prevent extra space below */
+            margin: 0 auto; /* Center canvas */
+            border-radius: 4px;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap; /* Allow buttons to wrap */
+            justify-content: center;
+            gap: 10px; /* Space between buttons */
+        }
+        button {
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 10px 18px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #7b1fa2;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            flex-wrap: wrap; /* Allow stats to wrap */
+            gap: 10px;
+        }
+        .team-red, .team-blue {
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 4px;
+            background-color: rgba(0,0,0,0.2);
+            flex-basis: 45%; /* Allow two per row on wider screens */
+            min-width: 180px; /* Minimum width before wrapping */
+        }
+        .team-red {
+            color: #ff5252; /* Brighter red for dark theme */
+        }
+        .team-blue {
+            color: #448aff; /* Brighter blue for dark theme */
+        }
+        .control-group {
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap; /* Allow controls to wrap */
+        }
+        .color-control {
+            display: flex;
+            align-items: center;
+            margin: 5px;
+            background-color: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+        label {
+            margin-right: 8px;
+            color: var(--text-secondary);
+        }
+        input[type="color"] {
+            cursor: pointer;
+            border: 1px solid #555;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border-radius: 4px;
+            background: none; /* Remove default background */
+        }
+        /* Style the color picker preview */
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 3px;
+        }
+        input[type="color"]::-moz-color-swatch {
+            border: none;
+            border-radius: 3px;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin: 15px auto; /* Center the container */
+            justify-content: center;
+            background-color: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            border-radius: 4px;
+            max-width: 350px; /* Limit width */
+            width: 90%;
+        }
+        .slider-container label {
+            margin-right: 10px;
+        }
+        input[type="range"] {
+            width: 180px; /* Adjust width */
+            height: 8px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #555;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            border: none;
+        }
+        .speed-value {
+            width: 30px;
+            text-align: center;
+            margin-left: 10px;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        h1 {
+            color: var(--primary-color);
+            font-weight: 300;
+            margin-bottom: 20px;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            #simulation-container {
+                padding: 10px;
+            }
+            .controls {
+                flex-direction: column; /* Stack buttons vertically */
+                align-items: stretch; /* Make buttons full width */
+            }
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            .stats {
+                flex-direction: column; /* Stack stats vertically */
+                align-items: center;
+            }
+            .team-red, .team-blue {
+                flex-basis: 90%; /* Take most of the width */
+                text-align: center;
+            }
+            .control-group {
+                flex-direction: column; /* Stack color pickers */
+                align-items: center;
+            }
+            .color-control {
+                width: 80%;
+                justify-content: space-between;
+            }
+            .slider-container {
+                width: 90%;
+                flex-wrap: wrap; /* Allow slider label/value to wrap if needed */
+                justify-content: center;
+            }
+            input[type="range"] {
+                width: 70%; /* Adjust slider width for mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Pixel War Simulation</h1>
+    
+    <div id="simulation-container">
+        <canvas id="warCanvas" width="600" height="400"></canvas>
+        
+        <div class="stats">
+            <div class="team-red">Red: <span id="red-count">0</span> (<span id="red-percent">0</span>%)</div>
+            <div class="team-blue">Blue: <span id="blue-count">0</span> (<span id="blue-percent">0</span>%)</div>
+        </div>
+        
+        <div class="control-group">
+            <div class="color-control">
+                <label for="red-color">Red:</label>
+                <input type="color" id="red-color" value="#ff5252"> <!-- Updated default color -->
+            </div>
+            <div class="color-control">
+                <label for="blue-color">Blue:</label>
+                <input type="color" id="blue-color" value="#448aff"> <!-- Updated default color -->
+            </div>
+        </div>
+        
+        <div class="slider-container">
+            <label for="speed-slider">Speed:</label>
+            <input type="range" id="speed-slider" min="1" max="40" value="5"> <!-- Changed max to 40 -->
+            <span id="speed-value" class="speed-value">5</span>
+        </div>
+        
+        <div class="controls">
+            <button id="start-btn">Start</button>
+            <button id="stop-btn">Stop</button>
+            <button id="reset-btn">Reset</button>
+            <button id="step-btn">Step</button>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const PIXEL_SIZE = 5;
+        const EMPTY = 0;
+        const RED = 1;
+        const BLUE = 2;
+        
+        // Get canvas and context
+        const canvas = document.getElementById('warCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Make canvas responsive (adjusts style, not internal resolution)
+        function resizeCanvasDisplay() {
+            const container = document.getElementById('simulation-container');
+            // Calculate available width minus padding
+            const availableWidth = container.clientWidth - parseInt(window.getComputedStyle(container).paddingLeft) - parseInt(window.getComputedStyle(container).paddingRight);
+            
+            // Use the original canvas aspect ratio
+            const aspectRatio = canvas.height / canvas.width;
+            
+            // Calculate the new width, ensuring it doesn't exceed the original or available width
+            let newWidth = Math.min(canvas.width, availableWidth);
+            
+            // Set the display size using CSS
+            canvas.style.width = newWidth + 'px';
+            canvas.style.height = (newWidth * aspectRatio) + 'px';
+        }
+        
+        // Call resize on load and window resize
+        window.addEventListener('load', resizeCanvasDisplay);
+        window.addEventListener('resize', resizeCanvasDisplay);
+
+        // Calculate grid dimensions (based on original canvas size)
+        const COLS = canvas.width / PIXEL_SIZE;
+        const ROWS = canvas.height / PIXEL_SIZE;
+        
+        // Animation variables
+        let animationId = null;
+        let isRunning = false;
+        let simulationSpeed = 5;  // Default speed (1-10)
+        let redColor = document.getElementById('red-color').value; // Initialize from input
+        let blueColor = document.getElementById('blue-color').value; // Initialize from input
+        
+        // Grid initialization
+        let grid = [];
+        
+        // Initialize the grid with empty cells
+        function initGrid() {
+            grid = [];
+            for (let y = 0; y < ROWS; y++) {
+                const row = [];
+                for (let x = 0; x < COLS; x++) {
+                    row.push(EMPTY);
+                }
+                grid.push(row);
+            }
+            
+            // Set initial territories (left side for RED, right side for BLUE)
+            for (let y = 0; y < ROWS; y++) {
+                // Red base on the left (10% of width)
+                for (let x = 0; x < Math.floor(COLS * 0.1); x++) {
+                    if (Math.random() < 0.7) { // 70% chance to have a pixel
+                        grid[y][x] = RED;
+                    }
+                }
+                
+                // Blue base on the right (10% of width)
+                for (let x = Math.floor(COLS * 0.9); x < COLS; x++) {
+                    if (Math.random() < 0.7) { // 70% chance to have a pixel
+                        grid[y][x] = BLUE;
+                    }
+                }
+            }
+            
+            updateStats(); // Update stats after initialization
+            drawGrid(); // Draw initial grid
+        }
+        
+        // Draw the current state of the grid
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const cell = grid[y][x];
+                    
+                    if (cell !== EMPTY) {
+                        ctx.fillStyle = cell === RED ? redColor : blueColor;
+                        ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                    }
+                }
+            }
+        }
+        
+        // Update the simulation for one step
+        function updateSimulation() {
+            // Create a copy of the current grid
+            const newGrid = JSON.parse(JSON.stringify(grid));
+            
+            // Process each cell
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const cell = grid[y][x];
+                    
+                    if (cell !== EMPTY) {
+                        // Try to spread to neighboring cells
+                        spreadToNeighbors(x, y, cell, newGrid);
+                    }
+                }
+            }
+            
+            // Apply changes
+            grid = newGrid;
+            updateStats();
+            drawGrid();
+        }
+        
+        // Attempt to spread to neighboring cells
+        function spreadToNeighbors(x, y, team, newGrid) {
+            const directions = [
+                [-1, 0], [1, 0], [0, -1], [0, 1], // orthogonal
+                [-1, -1], [1, -1], [-1, 1], [1, 1] // diagonal
+            ];
+            
+            // Randomly choose direction(s) to attempt spreading
+            directions.sort(() => Math.random() - 0.5);
+            
+            // Try to spread to a random direction
+            for (const [dx, dy] of directions) {
+                const nx = x + dx;
+                const ny = y + dy;
+                
+                // Check boundaries
+                if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+                    // Check if the target cell is empty or enemy
+                    if (grid[ny][nx] === EMPTY) {
+                        // 15% chance to spread to empty cell
+                        if (Math.random() < 0.15) {
+                            newGrid[ny][nx] = team;
+                            break; // Only spread to one cell per iteration
+                        }
+                    } else if (grid[ny][nx] !== team) {
+                        // 5% chance to convert enemy cell
+                        if (Math.random() < 0.05) {
+                            newGrid[ny][nx] = team;
+                            break; // Only convert one cell per iteration
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Update statistics
+        function updateStats() {
+            let redCount = 0;
+            let blueCount = 0;
+            let totalCells = ROWS * COLS;
+            
+            grid.forEach(row => {
+                row.forEach(cell => {
+                    if (cell === RED) redCount++;
+                    if (cell === BLUE) blueCount++;
+                });
+            });
+            
+            document.getElementById('red-count').textContent = redCount;
+            document.getElementById('blue-count').textContent = blueCount;
+            document.getElementById('red-percent').textContent = ((redCount / totalCells) * 100).toFixed(1);
+            document.getElementById('blue-percent').textContent = ((blueCount / totalCells) * 100).toFixed(1);
+            
+            // Also update the team color in the stats display
+            document.querySelector('.team-red').style.color = redColor;
+            document.querySelector('.team-blue').style.color = blueColor;
+        }
+        
+        // Animation loop
+        function animate() {
+            updateSimulation();
+            if (isRunning) {
+                // Convert speed (1-40) to delay (approx 200ms-20ms)
+                const delay = Math.max(20, 204.6 - (simulationSpeed * 4.6)); // Adjusted formula for 1-40 range, ensure minimum delay
+                
+                animationId = requestAnimationFrame(() => {
+                    setTimeout(animate, delay);
+                });
+            }
+        }
+        
+        // Control functions
+        function start() {
+            if (!isRunning) {
+                isRunning = true;
+                animate();
+            }
+        }
+        
+        function stop() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+        
+        function reset() {
+            stop();
+            initGrid();
+        }
+        
+        function step() {
+            stop();
+            updateSimulation();
+        }
+        
+        // Event listeners for simulation controls
+        document.getElementById('start-btn').addEventListener('click', start);
+        document.getElementById('stop-btn').addEventListener('click', stop);
+        document.getElementById('reset-btn').addEventListener('click', reset);
+        document.getElementById('step-btn').addEventListener('click', step);
+
+        // Add touch event listeners for buttons
+        function handleTouchEnd(e, actionFn) {
+            e.preventDefault(); // Prevent click event firing after touch
+            actionFn();
+        }
+        document.getElementById('start-btn').addEventListener('touchend', (e) => handleTouchEnd(e, start));
+        document.getElementById('stop-btn').addEventListener('touchend', (e) => handleTouchEnd(e, stop));
+        document.getElementById('reset-btn').addEventListener('touchend', (e) => handleTouchEnd(e, reset));
+        document.getElementById('step-btn').addEventListener('touchend', (e) => handleTouchEnd(e, step));
+        
+        // Event listeners for customization
+        document.getElementById('red-color').addEventListener('input', (e) => { // Use 'input' for live update
+            redColor = e.target.value;
+            document.querySelector('.team-red').style.color = redColor;
+            if (!isRunning) drawGrid(); // Redraw immediately if paused
+        });
+        
+        document.getElementById('blue-color').addEventListener('input', (e) => { // Use 'input' for live update
+            blueColor = e.target.value;
+            document.querySelector('.team-blue').style.color = blueColor;
+            if (!isRunning) drawGrid(); // Redraw immediately if paused
+        });
+        
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            simulationSpeed = parseInt(e.target.value);
+            document.getElementById('speed-value').textContent = simulationSpeed;
+        });
+        
+        // Initial setup
+        initGrid();
+        resizeCanvasDisplay(); // Initial resize
+    </script>
+</body>
+</html>
