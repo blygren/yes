@@ -89,5 +89,5 @@ The archive
 
 [Beats](https://blygren.github.io/yes/Beats.html)
 
-[Pixel War](https://blygren.github.io/yes/pixel-war.html)
+[Pixel War](https://blygren.github.io/yes/WarPixels.html)
 
