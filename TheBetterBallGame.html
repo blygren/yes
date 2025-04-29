@@ -382,10 +382,7 @@
 </head>
 <body>
     <div class="controls">
-        <p>Click and drag the ball to move it around.</p>
-        <p>Release to let it bounce with momentum!</p>
-        <p>Throw it faster for more impressive effects!</p>
-        <p>Watch the trajectory prediction in real-time!</p>
+        <!-- Removed the instructional text paragraphs -->
     </div>
     
     <button id="toggle-settings" class="toggle-btn">⚙️</button>
@@ -439,6 +436,10 @@
                 <span class="toggle-slider"></span>
             </label>
         </div>
+        <div class="settings-option">
+            <span class="settings-label">Accelerometer Sensitivity</span>
+            <input type="range" id="accel-sensitivity" class="slider" min="1" max="10" step="1" value="5">
+        </div>
     </div>
     
     <div class="accel-indicator" id="accel-indicator">Accelerometer Active</div>
@@ -449,10 +450,6 @@
     <div id="info-panel">
         <div>Speed: <span id="speed-value">0.00</span> px/s</div>
         <div>Energy: <span id="energy-value">0.00</span></div>
-    </div>
-    
-    <div class="ui-btn-container">
-        <button id="reset-btn" class="ui-btn">Reset</button>
     </div>
     
     <script>
@@ -471,7 +468,6 @@
         const effectsToggle = document.getElementById('effects-toggle');
         const accelerometerToggle = document.getElementById('accelerometer-toggle');
         const accelIndicator = document.getElementById('accel-indicator');
-        const resetBtn = document.getElementById('reset-btn');
         
         // App settings
         const settings = {
@@ -682,8 +678,11 @@
                 }
             });
             
-            // Reset button
-            resetBtn.addEventListener('click', resetSimulation);
+            // Accelerometer sensitivity slider
+            const accelSensitivitySlider = document.getElementById('accel-sensitivity');
+            accelSensitivitySlider.addEventListener('input', function() {
+                settings.accelSensitivity = parseInt(this.value, 10);
+            });
             
             // Set initial toggle states
             darkModeToggle.checked = settings.darkMode;
@@ -698,30 +697,6 @@
             
             // Setup specific mobile toggle handling
             setupMobileToggles();
-        }
-        
-        // Reset the simulation
-        function resetSimulation() {
-            // Reset ball position and velocity
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            ball.velocityX = 0;
-            ball.velocityY = 0;
-            ball.trail = [];
-            
-            // Clear path history
-            while (pathPoints.length > 0) {
-                pathPoints.pop();
-            }
-            trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
-            
-            // Clear any trajectory elements
-            trajectoryElements.forEach(element => {
-                if (document.body.contains(element)) {
-                    document.body.removeChild(element);
-                }
-            });
-            trajectoryElements = [];
         }
         
         // Accelerometer functions
