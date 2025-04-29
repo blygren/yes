@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Simulation</title>
+    <style>
+        :root {
+            --bg-color: #f0f0f0;
+            --canvas-bg: white;
+            --text-color: #333;
+            --panel-bg: rgba(255, 255, 255, 0.8);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --highlight-color: #3498db;
+            --grid-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --canvas-bg: #2c3e50;
+            --text-color: #f0f0f0;
+            --panel-bg: rgba(44, 62, 80, 0.8);
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --highlight-color: #e74c3c;
+            --grid-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--bg-color);
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            color: var(--text-color);
+            transition: background-color 0.3s ease;
+        }
+        
+        #canvas {
+            background-color: var(--canvas-bg);
+            box-shadow: 0 0 10px var(--shadow-color);
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            touch-action: none; /* Prevent browser handling of touch events */
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: var(--panel-bg);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            max-height: 80vh;
+            overflow-y: auto;
+            transition: background-color 0.3s ease;
+            width: auto;
+            max-width: 35vw;
+        }
+        
+        .trail {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.7;
+            animation: fadeOut 0.8s forwards;
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+        }
+        
+        .trajectory-point {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            background-color: rgba(231, 76, 60, 0.5);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+        
+        .path-point {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: -2;
+        }
+        
+        .slider-container {
+            margin-top: 10px;
+            padding: 5px;
+            border-top: 1px solid #ccc;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        .slider {
+            width: 100%;
+        }
+        
+        .effect-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        @keyframes pulseEffect {
+            0% { transform: scale(0.5); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .pulse-effect {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(52,152,219,0.5) 0%, rgba(52,152,219,0) 70%);
+            transform: translate(-50%, -50%);
+            animation: pulseEffect 1s ease-out;
+        }
+        
+        #info-panel {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: var(--panel-bg);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+        
+        .settings-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--panel-bg);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            width: auto;
+            max-width: 35vw;
+            transition: background-color 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .settings-panel h3 {
+            margin-top: 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--text-color);
+        }
+        
+        .settings-option {
+            margin-bottom: 12px;
+        }
+        
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            float: right;
+        }
+        
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--highlight-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+        
+        .settings-label {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .toggle-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--panel-bg);
+            border: none;
+            color: var(--text-color);
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+            z-index: 101;
+            transition: background-color 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .controls, .settings-panel {
+                max-width: 42vw;
+                font-size: 12px;
+                padding: 8px;
+            }
+            
+            .controls p {
+                margin: 4px 0;
+                font-size: 11px;
+            }
+            
+            .toggle-btn {
+                padding: 4px 8px;
+                font-size: 14px;
+            }
+            
+            #info-panel {
+                max-width: 120px;
+                font-size: 10px;
+                padding: 5px;
+            }
+            
+            .slider-container label {
+                font-size: 10px;
+            }
+            
+            .settings-option {
+                margin-bottom: 8px;
+            }
+            
+            .settings-label {
+                font-size: 11px;
+            }
+            
+            .toggle {
+                width: 32px;
+                height: 16px;
+            }
+            
+            .toggle-slider:before {
+                height: 12px;
+                width: 12px;
+            }
+            
+            input:checked + .toggle-slider:before {
+                transform: translateX(16px);
+            }
+            
+            .fullscreen-btn {
+                padding: 4px 6px;
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .controls {
+                max-height: 30vh;
+            }
+            
+            .settings-panel {
+                max-height: 40vh;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Grid styles */
+        #grid-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -5;
+            pointer-events: none;
+        }
+        
+        .grid-line {
+            stroke: var(--grid-color);
+            stroke-width: 1;
+            transition: stroke 0.3s ease;
+        }
+        
+        /* Fullscreen button */
+        .fullscreen-btn {
+            background-color: var(--panel-bg);
+            border: none;
+            color: var(--text-color);
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: background-color 0.3s ease;
+            font-size: 14px;
+        }
+        
+        /* UI Buttons */
+        .ui-btn-container {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .ui-btn {
+            background-color: var(--panel-bg);
+            border: none;
+            color: var(--text-color);
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: background-color 0.3s ease;
+            font-size: 14px;
+        }
+        
+        /* Accelerometer toggle */
+        .accel-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--panel-bg);
+            color: var(--text-color);
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .accel-indicator.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <p>Click and drag the ball to move it around.</p>
+        <p>Release to let it bounce with momentum!</p>
+        <p>Throw it faster for more impressive effects!</p>
+        <p>Watch the trajectory prediction in real-time!</p>
+        
+        <div class="slider-container">
+            <label for="gravity">Gravity: <span id="gravity-value">0.5</span></label>
+            <input type="range" id="gravity" class="slider" min="0" max="1.5" step="0.1" value="0.5">
+            
+            <label for="friction">Friction: <span id="friction-value">0.99</span></label>
+            <input type="range" id="friction" class="slider" min="0.9" max="0.999" step="0.001" value="0.99">
+            
+            <label for="damping">Bounce: <span id="damping-value">0.8</span></label>
+            <input type="range" id="damping" class="slider" min="0.5" max="0.95" step="0.05" value="0.8">
+        </div>
+    </div>
+    
+    <button id="toggle-settings" class="toggle-btn">⚙️</button>
+    
+    <div class="settings-panel" id="settings-panel">
+        <h3>Settings</h3>
+        <div class="settings-option">
+            <span class="settings-label">Dark Mode</span>
+            <label class="toggle">
+                <input type="checkbox" id="dark-mode-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-option">
+            <span class="settings-label">Show Grid</span>
+            <label class="toggle">
+                <input type="checkbox" id="grid-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-option">
+            <span class="settings-label">Show Trajectory</span>
+            <label class="toggle">
+                <input type="checkbox" id="trajectory-toggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-option">
+            <span class="settings-label">Show Path History</span>
+            <label class="toggle">
+                <input type="checkbox" id="path-toggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-option">
+            <span class="settings-label">Show Effects</span>
+            <label class="toggle">
+                <input type="checkbox" id="effects-toggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-option">
+            <span class="settings-label">Use Accelerometer</span>
+            <label class="toggle">
+                <input type="checkbox" id="accelerometer-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="accel-indicator" id="accel-indicator">Accelerometer Active</div>
+    
+    <div class="effect-layer" id="effect-layer"></div>
+    <svg id="grid-svg"></svg>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div id="info-panel">
+        <div>Speed: <span id="speed-value">0.00</span> px/s</div>
+        <div>Energy: <span id="energy-value">0.00</span></div>
+    </div>
+    
+    <div class="ui-btn-container">
+        <button id="reset-btn" class="ui-btn">Reset</button>
+        <button id="fullscreen-btn" class="ui-btn">⤢ Fullscreen</button>
+    </div>
+    
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const effectLayer = document.getElementById('effect-layer');
+        const gridSvg = document.getElementById('grid-svg');
+        
+        // Settings panel elements
+        const settingsPanel = document.getElementById('settings-panel');
+        const toggleSettingsBtn = document.getElementById('toggle-settings');
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const gridToggle = document.getElementById('grid-toggle');
+        const trajectoryToggle = document.getElementById('trajectory-toggle');
+        const pathToggle = document.getElementById('path-toggle');
+        const effectsToggle = document.getElementById('effects-toggle');
+        const accelerometerToggle = document.getElementById('accelerometer-toggle');
+        const accelIndicator = document.getElementById('accel-indicator');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        // App settings
+        const settings = {
+            darkMode: false,
+            showGrid: false,
+            showTrajectory: true,
+            showPath: true,
+            showEffects: true,
+            useAccelerometer: false,
+            accelSensitivity: 5
+        };
+        
+        // Accelerometer data
+        const accel = {
+            x: 0,
+            y: 0,
+            available: false,
+            lastUpdateTime: 0,
+            updateInterval: 16 // ms
+        };
+        
+        // Ball properties
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 30,
+            color: '#3498db',
+            velocityX: 0,
+            velocityY: 0,
+            gravity: 0.5,
+            friction: 0.99,
+            damping: 0.8,
+            isDragging: false,
+            mass: 1,
+            trail: [],
+            trajectoryPoints: [],
+            pathHistory: []
+        };
+        
+        // Physics constants
+        const PHYSICS = {
+            gravity: 0.5,
+            timeStep: 1,
+            maxTrajectoryPoints: 100,
+            trajectoryUpdateInterval: 50, // ms
+            pathTrackingInterval: 5, // frames
+            maxPathPoints: 200,
+            pathDuration: 8000 // ms
+        };
+        
+        // Mouse position
+        const mouse = {
+            x: 0,
+            y: 0,
+            prevX: 0,
+            prevY: 0,
+            isDown: false,
+            dragPoints: []
+        };
+        
+        // For velocity calculation
+        let lastTime = 0;
+        const dragPointsMax = 10; // How many points to keep for velocity calculation
+        
+        // For trajectory calculation
+        let lastTrajectoryUpdate = 0;
+        let trajectoryElements = [];
+        
+        // For path tracking
+        const pathPoints = [];
+        let frameCount = 0;
+        let trailCanvas = document.createElement('canvas');
+        trailCanvas.width = canvas.width;
+        trailCanvas.height = canvas.height;
+        let trailCtx = trailCanvas.getContext('2d');
+        
+        // UI elements
+        const speedValue = document.getElementById('speed-value');
+        const energyValue = document.getElementById('energy-value');
+        const gravitySlider = document.getElementById('gravity');
+        const frictionSlider = document.getElementById('friction');
+        const dampingSlider = document.getElementById('damping');
+        const gravityValue = document.getElementById('gravity-value');
+        const frictionValue = document.getElementById('friction-value');
+        const dampingValue = document.getElementById('damping-value');
+        
+        // Set initial values and event listeners
+        gravitySlider.addEventListener('input', function() {
+            ball.gravity = parseFloat(this.value);
+            gravityValue.textContent = ball.gravity;
+        });
+        
+        frictionSlider.addEventListener('input', function() {
+            ball.friction = parseFloat(this.value);
+            frictionValue.textContent = ball.friction.toFixed(3);
+        });
+        
+        dampingSlider.addEventListener('input', function() {
+            ball.damping = parseFloat(this.value);
+            dampingValue.textContent = ball.damping;
+        });
+        
+        // Initialize settings panel
+        function initSettings() {
+            // Initial state of the settings panel
+            settingsPanel.classList.add('hidden');
+            
+            // Toggle settings panel visibility
+            toggleSettingsBtn.addEventListener('click', () => {
+                settingsPanel.classList.toggle('hidden');
+            });
+            
+            // Dark mode toggle
+            darkModeToggle.addEventListener('change', () => {
+                settings.darkMode = darkModeToggle.checked;
+                document.body.classList.toggle('dark-mode', settings.darkMode);
+                // Update grid if shown
+                if (settings.showGrid) {
+                    drawGrid();
+                }
+            });
+            
+            // Grid toggle
+            gridToggle.addEventListener('change', () => {
+                settings.showGrid = gridToggle.checked;
+                if (settings.showGrid) {
+                    drawGrid();
+                } else {
+                    clearGrid();
+                }
+            });
+            
+            // Trajectory toggle
+            trajectoryToggle.addEventListener('change', () => {
+                settings.showTrajectory = trajectoryToggle.checked;
+                if (!settings.showTrajectory) {
+                    // Clean up trajectory elements
+                    trajectoryElements.forEach(element => {
+                        if (document.body.contains(element)) {
+                            document.body.removeChild(element);
+                        }
+                    });
+                    trajectoryElements = [];
+                }
+            });
+            
+            // Path toggle
+            pathToggle.addEventListener('change', () => {
+                settings.showPath = pathToggle.checked;
+                if (!settings.showPath) {
+                    // Clear path points
+                    while (pathPoints.length > 0) {
+                        pathPoints.pop();
+                    }
+                    // Clear trail canvas
+                    trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+                }
+            });
+            
+            // Effects toggle
+            effectsToggle.addEventListener('change', () => {
+                settings.showEffects = effectsToggle.checked;
+                effectLayer.style.display = settings.showEffects ? 'block' : 'none';
+            });
+            
+            // Accelerometer toggle
+            accelerometerToggle.addEventListener('change', () => {
+                settings.useAccelerometer = accelerometerToggle.checked;
+                
+                if (settings.useAccelerometer) {
+                    // Check if accelerometer is available and request permission if needed
+                    if (window.DeviceMotionEvent && typeof window.DeviceMotionEvent.requestPermission === 'function') {
+                        window.DeviceMotionEvent.requestPermission()
+                            .then(permissionState => {
+                                if (permissionState === 'granted') {
+                                    startAccelerometer();
+                                    accelIndicator.classList.add('active');
+                                } else {
+                                    console.log('Device motion permission denied');
+                                    accelerometerToggle.checked = false;
+                                    settings.useAccelerometer = false;
+                                }
+                            })
+                            .catch(console.error);
+                    } else if (window.DeviceMotionEvent) {
+                        // For devices that don't require permission
+                        startAccelerometer();
+                        accelIndicator.classList.add('active');
+                    } else {
+                        console.log('Device motion not available');
+                        accelerometerToggle.checked = false;
+                        settings.useAccelerometer = false;
+                        alert('Accelerometer not available on your device');
+                    }
+                } else {
+                    stopAccelerometer();
+                    accelIndicator.classList.remove('active');
+                }
+            });
+            
+            // Fullscreen button
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            
+            // Reset button
+            resetBtn.addEventListener('click', resetSimulation);
+            
+            // Set initial toggle states
+            darkModeToggle.checked = settings.darkMode;
+            gridToggle.checked = settings.showGrid;
+            trajectoryToggle.checked = settings.showTrajectory;
+            pathToggle.checked = settings.showPath;
+            effectsToggle.checked = settings.showEffects;
+            accelerometerToggle.checked = settings.useAccelerometer;
+            
+            // Apply initial settings
+            document.body.classList.toggle('dark-mode', settings.darkMode);
+            effectLayer.style.display = settings.showEffects ? 'block' : 'none';
+            if (settings.showGrid) {
+                drawGrid();
+            }
+        }
+        
+        // Reset the simulation
+        function resetSimulation() {
+            // Reset ball position and velocity
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.velocityX = 0;
+            ball.velocityY = 0;
+            ball.trail = [];
+            
+            // Clear path history
+            while (pathPoints.length > 0) {
+                pathPoints.pop();
+            }
+            trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+            
+            // Clear any trajectory elements
+            trajectoryElements.forEach(element => {
+                if (document.body.contains(element)) {
+                    document.body.removeChild(element);
+                }
+            });
+            trajectoryElements = [];
+        }
+        
+        // Draw grid on the SVG element
+        function drawGrid() {
+            // Clear existing grid
+            while (gridSvg.firstChild) {
+                gridSvg.removeChild(gridSvg.firstChild);
+            }
+            
+            // Size grid to match canvas
+            const rect = canvas.getBoundingClientRect();
+            gridSvg.style.width = `${rect.width}px`;
+            gridSvg.style.height = `${rect.height}px`;
+            gridSvg.style.top = `${rect.top}px`;
+            gridSvg.style.left = `${rect.left}px`;
+            
+            gridSvg.setAttribute('width', rect.width);
+            gridSvg.setAttribute('height', rect.height);
+            
+            const gridSize = 20; // Grid cell size in pixels
+            const width = rect.width;
+            const height = rect.height;
+            
+            // Create horizontal grid lines
+            for (let y = 0; y <= height; y += gridSize) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', '0');
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'grid-line');
+                gridSvg.appendChild(line);
+            }
+            
+            // Create vertical grid lines
+            for (let x = 0; x <= width; x += gridSize) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', '0');
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', height);
+                line.setAttribute('class', 'grid-line');
+                gridSvg.appendChild(line);
+            }
+        }
+        
+        // Clear grid
+        function clearGrid() {
+            while (gridSvg.firstChild) {
+                gridSvg.removeChild(gridSvg.firstChild);
+            }
+        }
+        
+        // Accelerometer functions
+        function startAccelerometer() {
+            window.addEventListener('devicemotion', handleDeviceMotion);
+            accel.available = true;
+        }
+        
+        function stopAccelerometer() {
+            window.removeEventListener('devicemotion', handleDeviceMotion);
+            accel.available = false;
+            accel.x = 0;
+            accel.y = 0;
+        }
+        
+        function handleDeviceMotion(event) {
+            const now = performance.now();
+            
+            // Throttle updates for performance
+            if (now - accel.lastUpdateTime < accel.updateInterval) {
+                return;
+            }
+            
+            accel.lastUpdateTime = now;
+            
+            // Get acceleration data
+            // Different devices report acceleration differently
+            const acceleration = event.accelerationIncludingGravity || event.acceleration;
+            
+            if (!acceleration) return;
+            
+            // Get acceleration values and adjust based on orientation
+            if (window.orientation === 0) {
+                // Portrait
+                accel.x = acceleration.x;
+                accel.y = acceleration.y;
+            } else if (window.orientation === 90) {
+                // Landscape right
+                accel.x = -acceleration.y;
+                accel.y = acceleration.x;
+            } else if (window.orientation === -90) {
+                // Landscape left
+                accel.x = acceleration.y;
+                accel.y = -acceleration.x;
+            } else {
+                // Upside down
+                accel.x = -acceleration.x;
+                accel.y = -acceleration.y;
+            }
+        }
+        
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+                fullscreenBtn.textContent = "⤓ Exit Fullscreen";
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    fullscreenBtn.textContent = "⤢ Fullscreen";
+                }
+            }
+        }
+        
+        // Check if mouse is over the ball
+        function isMouseOverBall(mouseX, mouseY) {
+            const dx = mouseX - ball.x;
+            const dy = mouseY - ball.y;
+            return Math.sqrt(dx * dx + dy * dy) < ball.radius;
+        }
+        
+        // Update path and add new points
+        function updatePath() {
+            if (!settings.showPath) return;
+            
+            frameCount++;
+            
+            // Add new path point every few frames when the ball is moving
+            if (frameCount % PHYSICS.pathTrackingInterval === 0 && !ball.isDragging) {
+                const speed = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
+                
+                // Only track path when moving significantly
+                if (speed > 1) {
+                    pathPoints.push({
+                        x: ball.x,
+                        y: ball.y,
+                        radius: ball.radius * 0.1 + (speed / 10),
+                        color: getSpeedColor(speed),
+                        timestamp: performance.now()
+                    });
+                    
+                    // Limit number of path points
+                    if (pathPoints.length > PHYSICS.maxPathPoints) {
+                        pathPoints.shift();
+                    }
+                }
+            }
+            
+            // Remove old path points
+            const now = performance.now();
+            while (pathPoints.length > 0 && now - pathPoints[0].timestamp > PHYSICS.pathDuration) {
+                pathPoints.shift();
+            }
+            
+            // Draw path on trail canvas
+            trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+            
+            // Draw connecting lines first
+            if (pathPoints.length > 1) {
+                trailCtx.beginPath();
+                trailCtx.moveTo(pathPoints[0].x, pathPoints[0].y);
+                
+                for (let i = 1; i < pathPoints.length; i++) {
+                    trailCtx.lineTo(pathPoints[i].x, pathPoints[i].y);
+                }
+                
+                trailCtx.strokeStyle = 'rgba(52, 152, 219, 0.3)';
+                trailCtx.lineWidth = 2;
+                trailCtx.stroke();
+            }
+            
+            // Draw individual points
+            for (let i = 0; i < pathPoints.length; i++) {
+                const point = pathPoints[i];
+                const age = (now - point.timestamp) / PHYSICS.pathDuration;
+                const opacity = 1 - age;
+                
+                trailCtx.beginPath();
+                trailCtx.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
+                trailCtx.fillStyle = `rgba(${point.color.r}, ${point.color.g}, ${point.color.b}, ${opacity})`;
+                trailCtx.fill();
+                trailCtx.closePath();
+            }
+        }
+        
+        // Get color based on speed
+        function getSpeedColor(speed) {
+            // Speed gradient from blue to red
+            let r, g, b;
+            
+            if (speed < 5) {
+                // Blue to cyan
+                r = 41;
+                g = 128 + (speed / 5) * 127;
+                b = 185;
+            } else if (speed < 15) {
+                // Cyan to green
+                r = 41 + ((speed - 5) / 10) * 46;
+                g = 255;
+                b = 185 - ((speed - 5) / 10) * 185;
+            } else if (speed < 25) {
+                // Green to yellow
+                r = 87 + ((speed - 15) / 10) * 168;
+                g = 255;
+                b = 0;
+            } else {
+                // Yellow to red
+                r = 255;
+                g = Math.max(0, 255 - ((speed - 25) / 10) * 255);
+                b = 0;
+            }
+            
+            return { r: Math.round(r), g: Math.round(g), b: Math.round(b) };
+        }
+        
+        // Draw the ball
+        function drawBall() {
+            // Draw the path first if enabled
+            if (settings.showPath) {
+                ctx.drawImage(trailCanvas, 0, 0);
+            }
+            
+            // Draw trail
+            for (let i = 0; i < ball.trail.length; i++) {
+                const point = ball.trail[i];
+                const alpha = 0.5 * (i / ball.trail.length);
+                const size = ball.radius * (i / ball.trail.length);
+                
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(52, 152, 219, ${alpha})`;
+                ctx.fill();
+                ctx.closePath();
+            }
+            
+            // Draw the ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            
+            // Create gradient for more realistic look
+            const gradient = ctx.createRadialGradient(
+                ball.x - ball.radius * 0.3,
+                ball.y - ball.radius * 0.3,
+                0,
+                ball.x,
+                ball.y,
+                ball.radius * 2
+            );
+            gradient.addColorStop(0, '#5dade2');
+            gradient.addColorStop(1, ball.isDragging ? '#e74c3c' : '#2874a6');
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.closePath();
+            
+            // Add a shine effect
+            ctx.beginPath();
+            ctx.arc(ball.x - ball.radius * 0.3, ball.y - ball.radius * 0.3, ball.radius * 0.2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fill();
+            ctx.closePath();
+            
+            // Draw velocity vector when dragging
+            if (ball.isDragging && mouse.dragPoints.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                
+                // Calculate velocity based on mouse movement
+                const velocityVector = getVelocityVector();
+                const lineEndX = ball.x - velocityVector.x * 10;
+                const lineEndY = ball.y - velocityVector.y * 10;
+                
+                ctx.lineTo(lineEndX, lineEndY);
+                ctx.strokeStyle = 'rgba(231, 76, 60, 0.7)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.closePath();
+                
+                // Draw predicted trajectory if enabled
+                if (settings.showTrajectory) {
+                    drawTrajectory(velocityVector);
+                }
+            }
+            
+            // Update info panel
+            const speed = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
+            const energy = 0.5 * ball.mass * speed * speed + ball.mass * ball.gravity * (canvas.height - ball.y);
+            
+            speedValue.textContent = speed.toFixed(2);
+            energyValue.textContent = energy.toFixed(2);
+        }
+        
+        // Calculate velocity based on mouse movement
+        function getVelocityVector() {
+            if (mouse.dragPoints.length < 2) return { x: 0, y: 0 };
+            
+            // Use the last few points for better accuracy
+            const recentPoints = mouse.dragPoints.slice(-5);
+            if (recentPoints.length < 2) return { x: 0, y: 0 };
+            
+            const newest = recentPoints[recentPoints.length - 1];
+            const oldest = recentPoints[0];
+            
+            const dx = newest.x - oldest.x;
+            const dy = newest.y - oldest.y;
+            const dt = newest.time - oldest.time;
+            
+            // Avoid division by zero and normalize by time difference
+            if (dt === 0) return { x: 0, y: 0 };
+            
+            return {
+                x: dx / dt * 15, // Multiply by a factor to increase throw strength
+                y: dy / dt * 15
+            };
+        }
+        
+        // Calculate and draw the predicted trajectory
+        function drawTrajectory(initialVelocity) {
+            if (!settings.showTrajectory) return;
+            
+            // Clear previous trajectory points
+            ctx.save();
+            
+            ctx.beginPath();
+            ctx.setLineDash([5, 3]);
+            ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+            ctx.lineWidth = 2;
+            
+            let prevX = ball.x;
+            let prevY = ball.y;
+            ctx.moveTo(prevX, prevY);
+            
+            let predictX = ball.x;
+            let predictY = ball.y;
+            let predictVX = initialVelocity.x;
+            let predictVY = initialVelocity.y;
+            
+            // Simulate future positions
+            for (let i = 0; i < 100; i++) {
+                // Apply physics
+                predictVY += ball.gravity;
+                predictVX *= ball.friction;
+                predictVY *= ball.friction;
+                
+                predictX += predictVX;
+                predictY += predictVY;
+                
+                // Bounce prediction
+                if (predictX + ball.radius > canvas.width) {
+                    predictX = canvas.width - ball.radius;
+                    predictVX *= -ball.damping;
+                } else if (predictX - ball.radius < 0) {
+                    predictX = ball.radius;
+                    predictVX *= -ball.damping;
+                }
+                
+                if (predictY + ball.radius > canvas.height) {
+                    predictY = canvas.height - ball.radius;
+                    predictVY *= -ball.damping;
+                } else if (predictY - ball.radius < 0) {
+                    predictY = ball.radius;
+                    predictVY *= -ball.damping;
+                }
+                
+                // Draw trajectory line
+                ctx.lineTo(predictX, predictY);
+                
+                // Stop if velocity becomes too small
+                if (Math.abs(predictVX) < 0.1 && Math.abs(predictVY) < 0.1) {
+                    break;
+                }
+                
+                // If reached 4 bounces or 100 points, stop prediction
+                const bounceCount = (i - initialVelocity.bounceCount) || 0;
+                if (bounceCount > 4) break;
+            }
+            
+            // Draw trajectory path
+            ctx.stroke();
+            ctx.closePath();
+            
+            // Add trajectory endpoints for visual effect
+            let radius = ball.radius * 0.2;
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.5)';
+            ctx.beginPath();
+            ctx.arc(predictX, predictY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
+            
+            ctx.restore();
+            
+            // Update DOM trajectory elements
+            updateDOMTrajectory(initialVelocity);
+        }
+        
+        // Update physical DOM elements for trajectory visualization
+        function updateDOMTrajectory(initialVelocity) {
+            if (!settings.showTrajectory) return;
+            
+            // Only update every 50ms for performance
+            const now = performance.now();
+            if (now - lastTrajectoryUpdate < PHYSICS.trajectoryUpdateInterval) return;
+            lastTrajectoryUpdate = now;
+            
+            // Remove previous trajectory points
+            trajectoryElements.forEach(element => {
+                if (document.body.contains(element)) {
+                    document.body.removeChild(element);
+                }
+            });
+            trajectoryElements = [];
+            
+            // Only display trajectory points for significant velocities
+            const speed = Math.sqrt(initialVelocity.x * initialVelocity.x + initialVelocity.y * initialVelocity.y);
+            if (speed < 5) return;
+            
+            // Create trajectory points
+            let predictX = ball.x;
+            let predictY = ball.y;
+            let predictVX = initialVelocity.x;
+            let predictVY = initialVelocity.y;
+            
+            // Show fewer points for performance
+            const skipPoints = 5;
+            
+            for (let i = 0; i < 100; i += skipPoints) {
+                // Skip initial few points to avoid clutter around the ball
+                if (i < skipPoints) {
+                    // Apply physics
+                    for (let j = 0; j < skipPoints; j++) {
+                        predictVY += ball.gravity;
+                        predictVX *= ball.friction;
+                        predictVY *= ball.friction;
+                        
+                        predictX += predictVX;
+                        predictY += predictVY;
+                        
+                        // Bounce prediction
+                        if (predictX + ball.radius > canvas.width) {
+                            predictX = canvas.width - ball.radius;
+                            predictVX *= -ball.damping;
+                        } else if (predictX - ball.radius < 0) {
+                            predictX = ball.radius;
+                            predictVX *= -ball.damping;
+                        }
+                        
+                        if (predictY + ball.radius > canvas.height) {
+                            predictY = canvas.height - ball.radius;
+                            predictVY *= -ball.damping;
+                        } else if (predictY - ball.radius < 0) {
+                            predictY = ball.radius;
+                            predictVY *= -ball.damping;
+                        }
+                    }
+                    continue;
+                }
+                
+                // Apply physics for skipPoints steps
+                for (let j = 0; j < skipPoints; j++) {
+                    predictVY += ball.gravity;
+                    predictVX *= ball.friction;
+                    predictVY *= ball.friction;
+                    
+                    predictX += predictVX;
+                    predictY += predictVY;
+                    
+                    // Bounce prediction
+                    if (predictX + ball.radius > canvas.width) {
+                        predictX = canvas.width - ball.radius;
+                        predictVX *= -ball.damping;
+                    } else if (predictX - ball.radius < 0) {
+                        predictX = ball.radius;
+                        predictVX *= -ball.damping;
+                    }
+                    
+                    if (predictY + ball.radius > canvas.height) {
+                        predictY = canvas.height - ball.radius;
+                        predictVY *= -ball.damping;
+                    } else if (predictY - ball.radius < 0) {
+                        predictY = ball.radius;
+                        predictVY *= -ball.damping;
+                    }
+                }
+                
+                // Create a trajectory point
+                const pointSize = ball.radius * 0.3 * Math.max(0.1, 1 - i/100);
+                const point = document.createElement('div');
+                point.className = 'trajectory-point';
+                point.style.left = `${predictX}px`;
+                point.style.top = `${predictY}px`;
+                point.style.width = `${pointSize}px`;
+                point.style.height = `${pointSize}px`;
+                point.style.opacity = Math.max(0.1, 1 - i/100);
+                document.body.appendChild(point);
+                trajectoryElements.push(point);
+                
+                // Stop if velocity becomes too small
+                if (Math.abs(predictVX) < 0.1 && Math.abs(predictVY) < 0.1) {
+                    break;
+                }
+                
+                // If reached 3 bounces or 60 points, stop prediction
+                if (i > 60) break;
+            }
+        }
+        
+        // Update ball position
+        function updateBall() {
+            // Update trail
+            if (Math.abs(ball.velocityX) > 3 || Math.abs(ball.velocityY) > 3) {
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > 10) ball.trail.shift();
+            } else {
+                if (ball.trail.length > 0) ball.trail.shift();
+            }
+            
+            // Update path
+            updatePath();
+            
+            if (!ball.isDragging) {
+                // Apply accelerometer forces if active
+                if (settings.useAccelerometer && accel.available) {
+                    // Scale accelerometer input
+                    ball.velocityX += accel.x * settings.accelSensitivity * 0.01;
+                    // y is reversed in device orientation vs. canvas
+                    ball.velocityY -= accel.y * settings.accelSensitivity * 0.01;
+                }
+                
+                // Apply gravity and update position
+                ball.velocityY += ball.gravity;
+                ball.velocityX *= ball.friction;
+                ball.velocityY *= ball.friction;
+                
+                ball.x += ball.velocityX;
+                ball.y += ball.velocityY;
+                
+                // Bounce off walls with energy conservation
+                if (ball.x + ball.radius > canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.velocityX *= -ball.damping;
+                    createImpactEffect(ball.x, ball.y, 'wall');
+                } else if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.velocityX *= -ball.damping;
+                    createImpactEffect(ball.x, ball.y, 'wall');
+                }
+                
+                if (ball.y + ball.radius > canvas.height) {
+                    ball.y = canvas.height - ball.radius;
+                    ball.velocityY *= -ball.damping;
+                    createImpactEffect(ball.x, ball.y, 'floor');
+                } else if (ball.y - ball.radius < 0) {
+                    ball.y = ball.radius;
+                    ball.velocityY *= -ball.damping;
+                    createImpactEffect(ball.x, ball.y, 'ceiling');
+                }
+                
+                // Apply some minimum threshold to stop the ball eventually
+                if (Math.abs(ball.velocityX) < 0.1 && Math.abs(ball.velocityY) < 0.1 && 
+                    Math.abs(ball.y - (canvas.height - ball.radius)) < 1) {
+                    ball.velocityX = 0;
+                    ball.velocityY = 0;
+                }
+            }
+        }
+        
+        function createImpactEffect(x, y, type) {
+            if (!settings.showEffects) return;
+            
+            // Only create impact effect for significant collisions
+            const speed = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
+            if (speed < 5) return;
+            
+            // Create ripple effect
+            const ripple = document.createElement('div');
+            ripple.className = 'trail';
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            ripple.style.width = `${ball.radius * 2}px`;
+            ripple.style.height = `${ball.radius * 2}px`;
+            
+            // Different colors for different wall types
+            if (type === 'floor') {
+                ripple.style.backgroundColor = 'rgba(46, 204, 113, 0.3)';
+            } else if (type === 'ceiling') {
+                ripple.style.backgroundColor = 'rgba(155, 89, 182, 0.3)';
+            } else {
+                ripple.style.backgroundColor = 'rgba(52, 152, 219, 0.3)';
+            }
+            
+            document.body.appendChild(ripple);
+            
+            // Create pulse effect for strong impacts
+            if (speed > 15) {
+                const pulse = document.createElement('div');
+                pulse.className = 'pulse-effect';
+                pulse.style.left = `${x}px`;
+                pulse.style.top = `${y}px`;
+                pulse.style.width = `${ball.radius * 4}px`;
+                pulse.style.height = `${ball.radius * 4}px`;
+                effectLayer.appendChild(pulse);
+                
+                setTimeout(() => {
+                    if (effectLayer.contains(pulse)) {
+                        effectLayer.removeChild(pulse);
+                    }
+                }, 1000);
+            }
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (document.body.contains(ripple)) {
+                    document.body.removeChild(ripple);
+                }
+            }, 800);
+        }
+        
+        // Animation loop
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update ball position
+            updateBall();
+            
+            // Draw ball
+            drawBall();
+            
+            // Continue animation
+            requestAnimationFrame(animate);
+        }
+        
+        // Event listeners for mouse/touch
+        canvas.addEventListener('mousedown', (e) => {
+            mouse.prevX = mouse.x = e.clientX - canvas.getBoundingClientRect().left;
+            mouse.prevY = mouse.y = e.clientY - canvas.getBoundingClientRect().top;
+            mouse.isDown = true;
+            mouse.dragPoints = [{ x: mouse.x, y: mouse.y, time: performance.now() }];
+            
+            if (isMouseOverBall(mouse.x, mouse.y)) {
+                ball.isDragging = true;
+                ball.velocityX = 0;
+                ball.velocityY = 0;
+                ball.trail = [];
+                
+                // Make the ball appear to be "grabbed" - slightly smaller
+                ball.radius *= 0.95;
+                
+                // Clean up any trajectory elements
+                trajectoryElements.forEach(element => {
+                    if (document.body.contains(element)) {
+                        document.body.removeChild(element);
+                    }
+                });
+                trajectoryElements = [];
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const newX = e.clientX - canvas.getBoundingClientRect().left;
+            const newY = e.clientY - canvas.getBoundingClientRect().top;
+            
+            if (ball.isDragging) {
+                // Store drag points for velocity calculation
+                mouse.dragPoints.push({
+                    x: newX,
+                    y: newY,
+                    time: performance.now()
+                });
+                
+                // Keep only the last few points
+                if (mouse.dragPoints.length > dragPointsMax) {
+                    mouse.dragPoints.shift();
+                }
+                
+                ball.x = newX;
+                ball.y = newY;
+            }
+            
+            mouse.prevX = mouse.x;
+            mouse.prevY = mouse.y;
+            mouse.x = newX;
+            mouse.y = newY;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            if (ball.isDragging) {
+                // Calculate velocity from drag history
+                const velocityVector = getVelocityVector();
+                ball.velocityX = velocityVector.x;
+                ball.velocityY = velocityVector.y;
+                
+                ball.isDragging = false;
+                
+                // Restore ball size
+                ball.radius /= 0.95;
+                
+                // Add visual effect for fast throws
+                const speed = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
+                if (speed > 20 && settings.showEffects) {
+                    // Create a speed trail
+                    for (let i = 0; i < 5; i++) {
+                        setTimeout(() => {
+                            const trail = document.createElement('div');
+                            trail.className = 'trail';
+                            trail.style.left = `${ball.x}px`;
+                            trail.style.top = `${ball.y}px`;
+                            trail.style.width = `${ball.radius * (1 - i/10)}px`;
+                            trail.style.height = `${ball.radius * (1 - i/10)}px`;
+                            trail.style.backgroundColor = 'rgba(231, 76, 60, 0.3)';
+                            document.body.appendChild(trail);
+                            
+                            setTimeout(() => {
+                                if (document.body.contains(trail)) {
+                                    document.body.removeChild(trail);
+                                }
+                            }, 800);
+                        }, i * 50);
+                    }
+                }
+                
+                // Clean up trajectory elements
+                trajectoryElements.forEach(element => {
+                    if (document.body.contains(element)) {
+                        document.body.removeChild(element);
+                    }
+                });
+                trajectoryElements = [];
+            }
+            mouse.isDown = false;
+            mouse.dragPoints = [];
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            if (ball.isDragging) {
+                // Calculate velocity from drag history
+                const velocityVector = getVelocityVector();
+                ball.velocityX = velocityVector.x;
+                ball.velocityY = velocityVector.y;
+                
+                ball.isDragging = false;
+                // Restore ball size
+                ball.radius /= 0.95;
+                
+                // Clean up trajectory elements
+                trajectoryElements.forEach(element => {
+                    if (document.body.contains(element)) {
+                        document.body.removeChild(element);
+                    }
+                });
+                trajectoryElements = [];
+            }
+            mouse.isDown = false;
+            mouse.dragPoints = [];
+        });
+        
+        // Improved touch support
+        function setupTouchSupport() {
+            // Add touch-action CSS to prevent browser handling of touch gestures
+            canvas.style.touchAction = 'none';
+            
+            // Add passive false to prevent default on mobile for smoother experience
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+            canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+        }
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            mouse.prevX = mouse.x = touchX;
+            mouse.prevY = mouse.y = touchY;
+            mouse.isDown = true;
+            mouse.dragPoints = [{ x: touchX, y: touchY, time: performance.now() }];
+            
+            if (isMouseOverBall(touchX, touchY)) {
+                ball.isDragging = true;
+                ball.velocityX = 0;
+                ball.velocityY = 0;
+                ball.trail = [];
+                
+                // Make the ball appear to be "grabbed" - slightly smaller
+                ball.radius *= 0.95;
+                
+                // Clean up any trajectory elements
+                trajectoryElements.forEach(element => {
+                    if (document.body.contains(element)) {
+                        document.body.removeChild(element);
+                    }
+                });
+                trajectoryElements = [];
+            }
+            
+            // Add active touch feedback
+            addTouchFeedback(touchX, touchY);
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (ball.isDragging) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+                
+                // Store drag points for velocity calculation
+                mouse.dragPoints.push({
+                    x: touchX,
+                    y: touchY,
+                    time: performance.now()
+                });
+                
+                // Keep only the last few points
+                if (mouse.dragPoints.length > dragPointsMax) {
+                    mouse.dragPoints.shift();
+                }
+                
+                ball.x = touchX;
+                ball.y = touchY;
+                
+                mouse.prevX = mouse.x;
+                mouse.prevY = mouse.y;
+                mouse.x = touchX;
+                mouse.y = touchY;
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            if (ball.isDragging) {
+                // Calculate velocity from drag history
+                const velocityVector = getVelocityVector();
+                ball.velocityX = velocityVector.x;
+                ball.velocityY = velocityVector.y;
+                
+                ball.isDragging = false;
+                // Restore ball size
+                ball.radius /= 0.95;
+                
+                // Add visual effect for fast throws
+                const speed = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
+                if (speed > 20 && settings.showEffects) {
+                    // Create a speed trail
+                    for (let i = 0; i < 5; i++) {
+                        setTimeout(() => {
+                            const trail = document.createElement('div');
+                            trail.className = 'trail';
+                            trail.style.left = `${ball.x}px`;
+                            trail.style.top = `${ball.y}px`;
+                            trail.style.width = `${ball.radius * (1 - i/10)}px`;
+                            trail.style.height = `${ball.radius * (1 - i/10)}px`;
+                            trail.style.backgroundColor = 'rgba(231, 76, 60, 0.3)';
+                            document.body.appendChild(trail);
+                            
+                            setTimeout(() => {
+                                if (document.body.contains(trail)) {
+                                    document.body.removeChild(trail);
+                                }
+                            }, 800);
+                        }, i * 50);
+                    }
+                }
+                
+                // Clean up trajectory elements
+                trajectoryElements.forEach(element => {
+                    if (document.body.contains(element)) {
+                        document.body.removeChild(element);
+                    }
+                });
+                trajectoryElements = [];
+            }
+            mouse.isDown = false;
+            mouse.dragPoints = [];
+        }
+        
+        // Visual feedback for touch events
+        function addTouchFeedback(x, y) {
+            if (!settings.showEffects) return;
+            
+            const feedback = document.createElement('div');
+            feedback.className = 'pulse-effect';
+            feedback.style.left = `${x}px`;
+            feedback.style.top = `${y}px`;
+            feedback.style.width = '30px';
+            feedback.style.height = '30px';
+            effectLayer.appendChild(feedback);
+            
+            setTimeout(() => {
+                if (effectLayer.contains(feedback)) {
+                    effectLayer.removeChild(feedback);
+                }
+            }, 500);
+        }
+        
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            // Preserve ball position ratio
+            const ratioX = ball.x / canvas.width;
+            const ratioY = ball.y / canvas.height;
+            
+            // Adjust canvas to window size
+            canvas.width = Math.min(800, window.innerWidth - 20);
+            canvas.height = Math.min(600, window.innerHeight - 20);
+            
+            // Update trail canvas size
+            trailCanvas.width = canvas.width;
+            trailCanvas.height = canvas.height;
+            
+            // Reposition ball
+            ball.x = ratioX * canvas.width;
+            ball.y = ratioY * canvas.height;
+            
+            // Redraw grid if enabled
+            if (settings.showGrid) {
+                drawGrid();
+            }
+        });
+        
+        // Listen for orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (settings.showGrid) {
+                    drawGrid();
+                }
+            }, 300); // Wait for orientation change to complete
+        });
+        
+        // Initialize
+        function init() {
+            // Check screen orientation API support
+            if (window.screen && window.screen.orientation) {
+                window.screen.orientation.addEventListener('change', () => {
+                    setTimeout(() => {
+                        if (settings.showGrid) {
+                            drawGrid();
+                        }
+                    }, 300);
+                });
+            }
+            
+            // Check accelerometer availability
+            if (window.DeviceMotionEvent) {
+                accel.available = true;
+            }
+            
+            // Initialize settings
+            initSettings();
+            setupTouchSupport();
+            
+            // Remove default touch events for smooth mobile experience
+            document.addEventListener('touchstart', function(e) {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Initial resize to fit screen
+            setTimeout(() => {
+                const resizeEvent = new Event('resize');
+                window.dispatchEvent(resizeEvent);
+            }, 100);
+            
+            // Start animation
+            requestAnimationFrame(animate);
+        }
+        
+        // Start everything
+        init();
+    </script>
+</body>
+</html>
