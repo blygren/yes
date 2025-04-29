@@ -83,3 +83,5 @@
 [Pixel Rope](https://blygren.github.io/yes/Ropepixel.html)
 
 [Advanced ball (FIX)](https://blygren.github.io/yes/Flipped%20Ball.html)
+
+[BetterBallGame](https://blygren.github.io/yes/TheBetterBallGame.html)
