@@ -22,9 +22,6 @@
 
 [cube game pause](https://blygren.github.io/yes/gg.html)
 
-
-Smaller Experiments
-
 [Marshmallow Softbody](https://blygren.github.io/yes/marshmallow-simulation.html)
 
 [Jelly](https://blygren.github.io/yes/index.html)
@@ -41,19 +38,11 @@ Smaller Experiments
 
 [softbody smile](https://blygren.github.io/yes/softbody-smiley.html)
 
-
 [Colour mixer](https://blygren.github.io/yes/image-to-softbody.html)
-
 
 [Grass simulation](https://blygren.github.io/yes/interactive_grass.html)
 
-
 [Better Ropes](https://blygren.github.io/yes/ropesss.html)
-
-
-
-The archive
-
 
 [Star map](https://blygren.github.io/yes/space-gen-combined.html)
 
