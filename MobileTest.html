@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cube Simulation with Achievements & Theme Toggle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+    #menu {
+      position: fixed;
+      left: -85%;
+      top: 0;
+      width: 85%;
+      max-width: 350px;
+      height: 100vh;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 15px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border-right: 2px solid #bb86fc;
+      transition: left 0.3s ease-in-out;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+      z-index: 1000;
+      font-size: 0.9em;
+      touch-action: pan-y;
+    }
+    #menu.open { left: 0; }
+    #menu h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 8px;
+      font-size: 1.2em;
+      color: #bb86fc;
+    }
+    #menu label {
+      display: block;
+      margin: 8px 0 4px;
+      font-size: 0.9em;
+      color: #bb86fc;
+    }
+    .settings-section {
+      margin-bottom: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #222;
+    }
+    .section-header {
+      padding: 14px 12px;
+      background: #333;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-header:active {
+      background: #444;
+    }
+    .section-header i {
+      transition: transform 0.3s;
+    }
+    .section-content {
+      padding: 10px;
+      display: none;
+      border-top: 1px solid #444;
+      max-height: 300px;
+      overflow-y: auto;
+      touch-action: pan-y;
+    }
+    .settings-section.open .section-content {
+      display: block;
+    }
+    .settings-section.open .section-header i {
+      transform: rotate(180deg);
+    }
+    #menu input[type="range"] {
+      width: 100%;
+      margin: 10px 0 15px;
+      height: 8px;
+      background: #444;
+      border-radius: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    #menu input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #bb86fc;
+      cursor: pointer;
+    }
+    #menu input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #bb86fc;
+      cursor: pointer;
+      border: none;
+    }
+    #menu input[type="color"],
+    #menu input[type="number"],
+    #menu input[type="text"] {
+      width: 100%;
+      margin: 5px 0 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 3px;
+      background: #333;
+      color: #fff;
+      font-size: 1em;
+    }
+    #menu input[type="checkbox"],
+    #menu input[type="radio"] {
+      margin-right: 8px;
+      accent-color: #bb86fc;
+      width: 18px;
+      height: 18px;
+      vertical-align: middle;
+    }
+    #menu label > input[type="checkbox"],
+    #menu label > input[type="radio"] {
+      margin-bottom: 5px;
+    }
+    #menu button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      background: #bb86fc;
+      border: none;
+      border-radius: 5px;
+      color: #121212;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      font-weight: 500;
+    }
+    #menu button:active {
+      background: #a370db;
+    }
+    #closeMenu {
+      margin-bottom: 10px;
+    }
+    .value-display {
+      float: right;
+      font-size: 0.85em;
+      color: #ccc;
+      background: #333;
+      padding: 2px 5px;
+      border-radius: 3px;
+      min-width: 35px;
+      text-align: center;
+    }
+    #achievements {
+      position: fixed;
+      right: -85%;
+      top: 0;
+      width: 85%;
+      max-width: 350px;
+      height: 100vh;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 15px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border-left: 2px solid #03dac6;
+      transition: right 0.3s ease-in-out;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+      z-index: 1000;
+      font-size: 0.9em;
+      touch-action: pan-y;
+    }
+    #achievements.open { right: 0; }
+    #achievements h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 8px;
+      font-size: 1.2em;
+      color: #03dac6;
+    }
+    #achievements ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 10px;
+    }
+    #achievements ul li {
+      margin: 8px 0;
+      font-size: 0.9em;
+      padding: 8px;
+      background: #222;
+      border-radius: 3px;
+      border-left: 3px solid #444;
+    }
+    #achievements ul li details summary {
+      cursor: pointer;
+      padding: 5px 0;
+    }
+    #achievements ul li details p {
+      padding-top: 5px;
+      font-size: 0.9em;
+      color: #aaa;
+    }
+    #achievements ul li.unlocked {
+      color: #03dac6;
+      font-weight: 500;
+      border-left-color: #03dac6;
+    }
+    #closeAchievements {
+      margin-bottom: 10px;
+    }
+    #achievementPopup {
+      max-width: 90%;
+      text-align: center;
+      padding: 12px 18px;
+      font-size: 0.9em;
+    }
+    .toolbar {
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: rgba(34,34,34,0.8);
+      border-radius: 15px;
+      padding: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      z-index: 900;
+      backdrop-filter: blur(5px);
+      margin: 0 10px;
+      max-width: calc(100% - 20px);
+    }
+    .tool-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #333;
+      color: #e0e0e0;
+      border: none;
+      margin: 4px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tool-btn:active {
+      background: #555;
+      transform: scale(0.95);
+    }
+    .tool-btn.active {
+      background: #bb86fc;
+      color: #121212;
+    }
+    .nav-toggle {
+      position: fixed;
+      width: 44px;
+      height: 44px;
+      background: rgba(34,34,34,0.8);
+      border: none;
+      border-radius: 50%;
+      color: #e0e0e0;
+      cursor: pointer;
+      z-index: 1100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      backdrop-filter: blur(5px);
+      font-size: 18px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-toggle:active {
+      background: #555;
+      transform: scale(0.95);
+    }
+    #toggleMenu { left: 10px; top: 10px; }
+    #toggleAchievements { right: 10px; top: 10px; }
+    #toggleHints { right: 60px; top: 10px; }
+    #toggleCredits { right: 110px; top: 10px; }
+    #toggleTheme { left: 10px; top: 60px; }
+    #pauseOverlay {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 25px 45px;
+      font-size: 2.2em;
+      border-radius: 10px;
+      z-index: 1500;
+      text-align: center;
+    }
+    #pauseOverlay button {
+      display: block;
+      margin-top: 15px;
+      width: 100%;
+      padding: 12px;
+      background: #bb86fc;
+      color: #121212;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.6em;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    #pauseOverlay button:active {
+      background: #a370db;
+      transform: scale(0.98);
+    }
+    @media (max-width: 480px) {
+      #mainMenu h1 {
+        font-size: 2.5em;
+      }
+      #startButton {
+        padding: 15px 30px;
+        font-size: 1.5em;
+      }
+      .toolbar {
+        padding: 4px;
+        bottom: 5px;
+        margin: 0 5px;
+        max-width: calc(100% - 10px);
+      }
+      .tool-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+        margin: 3px;
+      }
+      #menu h2, #achievements h2 {
+        font-size: 1.1em;
+      }
+      .section-header {
+        padding: 12px 10px;
+      }
+      .nav-toggle {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+      #toggleHints { right: 55px; }
+      #toggleCredits { right: 100px; }
+      #toggleTheme { top: 55px; }
+    }
+    .touch-active {
+      transform: scale(0.95) !important;
+      opacity: 0.8;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    #orientationIndicator {
+      position: fixed;
+      bottom: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 1000;
+      pointer-events: none;
+      display: none;
+    }
+    #credits {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      color: #fff;
+      z-index: 1500;
+      padding: 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-y: auto;
+      touch-action: pan-y;
+    }
+    #exitCredits {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #bb86fc;
+      border: none;
+      border-radius: 50%;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-size: 18px;
+      color: #121212;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #exitCredits:active {
+      background: #a370db;
+      transform: scale(0.95);
+    }
+    #credits > div {
+      font-size: 1.2em;
+    }
+    #hints {
+      position: fixed;
+      right: -85%;
+      top: 0;
+      width: 85%;
+      max-width: 350px;
+      height: 100vh;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 15px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border-left: 2px solid #03dac6;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+      font-size: 0.9em;
+      z-index: 1000;
+      transition: right 0.3s ease-in-out;
+      touch-action: pan-y;
+      display: block;
+    }
+    #hints.open {
+      right: 0 !important;
+    }
+    #hints h2 {
+      text-align: center;
+      color: #03dac6;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+    #closeHints {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 12px;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+      font-weight: 500;
+    }
+    #closeHints:active {
+      background: #555;
+    }
+    #hints details {
+      margin-bottom: 10px;
+    }
+    #hints details summary {
+      cursor: pointer;
+      font-weight: bold;
+      padding: 8px 0;
+      user-select: none;
+    }
+    #hints details summary:active {
+      color: #bbb;
+    }
+    #hints ul {
+      list-style: none;
+      padding-left: 15px;
+      margin-top: 5px;
+    }
+    #hints ul li {
+      margin-bottom: 5px;
+      font-size: 0.95em;
+    }
+    #hints progress {
+      width: 100%;
+      height: 8px;
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div id="mainMenu">
+    <h1>Cube Game</h1>
+    <button id="startButton">Start</button>
+  </div>
+  <button id="toggleMenu" class="nav-toggle"><i class="fas fa-bars"></i></button>
+  <button id="toggleAchievements" class="nav-toggle"><i class="fas fa-trophy"></i></button>
+  <button id="toggleHints" class="nav-toggle"><i class="fas fa-lightbulb"></i></button>
+  <button id="toggleCredits" class="nav-toggle"><i class="fas fa-info-circle"></i></button>
+  <button id="toggleTheme" class="nav-toggle"><i class="fas fa-moon"></i></button>
+  <div class="toolbar">
+    <button id="toolSpawn" class="tool-btn active" title="Spawn Tool"><i class="fas fa-plus"></i></button>
+    <button id="toolDrag" class="tool-btn" title="Drag Tool"><i class="fas fa-hand-paper"></i></button>
+    <button id="toolSlingshot" class="tool-btn" title="Slingshot Tool"><i class="fas fa-bullseye"></i></button>
+    <button id="toolTether" class="tool-btn" title="Tether Tool"><i class="fas fa-link"></i></button>
+    <button id="toolExplosion" class="tool-btn" title="Explosion Tool"><i class="fas fa-bomb"></i></button>
+    <button id="toolRandom" class="tool-btn" title="Random Tool"><i class="fas fa-random"></i></button>
+    <button id="toolMultiSpawn" class="tool-btn" title="Multi-Cube Spawner"><i class="fas fa-layer-group"></i></button>
+    <button id="toolBlade" class="tool-btn" title="Blade Tool"><i class="fas fa-cut"></i></button>
+    <button id="clearAllBtn" class="tool-btn" title="Clear All Cubes"><i class="fas fa-trash"></i></button>
+  </div>
+  <div id="menu">
+    <h2>Settings</h2>
+    <button id="closeMenu"><i class="fas fa-times"></i> Close</button>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-atom"></i> Physics</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="gravityX">Gravity X <span id="gravityXVal" class="value-display">0</span></label>
+        <input type="range" id="gravityX" min="-2" max="2" step="0.01" value="0">
+        <label for="gravityY">Gravity Y <span id="gravityYVal" class="value-display">1</span></label>
+        <input type="range" id="gravityY" min="-2" max="4" step="0.01" value="1">
+        <label for="timeScale">Simulation Speed <span id="timeScaleVal" class="value-display">1</span></label>
+        <input type="range" id="timeScale" min="0.1" max="3" step="0.1" value="1">
+        <label for="airFriction">Air Friction <span id="airFrictionVal" class="value-display">0.01</span></label>
+        <input type="range" id="airFriction" min="0" max="0.1" step="0.001" value="0.01">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="useDeviceOrientation"> Use Device Tilt for Gravity</label>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-cube"></i> Cube Properties</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="cubeSize">Size <span id="cubeSizeVal" class="value-display">40</span></label>
+        <input type="range" id="cubeSize" min="10" max="100" step="1" value="40">
+        <label for="cubeRestitution">Restitution (Old) <span id="cubeRestitutionVal" class="value-display">0.8</span></label>
+        <input type="range" id="cubeRestitution" min="0" max="2" step="0.01" value="0.8">
+        <label for="cubeFriction">Friction <span id="cubeFrictionVal" class="value-display">0.1</span></label>
+        <input type="range" id="cubeFriction" min="0" max="1" step="0.01" value="0.1">
+        <label for="cubeDensity">Density <span id="cubeDensityVal" class="value-display">0.001</span></label>
+        <input type="range" id="cubeDensity" min="0.0005" max="0.01" step="0.0001" value="0.001">
+        <label for="cubeAngular">Angular Velocity <span id="cubeAngularVal" class="value-display">0</span></label>
+        <input type="range" id="cubeAngular" min="-0.2" max="0.2" step="0.01" value="0">
+        <label for="cubeAngle">Initial Angle <span id="cubeAngleVal" class="value-display">0°</span></label>
+        <input type="range" id="cubeAngle" min="0" max="360" step="1" value="0">
+        <label for="cubeColor">Cube Color</label>
+        <input type="color" id="cubeColor" value="#0000ff">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="randomCubeColors"> Spawn as Random Colors</label>
+        <label for="cubeBouncyness">Bouncyness <span id="cubeBouncynessVal" class="value-display">0.8</span></label>
+        <input type="range" id="cubeBouncyness" min="0" max="1.5" step="0.01" value="0.8">
+        <label for="cubeOpacity">Cube Opacity <span id="cubeOpacityVal" class="value-display">1</span></label>
+        <input type="range" id="cubeOpacity" min="0.1" max="1" step="0.1" value="1">
+        <label for="cubeBorderThickness">Border Thickness <span id="cubeBorderThicknessVal" class="value-display">0</span></label>
+        <input type="range" id="cubeBorderThickness" min="0" max="5" step="0.5" value="0">
+        <label for="cubeBorderColor">Border Color</label>
+        <input type="color" id="cubeBorderColor" value="#000000">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="cubeShadow"> Enable Shadow</label>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-magic"></i> Spawn Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="spawnInterval">Interval <span id="spawnIntervalVal" class="value-display">500ms</span></label>
+        <input type="range" id="spawnInterval" min="100" max="2000" step="100" value="500">
+        <label for="maxCubes">Max Cubes <span id="maxCubesVal" class="value-display">20</span></label>
+        <input type="range" id="maxCubes" min="5" max="100" step="1" value="20">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="spawnOnClick" checked> Spawn on Tap</label>
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="autoSpawn" checked> Auto Spawn</label>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-border-all"></i> World Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="floorFriction">Floor Friction <span id="floorFrictionVal" class="value-display">0.5</span></label>
+        <input type="range" id="floorFriction" min="0" max="1" step="0.01" value="0.5">
+        <label for="floorRestitution">Floor Restitution <span id="floorRestitutionVal" class="value-display">0.2</span></label>
+        <input type="range" id="floorRestitution" min="0" max="1" step="0.01" value="0.2">
+        <label for="floorColor">Floor Color</label>
+        <input type="color" id="floorColor" value="#808080">
+        <label for="bgColor">Background Color</label>
+        <input type="color" id="bgColor" value="#222222">
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-tools"></i> Tool Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <h4><i class="fas fa-bullseye"></i> Slingshot Settings</h4>
+        <label for="slingshotStrength">Strength <span id="slingshotStrengthVal" class="value-display">0.0005</span></label>
+        <input type="range" id="slingshotStrength" min="0.0001" max="0.005" step="0.0001" value="0.0005">
+        <h4><i class="fas fa-link"></i> Tether Settings</h4>
+        <label for="tetherStiffness">Stiffness <span id="tetherStiffnessVal" class="value-display">0.001</span></label>
+        <input type="range" id="tetherStiffness" min="0.0001" max="0.01" step="0.0001" value="0.001">
+        <label for="tetherDamping">Damping <span id="tetherDampingVal" class="value-display">0.1</span></label>
+        <input type="range" id="tetherDamping" min="0" max="0.5" step="0.01" value="0.1">
+        <label for="tetherColor">Tether Color</label>
+        <input type="color" id="tetherColor" value="#FFFFFF">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="showTethers" checked> Show Tethers</label>
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="breakableTethers"> Breakable Tethers</label>
+        <h4><i class="fas fa-bomb"></i> Explosion Settings</h4>
+        <label for="explosionForce">Force <span id="explosionForceVal" class="value-display">0.05</span></label>
+        <input type="range" id="explosionForce" min="0.01" max="0.2" step="0.01" value="0.05">
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-cog"></i> Other Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="bounceThreshold">Bounce Threshold (Sound) <span id="bounceThresholdVal" class="value-display">20</span></label>
+        <input type="range" id="bounceThreshold" min="0" max="100" step="1" value="20">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="soundToggle" checked> Enable Sounds</label>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-fire"></i> Destruction Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="breakStrength">Break Strength <span id="breakStrengthVal" class="value-display">7</span></label>
+        <input type="range" id="breakStrength" min="1" max="20" step="0.1" value="7">
+        <label for="miniCubeCount">Mini Cube Count <span id="miniCubeCountVal" class="value-display">4</span></label>
+        <input type="range" id="miniCubeCount" min="2" max="10" step="1" value="4">
+        <button id="toggleDestruction" style="margin-top:8px;">Enable Destruction</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-random"></i> Random Tool Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="randomForce">Random Force <span id="randomForceVal" class="value-display">0.05</span></label>
+        <input type="range" id="randomForce" min="0.01" max="0.2" step="0.01" value="0.05">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="randomColorToggle"> Enable Random Colors</label>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-layer-group"></i> Multi-Cube Spawner Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label for="spawnCount">Spawn Count <span id="spawnCountVal" class="value-display">3</span></label>
+        <input type="range" id="spawnCount" min="2" max="10" step="1" value="3">
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="section-header">
+        <span><i class="fas fa-snowflake"></i> Visual Settings</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="section-content">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="gridBackground"> Enable Grid Background</label>
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="cubeTrails"> Enable Cube Trails</label>
+        <label for="trailColor">Trail Color</label>
+        <input type="color" id="trailColor" value="#0000ff">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="particleTrail"> Enable Particle Trail</label>
+        <label for="particleColor">Particle Color</label>
+        <input type="color" id="particleColor" value="#ffffff">
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="cubeFaces"> Enable Cube Faces</label>
+        <label style="display: flex; align-items: center;"><input type="checkbox" id="stunnedFaces" checked> Enable Stunned Faces</label>
+        <label for="particleEffects">Particle Effects Intensity <span id="particleEffectsVal" class="value-display">5</span></label>
+        <input type="range" id="particleEffects" min="0" max="10" step="1" value="5">
+        <label for="shadowEffects">Shadow Effects Strength <span id="shadowEffectsVal" class="value-display">3</span></label>
+        <input type="range" id="shadowEffects" min="0" max="10" step="0.5" value="3">
+      </div>
+    </div>
+    <div class="action-buttons">
+      <button id="resetSettings"><i class="fas fa-redo"></i> Reset All Settings</button>
+      <button id="clearCubes"><i class="fas fa-trash"></i> Clear Cubes</button>
+      <button id="clearTethers"><i class="fas fa-unlink"></i> Clear Tethers</button>
+    </div>
+  </div>
+  <div id="achievements">
+    <h2><i class="fas fa-trophy"></i> Achievements</h2>
+    <button id="closeAchievements"><i class="fas fa-times"></i> Close</button>
+    <ul>
+      <li>
+        <details>
+          <summary id="achievement_playFive"><i class="far fa-clock"></i> Play for 5 Minutes: Locked</summary>
+          <p>Hint: Keep the game open continuously for at least 5 minutes.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_changeColor"><i class="fas fa-palette"></i> Change Your Cube's Colour: Locked</summary>
+          <p>Hint: Select a different color for the cubes in the settings menu.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_gravityManip"><i class="fas fa-atom"></i> Gravity Manipulator: Locked</summary>
+          <p>Hint: Adjust the gravity sliders (X or Y) 5 times.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_speedDemon"><i class="fas fa-tachometer-alt"></i> Speed Demon: Locked</summary>
+          <p>Hint: Set the simulation speed above 1.5x for 10 seconds.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_clearItOut"><i class="fas fa-trash-alt"></i> Clear It Out: Locked</summary>
+          <p>Hint: Use the 'Clear Cubes' button 3 times.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_chainReaction"><i class="fas fa-bolt"></i> Chain Reaction: Locked</summary>
+          <p>Hint: Cause 3 or more collisions to happen simultaneously.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_slingshotAce"><i class="fas fa-bullseye"></i> Slingshot Ace: Locked</summary>
+          <p>Hint: Launch a cube with significant force using the slingshot tool.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_cubeOverload"><i class="fas fa-cubes"></i> Cube Overload: Locked</summary>
+          <p>Hint: Reach the maximum number of cubes allowed on screen.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_gravityGuru"><i class="fas fa-meteor"></i> Gravity Guru: Locked</summary>
+          <p>Hint: Set both X and Y gravity to non-default values.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_perfectReset"><i class="fas fa-redo"></i> Perfect Reset: Locked</summary>
+          <p>Hint: Reset all settings back to their defaults 5 times.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_tetherMaster"><i class="fas fa-link"></i> Tether Master: Locked</summary>
+          <p>Hint: Create at least 5 tethers between cubes.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_cubeWhisperer"><i class="fas fa-tower-observation"></i> Cube Whisperer: Locked</summary>
+          <p>Hint: Stack 5 cubes vertically without them toppling for 5 seconds.</p>
+        </details>
+        <progress id="progress_display_cubeWhisperer" value="0" max="5" style="display: block;"></progress>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_balancingAct"><i class="fas fa-balance-scale"></i> Balancing Act: Locked</summary>
+          <p>Hint: Balance a cube perfectly on its corner for 3 seconds.</p>
+        </details>
+        <progress id="progress_display_balancingAct" value="0" max="3" style="display: block;"></progress>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_dominoEffect"><i class="fas fa-dice"></i> Domino Effect: Locked</summary>
+          <p>Hint: Create a chain reaction with at least 7 cubes falling in sequence.</p>
+        </details>
+        <progress id="progress_display_dominoEffect" value="0" max="7" style="display: block;"></progress>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_shapeshifter"><i class="fas fa-draw-polygon"></i> Shapeshifter: Locked</summary>
+          <p>Hint: Using the blade tool, transform a single cube into exactly 16 mini-cubes.</p>
+        </details>
+        <progress id="progress_display_shapeshifter" value="0" max="16" style="display: block;"></progress>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_momentumMaster"><i class="fas fa-bolt"></i> Momentum Master: Locked</summary>
+          <p>Hint: Launch a cube so it bounces off all four walls within 2 seconds.</p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_cubeJuggler"><i class="fas fa-volleyball-ball"></i> Cube Juggler: Locked</summary>
+          <p>Hint: Keep 3 cubes airborne simultaneously for 5 seconds.</p>
+        </details>
+        <progress id="progress_display_cubeJuggler" value="0" max="5" style="display: block;"></progress>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_colorHarmony"><i class="fas fa-palette"></i> Color Harmony: Locked</summary>
+          <p>Hint: Create 7 cubes with a perfect rainbow color spectrum.</p>
+        </details>
+        <progress id="progress_display_colorHarmony" value="0" max="7" style="display: block;"></progress>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_perfectTiming"><i class="fas fa-stopwatch"></i> Perfect Timing: Locked</summary>
+          <p>Hint: Spawn 5 cubes at precisely 1-second intervals.</p>
+        </details>
+        <progress id="progress_display_perfectTiming" value="0" max="5" style="display: block;"></progress>
+      </li>
+      <li>
+        <details>
+          <summary id="achievement_tetherWeb"><i class="fas fa-spider"></i> Tether Web: Locked</summary>
+          <p>Hint: Create a web of tethers connecting at least 10 cubes in a complex pattern.</p>
+        </details>
+        <progress id="progress_display_tetherWeb" value="0" max="10" style="display: block;"></progress>
+      </li>
+    </ul>
+  </div>
+  <div id="achievementPopup"></div>
+  <div id="hints">
+    <h2><i class="fas fa-lightbulb"></i> Game & Hints</h2>
+    <button id="closeHints"><i class="fas fa-times"></i> Close</button>
+    <details open>
+      <summary>Tool Hints</summary>
+      <ul>
+        <li><strong>Spawn Tool:</strong> Tap screen to create cubes.</li>
+        <li><strong>Drag Tool:</strong> Touch and drag cubes to move them.</li>
+        <li><strong>Slingshot Tool:</strong> Touch a cube, pull back, and release to launch.</li>
+        <li><strong>Tether Tool:</strong> Tap one cube, then another to connect. Tap a tether line to remove it.</li>
+        <li><strong>Explosion Tool:</strong> Tap screen to create an explosion.</li>
+        <li><strong>Random Tool:</strong> Tap screen to apply random forces/colors.</li>
+        <li><strong>Multi-Cube Spawner:</strong> Tap screen to spawn several cubes.</li>
+        <li><strong>Blade Tool:</strong> Tap a cube to split it.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>General Game Info</summary>
+      <ul>
+        <li>Double-tap the screen to pause/resume.</li>
+        <li>Use the menus to customize physics, cube properties, and visuals.</li>
+        <li>Try enabling 'Use Device Tilt for Gravity' in Physics settings!</li>
+        <li>Explore different tool modes and settings to unlock achievements.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>Achievement Progress</summary>
+      <ul>
+        <li>Play Time: <progress id="progress_playFive" value="0" max="300"></progress></li>
+        <li>Speed Demon: <progress id="progress_speedDemon" value="0" max="10"></progress></li>
+        <li>Fast Spawner: <progress id="progress_fastSpawner" value="0" max="10"></progress></li>
+        <li>Precision Click: <progress id="progress_precisionClick" value="0" max="20"></progress></li>
+        <li>Master Breaker: <progress id="progress_masterBreaker" value="0" max="5"></progress></li>
+        <li>Ultimate Combo: <progress id="progress_ultimateCombo" value="0" max="3"></progress></li>
+        <li>Cube Whisperer: <progress id="progress_display_cubeWhisperer" value="0" max="5"></progress></li>
+        <li>Balancing Act: <progress id="progress_display_balancingAct" value="0" max="3"></progress></li>
+        <li>Domino Effect: <progress id="progress_display_dominoEffect" value="0" max="7"></progress></li>
+        <li>Shapeshifter: <progress id="progress_display_shapeshifter" value="0" max="16"></progress></li>
+        <li>Cube Juggler: <progress id="progress_display_cubeJuggler" value="0" max="5"></progress></li>
+        <li>Color Harmony: <progress id="progress_display_colorHarmony" value="0" max="7"></progress></li>
+        <li>Perfect Timing: <progress id="progress_display_perfectTiming" value="0" max="5"></progress></li>
+        <li>Tether Web: <progress id="progress_display_tetherWeb" value="0" max="10"></progress></li>
+      </ul>
+    </details>
+  </div>
+  <div id="tetherTooltip">Tap to remove tether</div>
+  <div id="orientationIndicator">Using device tilt for gravity</div>
+  <div id="pauseOverlay">
+    <span>PAUSED</span>
+    <button id="resumeButton">Resume</button>
+  </div>
+  <canvas id="canvas"></canvas>
+  <audio id="collisionSound"></audio>
+  <audio id="spawnSound"></audio>
+  <audio id="explosionSound"></audio>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <script>
+    const Engine = Matter.Engine,
+          Render = Matter.Render,
+          Runner = Matter.Runner,
+          Bodies = Matter.Bodies,
+          Composite = Matter.Composite,
+          Body = Matter.Body,
+          Mouse = Matter.Mouse,
+          MouseConstraint = Matter.MouseConstraint,
+          Events = Matter.Events,
+          Query = Matter.Query,
+          Constraint = Matter.Constraint;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const engine = Engine.create();
+      engine.positionIterations = 10;
+      engine.velocityIterations = 10;
+      const world = engine.world;
+
+      const canvas = document.getElementById('canvas');
+      const render = Render.create({
+        canvas: canvas,
+        engine: engine,
+        options: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          wireframes: false,
+          background: document.getElementById('bgColor').value
+        }
+      });
+      Render.run(render);
+      const runner = Runner.create();
+      Runner.run(runner, engine);
+
+      const mouse = Mouse.create(render.canvas);
+      let mouseConstraint = MouseConstraint.create(engine, {
+        mouse: mouse,
+        constraint: { stiffness: 0.2, render: { visible: false } }
+      });
+      let mouseConstraintAdded = false;
+      render.mouse = mouse;
+
+      let currentToolMode = "spawn";
+      let isPaused = false;
+      let isSlingshotActive = false;
+      let slingshotCube = null;
+      let slingshotStartPos = null;
+      let slingshotCurrentPos = null;
+      let tetherMode = false;
+      let firstCube = null;
+      let secondCube = null;
+      let tetherConstraints = [];
+      let tetheredPairs = new Map();
+      let activeTetherPoint = null;
+      let tetherHovering = null;
+      let currentlyDraggedCube = null;
+
+      function resetTetherSelection() {
+        firstCube = null;
+        secondCube = null;
+        activeTetherPoint = null;
+      }
+
+      function createTether(bodyA, bodyB) {
+        const pairKey1 = `${bodyA.id}-${bodyB.id}`;
+        const pairKey2 = `${bodyB.id}-${bodyA.id}`;
+
+        if (tetheredPairs.has(pairKey1) || tetheredPairs.has(pairKey2)) {
+          console.log("These cubes are already tethered");
+          return null;
+        }
+
+        const stiffness = parseFloat(document.getElementById('tetherStiffness').value);
+        const damping = parseFloat(document.getElementById('tetherDamping').value);
+        const tetherColor = document.getElementById('tetherColor').value;
+        const showTethers = document.getElementById('showTethers').checked;
+
+        const constraint = Constraint.create({
+          bodyA: bodyA,
+          bodyB: bodyB,
+          stiffness: stiffness,
+          damping: damping,
+          render: {
+            visible: showTethers,
+            lineColor: tetherColor,
+            lineWidth: 2,
+            type: 'line'
+          }
+        });
+
+        Composite.add(world, constraint);
+        tetherConstraints.push(constraint);
+        tetheredPairs.set(pairKey1, constraint);
+
+        return constraint;
+      }
+
+      function removeTether(constraint) {
+        const index = tetherConstraints.indexOf(constraint);
+        if (index !== -1) {
+          tetherConstraints.splice(index, 1);
+        }
+
+        for (const [key, value] of tetheredPairs.entries()) {
+          if (value === constraint) {
+            tetheredPairs.delete(key);
+            break;
+          }
+        }
+        Composite.remove(world, constraint);
+      }
+
+      const pauseOverlay = document.getElementById('pauseOverlay');
+      document.getElementById('resumeButton').addEventListener('click', togglePause);
+
+      let lastTapTime = 0;
+      let tapTimeout;
+      canvas.addEventListener('touchend', function(event) {
+          const currentTime = new Date().getTime();
+          const tapLength = currentTime - lastTapTime;
+
+          clearTimeout(tapTimeout);
+
+          if (tapLength < 300 && tapLength > 0) {
+              event.preventDefault();
+              togglePause();
+              lastTapTime = 0;
+          } else {
+              tapTimeout = setTimeout(() => {}, 300);
+              lastTapTime = currentTime;
+          }
+      }, { passive: false });
+
+      function togglePause() {
+        isPaused = !isPaused;
+        if (isPaused) {
+          Runner.stop(runner);
+          pauseOverlay.style.display = 'flex';
+        } else {
+          Runner.start(runner, engine);
+          pauseOverlay.style.display = 'none';
+        }
+      }
+
+      const toolButtonsMap = {
+        toolSpawn: "spawn",
+        toolDrag: "drag",
+        toolSlingshot: "slingshot",
+        toolTether: "tether",
+        toolExplosion: "explosion",
+        toolRandom: "random",
+        toolMultiSpawn: "multiSpawn",
+        toolBlade: "blade"
+      };
+
+      Object.keys(toolButtonsMap).forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.addEventListener('click', function() {
+                handleToolChange(toolButtonsMap[buttonId], this);
+            });
+            button.addEventListener('touchstart', () => button.classList.add('touch-active'), { passive: true });
+            button.addEventListener('touchend', () => button.classList.remove('touch-active'));
+            button.addEventListener('touchcancel', () => button.classList.remove('touch-active'));
+        }
+      });
+
+      function handleToolChange(newToolMode, clickedButton) {
+          document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+          if (clickedButton) {
+              clickedButton.classList.add('active');
+          }
+
+          currentToolMode = newToolMode;
+
+          if (currentToolMode === "drag") {
+              if (!mouseConstraintAdded) {
+                  Composite.add(world, mouseConstraint);
+                  mouseConstraintAdded = true;
+              }
+          } else {
+              if (mouseConstraintAdded) {
+                  Composite.remove(world, mouseConstraint);
+                  mouseConstraintAdded = false;
+              }
+          }
+
+          isSlingshotActive = false;
+          slingshotCube = null;
+          resetTetherSelection();
+          render.canvas.classList.remove('tether-active');
+
+          if (currentToolMode === "tether") {
+              render.canvas.classList.add('tether-active');
+          }
+          console.log("Tool changed to:", currentToolMode);
+      }
+
+      handleToolChange('spawn', document.getElementById('toolSpawn'));
+
+      function togglePanel(panelElement, buttonElement, otherButtonsToHide = []) {
+          const isOpen = panelElement.classList.contains('open');
+
+          if (isOpen) {
+              panelElement.classList.remove('open');
+              otherButtonsToHide.forEach(btn => btn.style.display = 'flex');
+          } else {
+              panelElement.classList.add('open');
+              otherButtonsToHide.forEach(btn => btn.style.display = 'none');
+          }
+      }
+
+      const menu = document.getElementById('menu');
+      const toggleMenuButton = document.getElementById('toggleMenu');
+      const closeMenuButton = document.getElementById('closeMenu');
+      toggleMenuButton.addEventListener('click', () => togglePanel(menu, toggleMenuButton, [toggleThemeButton]));
+      closeMenuButton.addEventListener('click', () => togglePanel(menu, toggleMenuButton, [toggleThemeButton]));
+      [toggleMenuButton, closeMenuButton].forEach(btn => {
+          btn.addEventListener('touchstart', () => btn.classList.add('touch-active'), { passive: true });
+          btn.addEventListener('touchend', () => btn.classList.remove('touch-active'));
+          btn.addEventListener('touchcancel', () => btn.classList.remove('touch-active'));
+      });
+
+      const achievementsTab = document.getElementById('achievements');
+      const toggleAchievementsButton = document.getElementById('toggleAchievements');
+      const closeAchievementsButton = document.getElementById('closeAchievements');
+      toggleAchievementsButton.addEventListener('click', () => togglePanel(achievementsTab, toggleAchievementsButton, [toggleHintsButton, toggleCreditsButton]));
+      closeAchievementsButton.addEventListener('click', () => togglePanel(achievementsTab, toggleAchievementsButton, [toggleHintsButton, toggleCreditsButton]));
+      [toggleAchievementsButton, closeAchievementsButton].forEach(btn => {
+          btn.addEventListener('touchstart', () => btn.classList.add('touch-active'), { passive: true });
+          btn.addEventListener('touchend', () => btn.classList.remove('touch-active'));
+          btn.addEventListener('touchcancel', () => btn.classList.remove('touch-active'));
+      });
+
+      const hintsPanel = document.getElementById('hints');
+      const toggleHintsButton = document.getElementById('toggleHints');
+      const closeHintsButton = document.getElementById('closeHints');
+      toggleHintsButton.addEventListener('click', () => togglePanel(hintsPanel, toggleHintsButton, [toggleAchievementsButton, toggleCreditsButton]));
+      closeHintsButton.addEventListener('click', () => togglePanel(hintsPanel, toggleHintsButton, [toggleAchievementsButton, toggleCreditsButton]));
+      [toggleHintsButton, closeHintsButton].forEach(btn => {
+          btn.addEventListener('touchstart', () => btn.classList.add('touch-active'), { passive: true });
+          btn.addEventListener('touchend', () => btn.classList.remove('touch-active'));
+          btn.addEventListener('touchcancel', () => btn.classList.remove('touch-active'));
+      });
+
+      const toggleThemeButton = document.getElementById('toggleTheme');
+      toggleThemeButton.addEventListener('click', () => {
+        document.body.classList.toggle("light");
+        const themeIcon = toggleThemeButton.querySelector('i');
+        themeIcon.className = document.body.classList.contains('light') ? 'fas fa-sun' : 'fas fa-moon';
+      });
+      toggleThemeButton.addEventListener('touchstart', () => toggleThemeButton.classList.add('touch-active'), { passive: true });
+      toggleThemeButton.addEventListener('touchend', () => toggleThemeButton.classList.remove('touch-active'));
+      toggleThemeButton.addEventListener('touchcancel', () => toggleThemeButton.classList.remove('touch-active'));
+
+      const creditsOverlay = document.getElementById('credits');
+      const toggleCreditsButton = document.getElementById('toggleCredits');
+      const exitCreditsButton = document.getElementById('exitCredits');
+      toggleCreditsButton.addEventListener('click', () => {
+          creditsOverlay.style.display = 'flex';
+      });
+      exitCreditsButton.addEventListener('click', () => {
+          creditsOverlay.style.display = 'none';
+      });
+      [toggleCreditsButton, exitCreditsButton].forEach(btn => {
+          btn.addEventListener('touchstart', () => btn.classList.add('touch-active'), { passive: true });
+          btn.addEventListener('touchend', () => btn.classList.remove('touch-active'));
+          btn.addEventListener('touchcancel', () => btn.classList.remove('touch-active'));
+      });
+
+      document.querySelectorAll('#menu button, #achievements button, #hints button').forEach(button => {
+          if (button !== closeMenuButton && button !== closeAchievementsButton && button !== closeHintsButton) {
+              button.addEventListener('touchstart', () => button.classList.add('touch-active'), { passive: true });
+              button.addEventListener('touchend', () => button.classList.remove('touch-active'));
+              button.addEventListener('touchcancel', () => button.classList.remove('touch-active'));
+          }
+      });
+
+      document.querySelectorAll('.section-header').forEach(header => {
+          header.addEventListener('touchstart', () => header.style.backgroundColor = '#444', { passive: true });
+          header.addEventListener('touchend', () => header.style.backgroundColor = '');
+          header.addEventListener('touchcancel', () => header.style.backgroundColor = '');
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.nav-toggle, .toolbar').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('#menu, #achievements, #hints').forEach(el => {
+            el.classList.remove('open');
+        });
+        creditsOverlay.style.display = 'none';
+      });
+
+      document.getElementById('startButton').addEventListener('click', function() {
+          const mainMenu = document.getElementById('mainMenu');
+          mainMenu.classList.add('hidden');
+          setTimeout(() => { 
+              mainMenu.style.display = 'none';
+              document.querySelectorAll('.nav-toggle, .toolbar').forEach(el => el.style.display = 'flex');
+              document.querySelectorAll('#menu, #achievements, #hints').forEach(el => {
+                  el.classList.remove('open');
+              });
+              toggleThemeButton.style.display = 'flex';
+              toggleCreditsButton.style.display = 'flex';
+          }, 1000);
+      });
+
+      const orientationIndicator = document.getElementById('orientationIndicator');
+      const useOrientationCheckbox = document.getElementById('useDeviceOrientation');
+      let orientationHandler = null;
+
+      function handleOrientation(event) {
+          const sensitivity = 2.0;
+          let gx = 0;
+          let gy = 1;
+
+          if (event.gamma !== null && event.beta !== null) {
+              gx = Math.sin(event.gamma * Math.PI / 180) * sensitivity;
+              let clampedBeta = Math.max(-90, Math.min(90, event.beta));
+              gy = Math.cos(clampedBeta * Math.PI / 180) * sensitivity; 
+              gy = Math.max(0.1, gy);
+              gx = Math.max(-2, Math.min(2, gx));
+              gy = Math.max(-2, Math.min(4, gy));
+
+              engine.world.gravity.x = gx;
+              engine.world.gravity.y = gy;
+          }
+      }
+
+      useOrientationCheckbox.addEventListener('change', function() {
+          if (this.checked) {
+              if (window.DeviceOrientationEvent) {
+                  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                      DeviceOrientationEvent.requestPermission()
+                          .then(permissionState => {
+                              if (permissionState === 'granted') {
+                                  orientationHandler = handleOrientation;
+                                  window.addEventListener('deviceorientation', orientationHandler);
+                                  orientationIndicator.style.display = 'block';
+                                  setTimeout(() => orientationIndicator.style.opacity = '1', 50);
+                                  document.getElementById('gravityX').disabled = true;
+                                  document.getElementById('gravityY').disabled = true;
+                              } else {
+                                  alert('Permission denied for device orientation.');
+                                  this.checked = false;
+                              }
+                          })
+                          .catch(error => {
+                               console.error('Device orientation permission error:', error);
+                               this.checked = false;
+                          });
+                  } else {
+                      orientationHandler = handleOrientation;
+                      window.addEventListener('deviceorientation', orientationHandler);
+                      orientationIndicator.style.display = 'block';
+                      setTimeout(() => orientationIndicator.style.opacity = '1', 50);
+                      document.getElementById('gravityX').disabled = true;
+                      document.getElementById('gravityY').disabled = true;
+                  }
+              } else {
+                  alert('Device orientation not supported on this browser.');
+                  this.checked = false;
+              }
+          } else {
+              if (orientationHandler) {
+                  window.removeEventListener('deviceorientation', orientationHandler);
+                  orientationHandler = null;
+              }
+              orientationIndicator.style.opacity = '0';
+              setTimeout(() => orientationIndicator.style.display = 'none', 500);
+              document.getElementById('gravityX').disabled = false;
+              document.getElementById('gravityY').disabled = false;
+              updateGravity();
+          }
+      });
+
+      function updateGravity() {
+          if (!useOrientationCheckbox.checked) {
+              engine.world.gravity.x = parseFloat(document.getElementById('gravityX').value);
+              engine.world.gravity.y = parseFloat(document.getElementById('gravityY').value);
+          }
+      }
+      document.getElementById('gravityX').addEventListener('input', updateGravity);
+      document.getElementById('gravityY').addEventListener('input', updateGravity);
+
+      updateGravity();
+    });
+  </script>
+  <div id="credits">
+    <button id="exitCredits"><i class="fas fa-times"></i></button>
+    <div>
+      Credits: Billy and Archer
+      <br><br>
+      Powered by Matter.js
+      <br>
+      Icons by Font Awesome
+    </div>
+  </div>
+</body>
+</html>
