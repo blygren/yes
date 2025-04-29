@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ball Simulation</title>
     <style>
         :root {
@@ -59,7 +59,7 @@
             overflow-y: auto;
             transition: background-color 0.3s ease;
             width: auto;
-            max-width: 35vw;
+            max-width: 60vw;
         }
         
         .trail {
@@ -96,8 +96,9 @@
         
         .slider-container {
             margin-top: 10px;
-            padding: 5px;
-            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            border-top: 1px solid var(--text-color);
+            width: 100%;
         }
         
         .slider-container label {
@@ -108,6 +109,32 @@
         
         .slider {
             width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: #d3d3d3;
+            outline: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--highlight-color);
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--highlight-color);
+            cursor: pointer;
+            border: none;
         }
         
         .effect-layer {
@@ -168,6 +195,9 @@
         
         .settings-option {
             margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .toggle {
@@ -175,7 +205,7 @@
             display: inline-block;
             width: 40px;
             height: 20px;
-            float: right;
+            min-width: 40px; /* Ensure minimum width for touch targets */
         }
         
         .toggle input {
@@ -218,7 +248,7 @@
         
         .settings-label {
             display: inline-block;
-            vertical-align: middle;
+            margin-right: 10px;
         }
         
         .toggle-btn {
@@ -237,7 +267,7 @@
         
         @media (max-width: 768px) {
             .controls, .settings-panel {
-                max-width: 42vw;
+                max-width: 60vw;
                 font-size: 12px;
                 padding: 8px;
             }
@@ -273,6 +303,7 @@
             .toggle {
                 width: 32px;
                 height: 16px;
+                min-width: 32px;
             }
             
             .toggle-slider:before {
@@ -293,44 +324,17 @@
         @media (max-width: 480px) {
             .controls {
                 max-height: 30vh;
+                max-width: 75vw;
             }
             
             .settings-panel {
-                max-height: 40vh;
+                max-height: 60vh;
+                max-width: 75vw;
             }
         }
         
         .hidden {
             display: none;
-        }
-        
-        /* Grid styles */
-        #grid-svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -5;
-            pointer-events: none;
-        }
-        
-        .grid-line {
-            stroke: var(--grid-color);
-            stroke-width: 1;
-            transition: stroke 0.3s ease;
-        }
-        
-        /* Fullscreen button */
-        .fullscreen-btn {
-            background-color: var(--panel-bg);
-            border: none;
-            color: var(--text-color);
-            border-radius: 5px;
-            cursor: pointer;
-            padding: 5px 10px;
-            transition: background-color 0.3s ease;
-            font-size: 14px;
         }
         
         /* UI Buttons */
@@ -355,7 +359,6 @@
             font-size: 14px;
         }
         
-        /* Accelerometer toggle */
         .accel-indicator {
             position: absolute;
             top: 10px;
@@ -383,6 +386,12 @@
         <p>Release to let it bounce with momentum!</p>
         <p>Throw it faster for more impressive effects!</p>
         <p>Watch the trajectory prediction in real-time!</p>
+    </div>
+    
+    <button id="toggle-settings" class="toggle-btn">⚙️</button>
+    
+    <div class="settings-panel" id="settings-panel">
+        <h3>Settings</h3>
         
         <div class="slider-container">
             <label for="gravity">Gravity: <span id="gravity-value">0.5</span></label>
@@ -394,23 +403,11 @@
             <label for="damping">Bounce: <span id="damping-value">0.8</span></label>
             <input type="range" id="damping" class="slider" min="0.5" max="0.95" step="0.05" value="0.8">
         </div>
-    </div>
-    
-    <button id="toggle-settings" class="toggle-btn">⚙️</button>
-    
-    <div class="settings-panel" id="settings-panel">
-        <h3>Settings</h3>
+        
         <div class="settings-option">
             <span class="settings-label">Dark Mode</span>
             <label class="toggle">
                 <input type="checkbox" id="dark-mode-toggle">
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
-        <div class="settings-option">
-            <span class="settings-label">Show Grid</span>
-            <label class="toggle">
-                <input type="checkbox" id="grid-toggle">
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -456,7 +453,6 @@
     
     <div class="ui-btn-container">
         <button id="reset-btn" class="ui-btn">Reset</button>
-        <button id="fullscreen-btn" class="ui-btn">⤢ Fullscreen</button>
     </div>
     
     <script>
@@ -470,19 +466,16 @@
         const settingsPanel = document.getElementById('settings-panel');
         const toggleSettingsBtn = document.getElementById('toggle-settings');
         const darkModeToggle = document.getElementById('dark-mode-toggle');
-        const gridToggle = document.getElementById('grid-toggle');
         const trajectoryToggle = document.getElementById('trajectory-toggle');
         const pathToggle = document.getElementById('path-toggle');
         const effectsToggle = document.getElementById('effects-toggle');
         const accelerometerToggle = document.getElementById('accelerometer-toggle');
         const accelIndicator = document.getElementById('accel-indicator');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
         const resetBtn = document.getElementById('reset-btn');
         
         // App settings
         const settings = {
             darkMode: false,
-            showGrid: false,
             showTrajectory: true,
             showPath: true,
             showEffects: true,
@@ -580,6 +573,31 @@
             dampingValue.textContent = ball.damping;
         });
         
+        // Function to fix toggle switches on mobile
+        function setupMobileToggles() {
+            // Get all toggle switches
+            const toggles = document.querySelectorAll('.toggle');
+            
+            // Add touch event handlers for each toggle
+            toggles.forEach(toggle => {
+                const input = toggle.querySelector('input[type="checkbox"]');
+                const slider = toggle.querySelector('.toggle-slider');
+                
+                // Add specific touch event for toggles
+                slider.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Toggle the checkbox
+                    input.checked = !input.checked;
+                    
+                    // Manually trigger the change event
+                    const event = new Event('change');
+                    input.dispatchEvent(event);
+                });
+            });
+        }
+        
         // Initialize settings panel
         function initSettings() {
             // Initial state of the settings panel
@@ -594,20 +612,6 @@
             darkModeToggle.addEventListener('change', () => {
                 settings.darkMode = darkModeToggle.checked;
                 document.body.classList.toggle('dark-mode', settings.darkMode);
-                // Update grid if shown
-                if (settings.showGrid) {
-                    drawGrid();
-                }
-            });
-            
-            // Grid toggle
-            gridToggle.addEventListener('change', () => {
-                settings.showGrid = gridToggle.checked;
-                if (settings.showGrid) {
-                    drawGrid();
-                } else {
-                    clearGrid();
-                }
             });
             
             // Trajectory toggle
@@ -678,15 +682,11 @@
                 }
             });
             
-            // Fullscreen button
-            fullscreenBtn.addEventListener('click', toggleFullscreen);
-            
             // Reset button
             resetBtn.addEventListener('click', resetSimulation);
             
             // Set initial toggle states
             darkModeToggle.checked = settings.darkMode;
-            gridToggle.checked = settings.showGrid;
             trajectoryToggle.checked = settings.showTrajectory;
             pathToggle.checked = settings.showPath;
             effectsToggle.checked = settings.showEffects;
@@ -695,9 +695,9 @@
             // Apply initial settings
             document.body.classList.toggle('dark-mode', settings.darkMode);
             effectLayer.style.display = settings.showEffects ? 'block' : 'none';
-            if (settings.showGrid) {
-                drawGrid();
-            }
+            
+            // Setup specific mobile toggle handling
+            setupMobileToggles();
         }
         
         // Reset the simulation
@@ -722,57 +722,6 @@
                 }
             });
             trajectoryElements = [];
-        }
-        
-        // Draw grid on the SVG element
-        function drawGrid() {
-            // Clear existing grid
-            while (gridSvg.firstChild) {
-                gridSvg.removeChild(gridSvg.firstChild);
-            }
-            
-            // Size grid to match canvas
-            const rect = canvas.getBoundingClientRect();
-            gridSvg.style.width = `${rect.width}px`;
-            gridSvg.style.height = `${rect.height}px`;
-            gridSvg.style.top = `${rect.top}px`;
-            gridSvg.style.left = `${rect.left}px`;
-            
-            gridSvg.setAttribute('width', rect.width);
-            gridSvg.setAttribute('height', rect.height);
-            
-            const gridSize = 20; // Grid cell size in pixels
-            const width = rect.width;
-            const height = rect.height;
-            
-            // Create horizontal grid lines
-            for (let y = 0; y <= height; y += gridSize) {
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', '0');
-                line.setAttribute('y1', y);
-                line.setAttribute('x2', width);
-                line.setAttribute('y2', y);
-                line.setAttribute('class', 'grid-line');
-                gridSvg.appendChild(line);
-            }
-            
-            // Create vertical grid lines
-            for (let x = 0; x <= width; x += gridSize) {
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', x);
-                line.setAttribute('y1', '0');
-                line.setAttribute('x2', x);
-                line.setAttribute('y2', height);
-                line.setAttribute('class', 'grid-line');
-                gridSvg.appendChild(line);
-            }
-        }
-        
-        // Clear grid
-        function clearGrid() {
-            while (gridSvg.firstChild) {
-                gridSvg.removeChild(gridSvg.firstChild);
-            }
         }
         
         // Accelerometer functions
@@ -821,21 +770,6 @@
                 // Upside down
                 accel.x = -acceleration.x;
                 accel.y = -acceleration.y;
-            }
-        }
-        
-        // Toggle fullscreen
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-                });
-                fullscreenBtn.textContent = "⤓ Exit Fullscreen";
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                    fullscreenBtn.textContent = "⤢ Fullscreen";
-                }
             }
         }
         
@@ -1342,7 +1276,7 @@
             }, 800);
         }
         
-        // Animation loop
+        // Animation loop - THIS WAS MISSING
         function animate(timestamp) {
             if (!lastTime) lastTime = timestamp;
             const deltaTime = timestamp - lastTime;
@@ -1462,29 +1396,6 @@
             mouse.dragPoints = [];
         });
         
-        canvas.addEventListener('mouseleave', () => {
-            if (ball.isDragging) {
-                // Calculate velocity from drag history
-                const velocityVector = getVelocityVector();
-                ball.velocityX = velocityVector.x;
-                ball.velocityY = velocityVector.y;
-                
-                ball.isDragging = false;
-                // Restore ball size
-                ball.radius /= 0.95;
-                
-                // Clean up trajectory elements
-                trajectoryElements.forEach(element => {
-                    if (document.body.contains(element)) {
-                        document.body.removeChild(element);
-                    }
-                });
-                trajectoryElements = [];
-            }
-            mouse.isDown = false;
-            mouse.dragPoints = [];
-        });
-        
         // Improved touch support
         function setupTouchSupport() {
             // Add touch-action CSS to prevent browser handling of touch gestures
@@ -1526,9 +1437,6 @@
                 });
                 trajectoryElements = [];
             }
-            
-            // Add active touch feedback
-            addTouchFeedback(touchX, touchY);
         }
         
         function handleTouchMove(e) {
@@ -1645,35 +1553,10 @@
             // Reposition ball
             ball.x = ratioX * canvas.width;
             ball.y = ratioY * canvas.height;
-            
-            // Redraw grid if enabled
-            if (settings.showGrid) {
-                drawGrid();
-            }
-        });
-        
-        // Listen for orientation changes
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                if (settings.showGrid) {
-                    drawGrid();
-                }
-            }, 300); // Wait for orientation change to complete
         });
         
         // Initialize
         function init() {
-            // Check screen orientation API support
-            if (window.screen && window.screen.orientation) {
-                window.screen.orientation.addEventListener('change', () => {
-                    setTimeout(() => {
-                        if (settings.showGrid) {
-                            drawGrid();
-                        }
-                    }, 300);
-                });
-            }
-            
             // Check accelerometer availability
             if (window.DeviceMotionEvent) {
                 accel.available = true;
@@ -1683,18 +1566,19 @@
             initSettings();
             setupTouchSupport();
             
-            // Remove default touch events for smooth mobile experience
+            // Remove default touch events but keep them for form elements
             document.addEventListener('touchstart', function(e) {
-                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+                // Only prevent default for non-interactive elements
+                const interactive = ['INPUT', 'BUTTON', 'LABEL', 'A'];
+                if (!interactive.includes(e.target.tagName) && 
+                    !e.target.classList.contains('toggle-slider')) {
                     e.preventDefault();
                 }
             }, { passive: false });
             
             // Initial resize to fit screen
-            setTimeout(() => {
-                const resizeEvent = new Event('resize');
-                window.dispatchEvent(resizeEvent);
-            }, 100);
+            const resizeEvent = new Event('resize');
+            window.dispatchEvent(resizeEvent);
             
             // Start animation
             requestAnimationFrame(animate);
