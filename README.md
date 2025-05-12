@@ -88,3 +88,6 @@
 
 [MOBILE TEST](https://blygren.github.io/yes/MobileTest.html)
 
+[CrazySlimes](https://blygren.github.io/yes/CrazySlimes.html)
+
+
