@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Cool Rainbow Balls</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .controls {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+        .control-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            color: white;
+            z-index: 100;
+        }
+        .toggle-section {
+            margin-bottom: 10px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #2196F3;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        .toggle-label {
+            vertical-align: middle;
+        }
+        .settings-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 101;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">Click or touch to add balls!</div>
+    
+    <button id="settingsToggle" class="settings-button">⚙️</button>
+    
+    <div id="controlPanel" class="control-panel hidden">
+        <div class="toggle-section">
+            <span class="toggle-label">Gravity</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="gravityToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="toggle-section">
+            <span class="toggle-label">Trails</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="trailsToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="toggle-section">
+            <span class="toggle-label">Glow Effects</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="glowToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="toggle-section">
+            <span class="toggle-label">Particles</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="particlesToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="toggle-section">
+            <span class="toggle-label">Ball Collisions</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="collisionsToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="toggle-section">
+            <span class="toggle-label">Sound Effects</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="soundToggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <hr style="border-color: #666; margin: 15px 0;">
+        
+        <div class="toggle-section">
+            <span class="toggle-label">Background:</span>
+            <select id="bgSelect" style="margin-left: 10px; background: #333; color: white; border: 1px solid #666; padding: 3px;">
+                <option value="black">Black</option>
+                <option value="stars">Stars</option>
+                <option value="grid">Grid</option>
+                <option value="custom">Custom Color</option>
+            </select>
+            <input type="color" id="bgColorPicker" style="margin-left: 10px; width: 30px; display: none;">
+        </div>
+        
+        <div class="toggle-section">
+            <span class="toggle-label">Ball Size:</span>
+            <input type="range" id="ballSizeSlider" min="5" max="50" value="20" style="margin-left: 10px; width: 100px;">
+            <span id="ballSizeValue" style="margin-left: 5px;">20</span>
+        </div>
+
+        <div class="toggle-section">
+            <span class="toggle-label">Ball Speed:</span>
+            <input type="range" id="ballSpeedSlider" min="1" max="20" value="10" style="margin-left: 10px; width: 100px;">
+            <span id="ballSpeedValue" style="margin-left: 5px;">10</span>
+        </div>
+
+        <div class="toggle-section" style="margin-top: 15px;">
+            <div>Ball Count: <span id="ballCountDisplay">5</span></div>
+            <button id="clearBallsBtn" style="margin-top: 10px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear All Balls</button>
+        </div>
+    </div>
+    
+    <script>
+        // Get the canvas and its context
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Settings configuration
+        const settings = {
+            gravity: true,
+            trails: true,
+            glow: true,
+            particles: true,
+            collisions: true,
+            sound: false,
+            background: "black",
+            customBgColor: "#123456",
+            ballSize: 20,
+            ballSpeed: 10
+        };
+        
+        // Load settings from localStorage if available
+        loadSettings();
+
+        // Stars background elements
+        const stars = [];
+        
+        // Sound effects
+        let bounceSfx, popSfx;
+        
+        // Initialize sound
+        function initSounds() {
+            // Create audio context
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            
+            // Create bounce sound
+            bounceSfx = {
+                play: function(volume = 0.3, pan = 0) {
+                    if (!settings.sound) return;
+                    
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    const panNode = audioCtx.createStereoPanner();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
+                    
+                    gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    
+                    panNode.pan.setValueAtTime(pan, audioCtx.currentTime);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(panNode);
+                    panNode.connect(audioCtx.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                }
+            };
+            
+            // Create pop sound
+            popSfx = {
+                play: function(volume = 0.3) {
+                    if (!settings.sound) return;
+                    
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+                    
+                    gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                }
+            };
+        }
+        
+        // Create stars for background
+        function createStars() {
+            stars.length = 0; // Clear existing stars
+            const starCount = Math.floor(canvas.width * canvas.height / 10000);
+            
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    brightness: Math.random() * 0.5 + 0.5
+                });
+            }
+        }
+        
+        // Draw stars background
+        function drawStarsBackground() {
+            for (const star of stars) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Draw grid background
+        function drawGridBackground() {
+            ctx.strokeStyle = 'rgba(50, 50, 50, 0.5)';
+            ctx.lineWidth = 1;
+            
+            // Draw vertical lines
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Draw horizontal lines
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        // Physics settings
+        const gravityValue = 0.2;
+        const friction = 0.98;
+        const bounce = 0.7;
+        
+        // Ball collection
+        const balls = [];
+        const particles = [];
+        
+        // Ball class
+        class Ball {
+            constructor(x, y, radius, dx, dy) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.dx = dx;
+                this.dy = dy;
+                this.mass = radius * radius;
+                this.hue = Math.floor(Math.random() * 360);
+                this.bounceParticles = [];
+                this.lastBounce = 0;
+            }
+            
+            update() {
+                // Apply gravity if enabled
+                if (settings.gravity) {
+                    this.dy += gravityValue;
+                    this.dx *= friction;
+                }
+                
+                // Ball collision detection
+                if (settings.collisions) {
+                    this.handleBallCollisions();
+                }
+                
+                // Bounce logic with walls
+                if (this.x + this.radius + this.dx >= canvas.width || this.x - this.radius + this.dx <= 0) {
+                    this.dx = -this.dx * (settings.gravity ? bounce : 1);
+                    
+                    // Play sound with panning based on x position
+                    const pan = (this.x / canvas.width) * 2 - 1; // -1 (left) to +1 (right)
+                    if (bounceSfx) bounceSfx.play(0.2, pan);
+                    
+                    if (settings.particles) {
+                        this.createBounceEffect(true);
+                    }
+                }
+                
+                if (this.y + this.radius + this.dy >= canvas.height || this.y - this.radius + this.dy <= 0) {
+                    this.dy = -this.dy * (settings.gravity ? bounce : 1);
+                    
+                    // Play sound
+                    if (bounceSfx) bounceSfx.play(0.2);
+                    
+                    // Prevent ball from getting stuck at bottom if gravity is on
+                    if (settings.gravity && Math.abs(this.dy) < 0.5 && this.y + this.radius > canvas.height - 2) {
+                        this.dy = -5 - Math.random() * 5; // Give it a boost
+                    }
+                    
+                    if (settings.particles) {
+                        this.createBounceEffect(false);
+                    }
+                }
+                
+                // Keep ball within bounds
+                if (this.x + this.radius > canvas.width) this.x = canvas.width - this.radius;
+                if (this.x - this.radius < 0) this.x = this.radius;
+                if (this.y + this.radius > canvas.height) this.y = canvas.height - this.radius;
+                if (this.y - this.radius < 0) this.y = this.radius;
+                
+                // Update position
+                this.x += this.dx;
+                this.y += this.dy;
+                
+                // Update color
+                this.hue = (this.hue + 1) % 360;
+            }
+            
+            handleBallCollisions() {
+                for (let i = 0; i < balls.length; i++) {
+                    const otherBall = balls[i];
+                    
+                    // Skip self-collision
+                    if (this === otherBall) continue;
+                    
+                    // Calculate distance between ball centers
+                    const dx = otherBall.x - this.x;
+                    const dy = otherBall.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Check for collision
+                    if (distance < this.radius + otherBall.radius) {
+                        // Calculate collision normal
+                        const nx = dx / distance;
+                        const ny = dy / distance;
+                        
+                        // Calculate relative velocity
+                        const relVelX = otherBall.dx - this.dx;
+                        const relVelY = otherBall.dy - this.dy;
+                        
+                        // Calculate relative velocity in terms of normal direction
+                        const dotProduct = relVelX * nx + relVelY * ny;
+                        
+                        // Do not resolve if objects are moving away from each other
+                        if (dotProduct > 0) continue;
+                        
+                        // Calculate impulse
+                        const impulse = 2 * dotProduct / (this.mass + otherBall.mass);
+                        
+                        // Apply impulse to ball velocities
+                        this.dx += impulse * nx * otherBall.mass;
+                        this.dy += impulse * ny * otherBall.mass;
+                        otherBall.dx -= impulse * nx * this.mass;
+                        otherBall.dy -= impulse * ny * this.mass;
+                        
+                        // Move balls apart to prevent sticking
+                        const overlap = (this.radius + otherBall.radius - distance) / 2;
+                        this.x -= overlap * nx;
+                        this.y -= overlap * ny;
+                        otherBall.x += overlap * nx;
+                        otherBall.y += overlap * ny;
+                    }
+                }
+            }
+            
+            createBounceEffect(isHorizontal) {
+                // Only create particles if enough time has passed since last bounce
+                const now = Date.now();
+                if (now - this.lastBounce < 300) return;
+                this.lastBounce = now;
+                
+                // Create explosion particles
+                for (let i = 0; i < 8; i++) {
+                    let speed = 2 + Math.random() * 3;
+                    let angle = Math.random() * Math.PI * 2;
+                    let particleDx = Math.cos(angle) * speed;
+                    let particleDy = Math.sin(angle) * speed;
+                    
+                    // Adjust direction based on bounce direction
+                    if (isHorizontal) {
+                        particleDx = Math.abs(particleDx) * Math.sign(this.dx) * -1;
+                    }
+                    
+                    particles.push(new Particle(
+                        this.x, 
+                        this.y, 
+                        Math.random() * 4 + 2, 
+                        particleDx, 
+                        particleDy, 
+                        this.hue
+                    ));
+                }
+            }
+            
+            draw() {
+                // Draw glow effect if enabled
+                if (settings.glow) {
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, this.radius * 2
+                    );
+                    gradient.addColorStop(0, `hsla(${this.hue}, 100%, 65%, 0.3)`);
+                    gradient.addColorStop(1, `hsla(${this.hue}, 100%, 65%, 0)`);
+                    
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+                
+                // Draw ball
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+                ctx.fill();
+                
+                // Add highlight if glow is enabled
+                if (settings.glow) {
+                    ctx.beginPath();
+                    ctx.arc(this.x - this.radius / 3, this.y - this.radius / 3, this.radius / 3, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // Particle class for bounce effects
+        class Particle {
+            constructor(x, y, radius, dx, dy, hue) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.dx = dx;
+                this.dy = dy;
+                this.hue = hue;
+                this.alpha = 1;
+                this.life = 30;
+            }
+            
+            update() {
+                this.life--;
+                this.alpha = this.life / 30;
+                this.x += this.dx;
+                this.y += this.dy;
+                return this.life > 0;
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${this.hue}, 100%, 60%, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+        
+        // Create initial balls
+        function createInitialBalls() {
+            for (let i = 0; i < 5; i++) {
+                const radius = settings.ballSize;
+                const x = Math.random() * (canvas.width - radius * 2) + radius;
+                const y = Math.random() * (canvas.height / 2);
+                
+                // Scale speed based on settings
+                const speedFactor = settings.ballSpeed / 10;
+                const dx = (Math.random() * 10 - 5) * speedFactor;
+                const dy = Math.random() * 2 * speedFactor;
+                
+                balls.push(new Ball(x, y, radius, dx, dy));
+            }
+            
+            updateBallCountDisplay();
+        }
+        
+        // Handle user interaction - add new balls on click/touch
+        function handleInteraction(e) {
+            // Prevent adding balls if clicking on settings
+            if (e.target !== canvas) return;
+            
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+            const radius = settings.ballSize;
+            
+            // Scale speed based on settings
+            const speedFactor = settings.ballSpeed / 10;
+            const dx = (Math.random() * 10 - 5) * speedFactor;
+            const dy = (Math.random() * -10 - 5) * speedFactor; // Start with upward velocity
+            
+            balls.push(new Ball(x, y, radius, dx, dy));
+            
+            // Play pop sound
+            if (popSfx) popSfx.play(0.3);
+            
+            // Limit max number of balls
+            if (balls.length > 50) {
+                balls.shift();
+            }
+            
+            updateBallCountDisplay();
+        }
+        
+        function updateBallCountDisplay() {
+            document.getElementById('ballCountDisplay').textContent = balls.length;
+        }
+        
+        function clearAllBalls() {
+            balls.length = 0;
+            particles.length = 0;
+            updateBallCountDisplay();
+        }
+        
+        // Animation loop
+        function animate() {
+            // Handle background based on selected option
+            if (settings.background === "black") {
+                ctx.fillStyle = 'rgba(0, 0, 0, settings.trails ? 0.1 : 1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } 
+            else if (settings.background === "stars") {
+                if (settings.trails) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                } else {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+                }
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                drawStarsBackground();
+            }
+            else if (settings.background === "grid") {
+                if (settings.trails) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                } else {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+                }
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                drawGridBackground();
+            }
+            else if (settings.background === "custom") {
+                // Parse custom color and apply transparency if trails are on
+                const color = settings.customBgColor;
+                const r = parseInt(color.slice(1, 3), 16);
+                const g = parseInt(color.slice(3, 5), 16);
+                const b = parseInt(color.slice(5, 7), 16);
+                
+                if (settings.trails) {
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.1)`;
+                } else {
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`;
+                }
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const isAlive = particles[i].update();
+                if (isAlive) {
+                    particles[i].draw();
+                } else {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            // Update and draw balls
+            balls.forEach(ball => {
+                ball.update();
+                ball.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Settings UI functionality
+        function setupSettingsUI() {
+            const settingsToggle = document.getElementById('settingsToggle');
+            const controlPanel = document.getElementById('controlPanel');
+            const gravityToggle = document.getElementById('gravityToggle');
+            const trailsToggle = document.getElementById('trailsToggle');
+            const glowToggle = document.getElementById('glowToggle');
+            const particlesToggle = document.getElementById('particlesToggle');
+            const collisionsToggle = document.getElementById('collisionsToggle');
+            const soundToggle = document.getElementById('soundToggle');
+            const bgSelect = document.getElementById('bgSelect');
+            const bgColorPicker = document.getElementById('bgColorPicker');
+            const ballSizeSlider = document.getElementById('ballSizeSlider');
+            const ballSizeValue = document.getElementById('ballSizeValue');
+            const ballSpeedSlider = document.getElementById('ballSpeedSlider');
+            const ballSpeedValue = document.getElementById('ballSpeedValue');
+            const clearBallsBtn = document.getElementById('clearBallsBtn');
+            
+            // Set initial values
+            gravityToggle.checked = settings.gravity;
+            trailsToggle.checked = settings.trails;
+            glowToggle.checked = settings.glow;
+            particlesToggle.checked = settings.particles;
+            collisionsToggle.checked = settings.collisions;
+            soundToggle.checked = settings.sound;
+            bgSelect.value = settings.background;
+            bgColorPicker.value = settings.customBgColor;
+            ballSizeSlider.value = settings.ballSize;
+            ballSizeValue.textContent = settings.ballSize;
+            ballSpeedSlider.value = settings.ballSpeed;
+            ballSpeedValue.textContent = settings.ballSpeed;
+            
+            // Show/hide color picker based on background selection
+            if (settings.background === 'custom') {
+                bgColorPicker.style.display = 'inline-block';
+            } else {
+                bgColorPicker.style.display = 'none';
+            }
+            
+            // Toggle settings panel visibility
+            settingsToggle.addEventListener('click', function() {
+                controlPanel.classList.toggle('hidden');
+            });
+            
+            // Handle toggle changes
+            gravityToggle.addEventListener('change', function() {
+                settings.gravity = this.checked;
+                saveSettings();
+            });
+            
+            trailsToggle.addEventListener('change', function() {
+                settings.trails = this.checked;
+                saveSettings();
+            });
+            
+            glowToggle.addEventListener('change', function() {
+                settings.glow = this.checked;
+                saveSettings();
+            });
+            
+            particlesToggle.addEventListener('change', function() {
+                settings.particles = this.checked;
+                saveSettings();
+            });
+            
+            collisionsToggle.addEventListener('change', function() {
+                settings.collisions = this.checked;
+                saveSettings();
+            });
+            
+            soundToggle.addEventListener('change', function() {
+                settings.sound = this.checked;
+                saveSettings();
+                
+                // Initialize sounds if turned on for the first time
+                if (settings.sound && !bounceSfx) {
+                    initSounds();
+                }
+            });
+            
+            bgSelect.addEventListener('change', function() {
+                settings.background = this.value;
+                
+                if (this.value === 'custom') {
+                    bgColorPicker.style.display = 'inline-block';
+                } else {
+                    bgColorPicker.style.display = 'none';
+                }
+                
+                if (this.value === 'stars' && stars.length === 0) {
+                    createStars();
+                }
+                
+                saveSettings();
+            });
+            
+            bgColorPicker.addEventListener('change', function() {
+                settings.customBgColor = this.value;
+                saveSettings();
+            });
+            
+            ballSizeSlider.addEventListener('input', function() {
+                settings.ballSize = parseInt(this.value);
+                ballSizeValue.textContent = settings.ballSize;
+                saveSettings();
+            });
+            
+            ballSpeedSlider.addEventListener('input', function() {
+                settings.ballSpeed = parseInt(this.value);
+                ballSpeedValue.textContent = settings.ballSpeed;
+                saveSettings();
+            });
+            
+            clearBallsBtn.addEventListener('click', function() {
+                clearAllBalls();
+            });
+        }
+        
+        // Save settings to localStorage
+        function saveSettings() {
+            localStorage.setItem('ballSettings', JSON.stringify(settings));
+        }
+        
+        // Load settings from localStorage
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('ballSettings');
+            if (savedSettings) {
+                const parsedSettings = JSON.parse(savedSettings);
+                Object.assign(settings, parsedSettings);
+            }
+        }
+        
+        // Event listeners for interaction
+        canvas.addEventListener('click', handleInteraction);
+        canvas.addEventListener('touchstart', handleInteraction);
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Recreate stars if they're used
+            if (settings.background === 'stars') {
+                createStars();
+            }
+        });
+        
+        // Initialize sound if enabled
+        if (settings.sound) {
+            initSounds();
+        }
+        
+        // Create stars if using stars background
+        if (settings.background === 'stars') {
+            createStars();
+        }
+        
+        // Initialize and start animation
+        setupSettingsUI();
+        createInitialBalls();
+        animate();
+    </script>
+</body>
+</html>
