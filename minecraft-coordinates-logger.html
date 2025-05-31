@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Coordinates Logger</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #59b464; /* Minecraft green */
+            --accent-secondary: #4a9c53;
+            --accent-danger: #b43c3c; /* Minecraft red */
+            --accent-warning: #b49c3c; /* Minecraft gold */
+            --accent-info: #3c78b4; /* Minecraft blue */
+            --overworld: #59b464;
+            --nether: #b43c3c;
+            --end: #9c59b6;
+        }
+        
+        body {
+            font-family: 'VT323', monospace;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+        
+        h1, h2 {
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-transform: uppercase;
+        }
+        
+        h1 {
+            color: var(--accent-primary);
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--accent-primary), transparent);
+        }
+        
+        h2 {
+            color: var(--accent-primary);
+            margin-top: 30px;
+        }
+        
+        .form-container {
+            background-color: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background-color: #333;
+            color: var(--text-primary);
+            font-family: 'VT323', monospace;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(89, 180, 100, 0.3);
+        }
+        
+        .coordinates {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .coordinates input {
+            flex: 1;
+        }
+        
+        button {
+            background-color: var(--accent-primary);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+            font-family: 'VT323', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:hover {
+            background-color: var(--accent-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background-color: var(--bg-secondary);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #303030;
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        td {
+            border-top: 1px solid #3a3a3a;
+        }
+        
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .edit-btn {
+            background-color: var(--accent-warning);
+        }
+        
+        .edit-btn:hover {
+            background-color: #9c8433;
+        }
+        
+        .delete-btn {
+            background-color: var(--accent-danger);
+        }
+        
+        .delete-btn:hover {
+            background-color: #9c3333;
+        }
+        
+        .dimension-minecraft {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            border-radius: 4px;
+            vertical-align: middle;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        .dimension-overworld {
+            background-color: var(--overworld);
+            box-shadow: 0 0 8px var(--overworld);
+        }
+        
+        .dimension-nether {
+            background-color: var(--nether);
+            box-shadow: 0 0 8px var(--nether);
+        }
+        
+        .dimension-end {
+            background-color: var(--end);
+            box-shadow: 0 0 8px var(--end);
+        }
+
+        /* Minecraft-inspired pixelated border */
+        .minecraft-border {
+            border: 4px solid #555;
+            border-image: linear-gradient(45deg, #333, #555) 1;
+            image-rendering: pixelated;
+        }
+        
+        /* Add a pixelated top bar */
+        .page-header {
+            background-color: #383838;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-bottom: 4px solid var(--accent-primary);
+            text-align: center;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        /* Empty state styling */
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Coordinates badge */
+        .coord-badge {
+            font-family: monospace;
+            background-color: #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        /* Copy button for coordinates */
+        .copy-btn {
+            background-color: #444;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            margin-left: 8px;
+            opacity: 0.7;
+        }
+
+        .copy-btn:hover {
+            opacity: 1;
+            background-color: #555;
+        }
+
+        /* Add animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Tooltip for copied message */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip .tooltiptext.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Minecraft icons */
+        .mc-icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            image-rendering: pixelated; /* Ensures pixel art stays crisp */
+        }
+        
+        .mc-diamond {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACEElEQVRYR+2XP0hbURTGf+eZSBYJBcFBcOgk4uAgODgUOnQodHCRDg6FDt10EDoIHQodOkiHTkKHDkKGDIIOHTp0CBQKHTrk/Tl5Dy/Je8m7yT8I9S73vXvP953vO+fcK/zni0bELwLfVfWjqm4CQ6r6QkQWVPUH8Bd4BvSo6jvgnar+FpFLVb1PxhGRMVXdB+6Bi8yQiLxW1YfoPSIyrarRc6FwBvYBc9L7XVVnVPUW+KOqH4AHYAdYBsaBp8BHEQkBV4EQkHdjGweAOzT6InAuIjsicgE8A3pUtU9EbL/TuXaTkRuRCyP3bZGAeeDYmc650O+q+sXpgqreRWJnpn97ZTLW0oi9Al9FZN8Zvgd2ReRSRI5EJFDviJW4YdsnVX11ooq/htQBEZkD3qrqQxCwJiLbIvITGMsTUMAmJorLwFRmHxPyGtgEfgGrgDHjb1V9AjxX1R1gDHjtFN0Ar4ArZ28dOFbVhyJiYs5E5LCqgCzjFhVjYy+xiKqqh6QCLiKTQLh6Te6rYsAysApY6m/y7BdR5NSNPCJmczEbZTptxfQVooTaTgExZRUE5KVgK990J0ndFgXk0ZrZbxmBIudlGelIBIoMPS4CrTqpK6DrEWikeOoG4IlQH0Jti4CZ7UgREpG13FCzBhtXwKPpyEhU1/AbPY9paCsDLZ+GWssT96nTGfgHPJeGIRlhPKEAAAAASUVORK5CYII=');
+        }
+        
+        .mc-compass {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACoklEQVRYR+2XTUhUURTHf+fNGIKbFi2iNi2CTRsXLdq0aNGmRSRtIoJaRAupIGgTtGkTBLVoYdCiRdAmahERQdQ20aJFqzZBi4gIwvGbGefdzL03M2/eaF8ikXe6757/+Z//OefeK/zni0bELwGDqroNdACbROSjiMwBP4Ap4EJVv4nIvKrWVHVRVbdZH1XdLCInReS7iEypak1EfqnqlIjMisiX0NZaAfJCqnpAVYdF5JeqforFVPWkqj4SkadAN7CoqhsS++ciciAi4KuIfFPVNyHJBeCliJSAayLSHwhQ1QFVPQ8MA92JY4kPETEBV4CRQOAjEfknIrOq+l5EqkAPsEdVJ0Xkg6p2RfYGAyEfgBfAR+AcUA7yD0XkuIj0q+qJSMCzaO8Y8CriM/DNAVuAQ8Dr7L0WEbAlPO8HrgLbgQpwF3gZbDwN3jtC+HeGyA+LyMWQpKgJZ0Xkms+9L+zciNjbCRwBRoFO4DYQEr0PzHsiCwX4Y/wS8aC/xU56RXSYrbck9ILkOw/JxQTEXcCI6AVeBW4AO0MV7AMmRMRo3ZueB4/OeVW9JSK3AyALNen2og+uNsBv+96iCnAdOAOYc1sXIiIeuctN545nnusB/M3AeJSssE0zCJ3QEtDtjlfVd9F5OkQaE9DNLaiQw4Kl2errsbMTUA4EVVTVRsIGZyQciZzaZAKGB9vKwDYbL5kaX6Mz+q2ygV0FlnJxJSfElDcVYIbybWxAmfHSGCzYgOFRPUzkRdxuCDXA6SAATia17cpsQSW/7UpD6GDkyAhzgS3sDtxScoibihMQd2MbQGirgYhbcKMM2IW16nURAXljOHcPayGB7QLaOkcyN2QuB/WjuOWLSFHzGbBFVZs1DnddLQApSpYTeJ6Akqrm/xndNrp/e1qnorTNgb/78IYhLSJQqgAAAABJRU5ErkJggg==');
+        }
+        
+        .mc-map {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACW0lEQVRYR+2XTUhUURTHf+fNODrjx0IXfixatGgRLVq0cNGiRYsWLYIWQYuCFkGLoEXQom/atAhatAlaBBG0CVoEbdoELSIiCJyZcT7ezNx3Y++duTPOm3nDgF8Rw7zcee+e//mfc+45V/jPl8bELwEzqvoU2AK0AG9F5DswJyKfgBVVnRWRRVX9CXSFOFUdVNVHwK8Q9w9V5b8SkW8i8jXpq6kAvUJUdaeq3hKRn6o6lYhV1eOqehd4AnQDy6q6LsH/FZG9MQHfReSnqr4OSV4Cr0SkAlwRkXJMgKoeU9XzwG2gM2H5WURKQEVVbwKjMYEPIvIyJuo1cFhEelT1WCTgb4gdCQkPRSrsAYZCYT2NAkTkV3jeCwwDu4ES8AB4FQiYCN7bQvj3DMKfiMi5kCSvCS+IyOWcd89C5PuIvW3AIWAM2AjcB+KiTgKznsiMAmJz/LjsUH+LnZTz6DDr9YQuBPJ9DrELMQFJCzaiRoHXwFVgW6jCHmBKRIzWvRl48ONzQVXvisj9AMhcpoD5ogeuOMAfe98iD3AZOAuYc1sXIiKeuezYp8V5npOBv2FgMkpW2KYb8E6vEvDRzpeKjtPrwJXEE7AQzVRrKg3JqDDcWA0BtmwhTGRonuppYmfhYTSfsJYPQi9C5QuwP//OrPgU7p8BMkc9jN109gzaoAndgcaIlhDuHmD2JpspQKOQV1XvNSCsjmrG5TMjwJqvaQKaVL01OZA8aeQbsVqQXgV649PQX0ciD0pmAvJC6ENoMTB7t9pPPBH9/cNYQkLys5CXrJGjuIld/wB4vdUhbpM63wAAAABJRU5ErkJggg==');
+        }
+        
+        .mc-sword {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABUUlEQVRYR+2XMU7DMBSG33diBA4QGFk6wMLCwI54JDZGBoYODAwwMiGBxMzGxMAAEwMLAwNbmXgnejFxZcdxk7aN1MiW87/vff9/bKehgR81oI8zYC5h1xA1gapT6Ap9LjCVJMluzPxNEbLs/QbgMgD9E5E+M783xrwCUEBNRDYA7BS5KACf/ce6ZeYpa+0egLmIXDDz0hgzEZF557lUiQKQVaCUiHR+nxYAbpj5k5m3AJww86q1disIoILLRJGXACbMfGSt3a9zL1UgVCCo/0TkiJmvtNbvZSApADIVuo5T9VcA3BLRvXPuJQQgWiE3Q8Re701EBs65cRCgTBRVlShA1QL/rkBTEUWff9cLlUp0OpDQbwjAQUSkz8xjrfVbzO/fdQYy4vUDeATw0O12B+PxeP3b/wE1YfnrA3ilAnfOuefYHHcGqOIrSg+UKtBqtYaxt18e3gDMja0h0SnOAwAAAABJRU5ErkJggg==');
+        }
+
+        .mc-bed {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACMUlEQVRYR+2XT0gUYRjGn3dmZ3XFTGwPFdRBCDoUdAg6RAF1iA51CIIOQZfok2AQdAg6BB2CwPJQoEGHICmCgg51qKBDdAiKIP9s7uzqjs5+zTeb682u7o47Sm6H+S7z/d7zvM/7fd87I3zgkQ84P/4HUJmB66r6AUCXtXadiAxba+dUdVFEqluef0dEfpY553YCqOoZEfkOoBPAXQDXbf4KwH1r7W8AQ865DxU5cHFycrLLe/8UwDUAPXVzZoDZ1tramYWFhaUgCO6JyDCA3SLyRVUfjI2NfambX8uAqn4EcBlAXFXvj4yMzBYYmArgF4DjAMastbullGPXarV+Y8xhEZmw1p7M5+Qi8L0437UMWGu/quoPEXlsjDkgIgtDQ0PBzMzMTu/9MxG5BOCOtfZF7RYlEolHInILQI+qKoAjqvoeQEpVJ7stA0EQbPHePwGQFZEuAO+mpqZOTE9PfwPQX61Wz8/Pzy8nk8ndAMZFZMB7f9N7/0pE3nrvT6nqC+/9Oe/9MIAzIhJfbwbuALhW6l+xDXt7e99MTk4eyWQyfbVa7TiAt6p6WUSGarXalVQq9UpEzgI4CuCTtfZ0fS+qGvuSc+5kFMBo/enLATwcHR292NfXF1prz4vIS+fcJVU9KCIPReQigB0AZoPBwe1LS0tJEZkSkePW2sP5QAqp5BwAGSESiIi8BXAtnU4fKhQKlcHBwYwx5iqAVBRFT/P5fN57fxxAUUSS+Xxebty4NQwkkslkRAkPguBCGIbZ9dr/bQDrgaommkwmw/X6/gVRoJkhFsrHnAAAAABJRU5ErkJggg==');
+        }
+        
+        /* Minecraft Block Buttons */
+        .block-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #222;
+            border-top-color: #555;
+            border-left-color: #555;
+            background-image: repeating-linear-gradient(45deg, #333 0px, #333 3px, #3a3a3a 3px, #3a3a3a 6px);
+            text-shadow: 1px 1px 0 #000;
+        }
+        
+        .block-btn:hover {
+            filter: brightness(1.2);
+        }
+        
+        .block-btn:active {
+            border-top-color: #222;
+            border-left-color: #222;
+            border-right-color: #555;
+            border-bottom-color: #555;
+        }
+
+        /* Weather button styles */
+        .weather-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .weather-btn {
+            background-color: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.6;
+            flex: 1;
+            color: var(--text-primary); /* Ensure text is visible */
+        }
+        
+        .weather-btn.active {
+            opacity: 1;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 10px rgba(89, 180, 100, 0.3);
+        }
+        
+        .weather-icon {
+            font-size: 18px;
+            margin-right: 5px;
+        }
+        
+        /* Biome styles */
+        .biome-select {
+            padding-right: 30px; /* Space for arrow */
+            appearance: none; /* Remove default arrow */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2359b464' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        /* Favorites star */
+        .star-btn {
+            background: none;
+            border: none;
+            color: var(--accent-warning);
+            font-size: 1.2rem;
+            padding: 5px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s;
+        }
+        
+        .star-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .star-btn.active {
+            opacity: 1;
+        }
+        
+        /* Minecraft health bar */
+        .health-bar {
+            width: 100%;
+            height: 12px;
+            background-color: #141414;
+            border: 2px solid #000;
+            margin-top: 10px; /* Adjusted margin */
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background-color: var(--accent-danger);
+            width: 0%; /* Initial width */
+            transition: width 0.5s ease;
+        }
+
+        .importance-slider { /* Style for the range input */
+            margin-top: 5px;
+        }
+        
+        /* Experience bar */
+        .xp-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #141414;
+            border: 1px solid #000;
+            margin: 5px 0 20px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 1px;
+        }
+        
+        .xp-fill {
+            height: 100%;
+            background-color: var(--accent-info);
+            width: 0%; /* Initial width */
+            transition: width 0.5s ease;
+        }
+        
+        /* Filter and sort options */
+        .options-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background-color: var(--bg-secondary);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+        
+        .filter-options, .sort-options {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Added gap */
+        }
+        
+        .filter-options label, .sort-options label { /* Style labels in options bar */
+             font-size: 1rem;
+             margin-bottom: 0; /* Override default label margin */
+        }
+
+        .filter-options select, .sort-options select {
+            width: auto;
+            padding: 8px 25px 8px 10px; /* Adjusted padding */
+            margin-left: 5px; /* Reduced margin */
+            font-size: 1rem; /* Consistent font size */
+        }
+        
+        /* Tab navigation */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333; /* Separator line */
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            text-align: center;
+            cursor: pointer;
+            border-top-left-radius: 5px; /* Rounded top corners */
+            border-top-right-radius: 5px;
+            border: 1px solid #333;
+            border-bottom: none;
+            margin-right: 2px; /* Small gap between tabs */
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background-color: #383838;
+            color: var(--accent-primary);
+            border-bottom: 2px solid var(--accent-primary); /* Highlight active tab */
+            position: relative;
+            top: 2px; /* Make active tab slightly pop out */
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: #333;
+            color: var(--text-primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s; /* Fade in tab content */
+        }
+        
+        /* Floating icon toolbar */
+        .toolbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .tool-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid #444;
+        }
+        
+        .tool-btn:hover {
+            transform: scale(1.1);
+            background-color: var(--accent-primary);
+            color: #fff;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Dark mode toggle */
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem; /* Increased size */
+            cursor: pointer;
+            z-index: 10;
+            padding: 5px;
+        }
+        
+        /* Day/Night cycle */
+        .day-night-cycle {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1; /* Behind everything */
+            overflow: hidden; /* Prevent scrollbars from sun/moon */
+        }
+        
+        .sun, .moon {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            top: 30px; /* Initial position */
+            left: 30px; /* Initial position */
+            transition: all 2s ease-in-out, opacity 1s ease; /* Smooth transition for movement and visibility */
+        }
+        
+        .sun {
+            background-color: #ffdd77; /* Softer sun color */
+            box-shadow: 0 0 40px #ffdd77, 0 0 60px #ffaa00;
+            display: block;
+        }
+        
+        .moon {
+            background-color: #ddeeff; /* Softer moon color */
+            box-shadow: 0 0 20px #ddeeff, 0 0 30px #aabbff;
+            display: none; /* Initially hidden */
+        }
+
+        /* Checkbox group styling */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto; /* Override default input width */
+            margin-right: 5px;
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast {
+            background-color: var(--accent-primary);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            font-family: 'VT323', monospace;
+            font-size: 1.1rem;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="day-night-cycle">
+        <div class="sun"></div>
+        <div class="moon"></div>
+    </div>
+
+    <button class="dark-mode-toggle" title="Toggle darker mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="xp-bar"> <!-- Moved XP bar here -->
+        <div class="xp-fill"></div>
+    </div>
+
+    <div class="page-header minecraft-border">
+        <h1><span class="mc-icon mc-map"></span>Minecraft Coordinates Logger</h1>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="add-location">
+            <i class="fas fa-plus-circle"></i> Add Location
+        </div>
+        <div class="tab" data-tab="view-locations">
+            <i class="fas fa-list-alt"></i> View Locations
+        </div>
+        <div class="tab" data-tab="favorites">
+            <i class="fas fa-star"></i> Favorites
+        </div>
+    </div>
+    
+    <div class="tab-content active" id="add-location">
+        <div class="form-container minecraft-border">
+            <form id="coordinateForm">
+                <div class="form-group">
+                    <label for="structureName">
+                        <i class="fas fa-signature"></i> Structure Name:
+                    </label>
+                    <input type="text" id="structureName" required placeholder="e.g., Village, Stronghold, Base">
+                </div>
+                
+                <div class="form-group">
+                    <label for="coordinates">
+                        <span class="mc-icon mc-compass"></span> Coordinates:
+                    </label>
+                    <div class="coordinates">
+                        <input type="number" id="x" placeholder="X" required>
+                        <input type="number" id="y" placeholder="Y" required>
+                        <input type="number" id="z" placeholder="Z" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dimension">
+                        <i class="fas fa-layer-group"></i> Dimension:
+                    </label>
+                    <select id="dimension" required>
+                        <option value="overworld">Overworld</option>
+                        <option value="nether">Nether</option>
+                        <option value="end">The End</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="biome">
+                        <i class="fas fa-leaf"></i> Biome:
+                    </label>
+                    <select id="biome" class="biome-select">
+                        <option value="">-- Select Biome --</option>
+                        <option value="plains">Plains</option>
+                        <option value="forest">Forest</option>
+                        <option value="desert">Desert</option>
+                        <option value="mountains">Mountains</option>
+                        <option value="swamp">Swamp</option>
+                        <option value="taiga">Taiga</option>
+                        <option value="jungle">Jungle</option>
+                        <option value="savanna">Savanna</option>
+                        <option value="ocean">Ocean</option>
+                        <option value="mushroom_fields">Mushroom Fields</option>
+                        <option value="badlands">Badlands/Mesa</option>
+                        <option value="snowy_tundra">Snowy Tundra</option>
+                        <option value="nether_wastes">Nether Wastes</option>
+                        <option value="soul_sand_valley">Soul Sand Valley</option>
+                        <option value="crimson_forest">Crimson Forest</option>
+                        <option value="warped_forest">Warped Forest</option>
+                        <option value="basalt_deltas">Basalt Deltas</option>
+                        <option value="the_end">The End</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="weather">
+                        <i class="fas fa-cloud-sun-rain"></i> Weather Conditions:
+                    </label>
+                    <div class="weather-selector">
+                        <button type="button" class="weather-btn active" data-weather="clear">
+                            <i class="fas fa-sun weather-icon"></i> Clear
+                        </button>
+                        <button type="button" class="weather-btn" data-weather="rain">
+                            <i class="fas fa-cloud-showers-heavy weather-icon"></i> Rain
+                        </button>
+                        <button type="button" class="weather-btn" data-weather="storm">
+                            <i class="fas fa-poo-storm weather-icon"></i> Storm
+                        </button>
+                        <input type="hidden" id="weather" value="clear">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-tags"></i> Tags:
+                    </label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="tags" value="base"> <span class="mc-icon mc-bed"></span> Base</label>
+                        <label><input type="checkbox" name="tags" value="farm"> <i class="fas fa-seedling"></i> Farm</label>
+                        <label><input type="checkbox" name="tags" value="village"> <i class="fas fa-home"></i> Village</label>
+                        <label><input type="checkbox" name="tags" value="dungeon"> <span class="mc-icon mc-sword"></span> Dungeon</label>
+                        <label><input type="checkbox" name="tags" value="portal"> <i class="fas fa-dungeon"></i> Portal</label>
+                        <label><input type="checkbox" name="tags" value="mine"> <i class="fas fa-gem"></i> Mine</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">
+                        <i class="fas fa-pencil-alt"></i> Description (optional):
+                    </label>
+                    <textarea id="description" rows="3" placeholder="Add any notes about this location"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="importance">
+                        <i class="fas fa-heartbeat"></i> Importance: <span id="importanceValue">50</span>
+                    </label>
+                    <input type="range" id="importance" min="0" max="100" value="50" class="importance-slider">
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 50%"></div>
+                    </div>
+                </div>
+                
+                <button type="submit" id="saveButton" class="block-btn">
+                    <span class="mc-icon mc-diamond"></span> Save Location
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="view-locations">
+        <div class="options-bar">
+            <div class="filter-options">
+                <label><i class="fas fa-filter"></i> Filter:</label>
+                <select id="filter-dimension" class="biome-select">
+                    <option value="all">All Dimensions</option>
+                    <option value="overworld">Overworld</option>
+                    <option value="nether">Nether</option>
+                    <option value="end">The End</option>
+                </select>
+                <select id="filter-biome" class="biome-select">
+                    <option value="all">All Biomes</option>
+                    <option value="plains">Plains</option>
+                    <option value="forest">Forest</option>
+                    <option value="desert">Desert</option>
+                    <option value="mountains">Mountains</option>
+                    <option value="swamp">Swamp</option>
+                    <option value="taiga">Taiga</option>
+                    <option value="jungle">Jungle</option>
+                    <option value="savanna">Savanna</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="mushroom_fields">Mushroom Fields</option>
+                    <option value="badlands">Badlands/Mesa</option>
+                    <option value="snowy_tundra">Snowy Tundra</option>
+                    <option value="nether_wastes">Nether Wastes</option>
+                    <option value="soul_sand_valley">Soul Sand Valley</option>
+                    <option value="crimson_forest">Crimson Forest</option>
+                    <option value="warped_forest">Warped Forest</option>
+                    <option value="basalt_deltas">Basalt Deltas</option>
+                    <option value="the_end">The End</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="sort-options">
+                <label><i class="fas fa-sort-amount-down"></i> Sort by:</label>
+                <select id="sort-by" class="biome-select">
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="importance">Importance</option>
+                </select>
+            </div>
+        </div>
+        
+        <table id="coordinatesTable" class="minecraft-border">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Coordinates</th>
+                    <th>Dimension</th>
+                    <th>Biome</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="coordinatesTableBody">
+                <!-- Table content will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="tab-content" id="favorites">
+        <h2><i class="fas fa-star"></i> Favorite Locations</h2>
+        <table id="favoritesTable" class="minecraft-border">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Coordinates</th>
+                    <th>Dimension</th>
+                    <th>Biome</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="favoritesTableBody">
+                <!-- Table content will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="toolbar">
+        <div class="tool-btn" id="teleport-btn" title="Teleport Command Generator">
+            <i class="fas fa-terminal"></i>
+        </div>
+        <div class="tool-btn" id="import-btn" title="Import Coordinates">
+            <i class="fas fa-file-import"></i>
+        </div>
+        <div class="tool-btn" id="export-btn" title="Export Coordinates">
+            <i class="fas fa-file-export"></i>
+        </div>
+        <div class="tool-btn" id="help-btn" title="Help">
+            <i class="fas fa-question-circle"></i>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+
+    <script>
+        // Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCoordinates(); // Initial load for view tab
+            setupEventListeners();
+            updateXPBar();
+            startDayNightCycle();
+            // Set initial dark mode based on preference or default
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('darker-mode');
+                document.documentElement.style.setProperty('--bg-primary', '#0a0a0a');
+                document.documentElement.style.setProperty('--bg-secondary', '#1a1a1a');
+                document.querySelector('.dark-mode-toggle i').classList.replace('fa-moon', 'fa-sun');
+            }
+        });
+        
+        function setupEventListeners() {
+            document.getElementById('coordinateForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveCoordinate();
+            });
+
+            document.getElementById('importance').addEventListener('input', updateHealthBar);
+            updateHealthBar(); // Initial call
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
+            });
+            
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById('weather').value = this.getAttribute('data-weather');
+                });
+            });
+            
+            document.getElementById('filter-dimension').addEventListener('change', loadCoordinates);
+            document.getElementById('filter-biome').addEventListener('change', loadCoordinates);
+            document.getElementById('sort-by').addEventListener('change', loadCoordinates);
+            
+            document.querySelector('.dark-mode-toggle').addEventListener('click', toggleDarkMode);
+            
+            document.getElementById('export-btn').addEventListener('click', exportCoordinates);
+            document.getElementById('import-btn').addEventListener('click', () => document.getElementById('importFile').click());
+            
+            // Create file input for import dynamically to keep HTML cleaner
+            const importFileInput = document.createElement('input');
+            importFileInput.type = 'file';
+            importFileInput.id = 'importFile';
+            importFileInput.accept = '.json';
+            importFileInput.style.display = 'none';
+            importFileInput.onchange = handleImportFile;
+            document.body.appendChild(importFileInput);
+
+            document.getElementById('teleport-btn').addEventListener('click', showTeleportGeneratorInfo);
+            document.getElementById('help-btn').addEventListener('click', showHelp);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            if (tabId === 'view-locations') {
+                loadCoordinates();
+            } else if (tabId === 'favorites') {
+                loadFavorites();
+            }
+        }
+
+        // Manage coordinates array in localStorage
+        function getCoordinates() {
+            const coordinates = localStorage.getItem('minecraftCoordinates');
+            return coordinates ? JSON.parse(coordinates) : [];
+        }
+
+        function saveCoordinates(coordinates) {
+            localStorage.setItem('minecraftCoordinates', JSON.stringify(coordinates));
+            updateXPBar();
+        }
+
+        // Save a new coordinate or update an existing one
+        function saveCoordinate() {
+            const coordinates = getCoordinates();
+            const form = document.getElementById('coordinateForm');
+            const id = form.dataset.editId || Date.now().toString();
+            const isEditing = !!form.dataset.editId;
+            
+            const tagElements = form.querySelectorAll('input[name="tags"]:checked');
+            const selectedTags = Array.from(tagElements).map(el => el.value);
+            
+            const existingCoord = isEditing ? coordinates.find(c => c.id === id) : {};
+
+            const coordinate = {
+                id: id,
+                name: document.getElementById('structureName').value.trim(),
+                x: document.getElementById('x').value,
+                y: document.getElementById('y').value,
+                z: document.getElementById('z').value,
+                dimension: document.getElementById('dimension').value,
+                biome: document.getElementById('biome').value,
+                weather: document.getElementById('weather').value,
+                tags: selectedTags,
+                importance: document.getElementById('importance').value,
+                description: document.getElementById('description').value.trim(),
+                timestamp: isEditing ? (existingCoord.timestamp || Date.now()) : Date.now(),
+                favorite: isEditing ? (existingCoord.favorite || false) : false
+            };
+
+            if (!coordinate.name || !coordinate.x || !coordinate.y || !coordinate.z) {
+                showToast("Name and all coordinates (X, Y, Z) are required.", "error");
+                return;
+            }
+            
+            if (isEditing) {
+                const index = coordinates.findIndex(coord => coord.id === id);
+                if (index !== -1) {
+                    coordinates[index] = coordinate;
+                }
+            } else {
+                coordinates.push(coordinate);
+            }
+            
+            saveCoordinates(coordinates);
+            resetForm();
+            loadCoordinates(); // Refresh main list
+            if (document.getElementById('favorites').classList.contains('active')) {
+                loadFavorites(); // Refresh favorites if active
+            }
+            
+            showToast(`Location ${isEditing ? 'updated' : 'saved'} successfully!`);
+            switchTab('view-locations'); // Switch to view tab after saving
+        }
+
+        // Load and display all coordinates
+        function loadCoordinates() {
+            const allCoords = getCoordinates();
+            const tableBody = document.getElementById('coordinatesTableBody');
+            tableBody.innerHTML = '';
+            
+            const dimensionFilter = document.getElementById('filter-dimension').value;
+            const biomeFilter = document.getElementById('filter-biome').value;
+            const sortBy = document.getElementById('sort-by').value;
+            
+            let filteredCoords = [...allCoords];
+            
+            if (dimensionFilter !== 'all') {
+                filteredCoords = filteredCoords.filter(coord => coord.dimension === dimensionFilter);
+            }
+            if (biomeFilter !== 'all' && biomeFilter) {
+                filteredCoords = filteredCoords.filter(coord => coord.biome === biomeFilter);
+            }
+            
+            filteredCoords.sort((a, b) => {
+                switch(sortBy) {
+                    case 'oldest': return (a.timestamp || 0) - (b.timestamp || 0);
+                    case 'name-asc': return a.name.localeCompare(b.name);
+                    case 'name-desc': return b.name.localeCompare(a.name);
+                    case 'importance': return (b.importance || 0) - (a.importance || 0);
+                    case 'newest': default: return (b.timestamp || 0) - (a.timestamp || 0);
+                }
+            });
+            
+            if (filteredCoords.length === 0) {
+                const row = tableBody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 6;
+                cell.className = 'empty-state';
+                cell.textContent = 'No locations match your criteria. Try adding some or adjusting filters!';
+                return;
+            }
+            
+            filteredCoords.forEach((coordinate, index) => {
+                const row = tableBody.insertRow();
+                row.className = 'fadeIn';
+                row.style.animationDelay = `${index * 0.03}s`;
+                
+                const nameCell = row.insertCell();
+                let iconHtml = '';
+                if (coordinate.tags && coordinate.tags.includes('base')) iconHtml = '<span class="mc-icon mc-bed"></span>';
+                else if (coordinate.tags && coordinate.tags.includes('dungeon')) iconHtml = '<span class="mc-icon mc-sword"></span>';
+                else if (coordinate.tags && coordinate.tags.includes('mine')) iconHtml = '<i class="fas fa-gem"></i>';
+                else if (coordinate.tags && coordinate.tags.includes('village')) iconHtml = '<i class="fas fa-home"></i>';
+                else if (coordinate.tags && coordinate.tags.includes('farm')) iconHtml = '<i class="fas fa-seedling"></i>';
+                else if (coordinate.tags && coordinate.tags.includes('portal')) iconHtml = '<i class="fas fa-dungeon"></i>'; // Using dungeon icon for portal
+                else iconHtml = '<i class="fas fa-map-marker-alt"></i>';
+
+                const starBtn = document.createElement('button');
+                starBtn.className = 'star-btn' + (coordinate.favorite ? ' active pulse' : '');
+                starBtn.innerHTML = `<i class="fas fa-star"></i>`;
+                starBtn.title = coordinate.favorite ? 'Remove from favorites' : 'Add to favorites';
+                starBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(coordinate.id); };
+                
+                nameCell.innerHTML = `${iconHtml} ${coordinate.name} `;
+                nameCell.appendChild(starBtn);
+                
+                const coordCell = row.insertCell();
+                const coordText = `${coordinate.x}, ${coordinate.y}, ${coordinate.z}`;
+                coordCell.innerHTML = `<span class="coord-badge">${coordText}</span>`;
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn tooltip';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                copyBtn.title = 'Copy coordinates';
+                copyBtn.onclick = (e) => { e.stopPropagation(); copyToClipboard(coordText, copyBtn); };
+                coordCell.appendChild(copyBtn);
+                
+                const dimensionCell = row.insertCell();
+                dimensionCell.innerHTML = `<span class="dimension-minecraft dimension-${coordinate.dimension}"></span> ${coordinate.dimension.charAt(0).toUpperCase() + coordinate.dimension.slice(1)}`;
+                
+                const biomeCell = row.insertCell();
+                biomeCell.textContent = coordinate.biome ? (coordinate.biome.charAt(0).toUpperCase() + coordinate.biome.slice(1)).replace(/_/g, ' ') : '-';
+                
+                const descCell = row.insertCell();
+                let weatherIcon = '';
+                if (coordinate.weather) {
+                    switch(coordinate.weather) {
+                        case 'clear': weatherIcon = '<i class="fas fa-sun" title="Clear"></i> '; break;
+                        case 'rain': weatherIcon = '<i class="fas fa-cloud-showers-heavy" title="Rain"></i> '; break;
+                        case 'storm': weatherIcon = '<i class="fas fa-poo-storm" title="Storm"></i> '; break;
+                    }
+                }
+                descCell.innerHTML = weatherIcon + (coordinate.description || '-');
+                
+                const actionsCell = row.insertCell();
+                actionsCell.className = 'action-buttons';
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn'; editBtn.innerHTML = '<i class="fas fa-edit"></i>'; editBtn.title = 'Edit';
+                editBtn.onclick = () => editCoordinate(coordinate.id);
+                actionsCell.appendChild(editBtn);
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn'; deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>'; deleteBtn.title = 'Delete';
+                deleteBtn.onclick = () => deleteCoordinate(coordinate.id);
+                actionsCell.appendChild(deleteBtn);
+            });
+        }
+        
+        function loadFavorites() {
+            const allCoords = getCoordinates();
+            const tableBody = document.getElementById('favoritesTableBody');
+            tableBody.innerHTML = '';
+            const favorites = allCoords.filter(coord => coord.favorite)
+                                     .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            if (favorites.length === 0) {
+                const row = tableBody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 6;
+                cell.className = 'empty-state';
+                cell.textContent = 'No favorite locations yet. Click the star icon on a location to add it!';
+                return;
+            }
+
+            favorites.forEach((coordinate, index) => {
+                const row = tableBody.insertRow();
+                row.className = 'fadeIn';
+                row.style.animationDelay = `${index * 0.03}s`;
+                
+                const nameCell = row.insertCell();
+                let iconHtml = '';
+                 if (coordinate.tags && coordinate.tags.includes('base')) iconHtml = '<span class="mc-icon mc-bed"></span>';
+                else if (coordinate.tags && coordinate.tags.includes('dungeon')) iconHtml = '<span class="mc-icon mc-sword"></span>';
+                else if (coordinate.tags && coordinate.tags.includes('mine')) iconHtml = '<i class="fas fa-gem"></i>';
+                else iconHtml = '<i class="fas fa-map-marker-alt"></i>';
+                nameCell.innerHTML = `${iconHtml} ${coordinate.name}`;
+                
+                const coordCell = row.insertCell();
+                const coordText = `${coordinate.x}, ${coordinate.y}, ${coordinate.z}`;
+                coordCell.innerHTML = `<span class="coord-badge">${coordText}</span>`;
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn tooltip';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; copyBtn.title = 'Copy coordinates';
+                copyBtn.onclick = (e) => { e.stopPropagation(); copyToClipboard(coordText, copyBtn); };
+                coordCell.appendChild(copyBtn);
+
+                const dimensionCell = row.insertCell();
+                dimensionCell.innerHTML = `<span class="dimension-minecraft dimension-${coordinate.dimension}"></span> ${coordinate.dimension.charAt(0).toUpperCase() + coordinate.dimension.slice(1)}`;
+                
+                const biomeCell = row.insertCell();
+                biomeCell.textContent = coordinate.biome ? (coordinate.biome.charAt(0).toUpperCase() + coordinate.biome.slice(1)).replace(/_/g, ' ') : '-';
+                
+                const descCell = row.insertCell();
+                descCell.textContent = coordinate.description || '-';
+                
+                const actionsCell = row.insertCell();
+                actionsCell.className = 'action-buttons';
+                const starBtn = document.createElement('button');
+                starBtn.className = 'star-btn active pulse'; starBtn.innerHTML = '<i class="fas fa-star"></i>'; starBtn.title = 'Remove from favorites';
+                starBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(coordinate.id); };
+                actionsCell.appendChild(starBtn);
+
+                const teleportBtn = document.createElement('button');
+                teleportBtn.className = 'edit-btn'; teleportBtn.innerHTML = '<i class="fas fa-terminal"></i>'; teleportBtn.title = 'Generate TP command';
+                teleportBtn.onclick = () => generateTeleportCommand(coordinate);
+                actionsCell.appendChild(teleportBtn);
+            });
+        }
+
+        function copyToClipboard(text, buttonElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = buttonElement.innerHTML;
+                buttonElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalText;
+                }, 1500);
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                showToast('Failed to copy coordinates.', 'error');
+            });
+        }
+
+        function editCoordinate(id) {
+            const coordinates = getCoordinates();
+            const coordinate = coordinates.find(coord => coord.id === id);
+            
+            if (coordinate) {
+                switchTab('add-location');
+                const form = document.getElementById('coordinateForm');
+                form.dataset.editId = id;
+                document.getElementById('structureName').value = coordinate.name;
+                document.getElementById('x').value = coordinate.x;
+                document.getElementById('y').value = coordinate.y;
+                document.getElementById('z').value = coordinate.z;
+                document.getElementById('dimension').value = coordinate.dimension;
+                document.getElementById('biome').value = coordinate.biome || '';
+                document.getElementById('weather').value = coordinate.weather || 'clear';
+                document.querySelectorAll('.weather-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-weather') === (coordinate.weather || 'clear'));
+                });
+                document.getElementById('description').value = coordinate.description || '';
+                document.getElementById('importance').value = coordinate.importance || 50;
+                updateHealthBar();
+                
+                form.querySelectorAll('input[name="tags"]').forEach(checkbox => {
+                    checkbox.checked = coordinate.tags && coordinate.tags.includes(checkbox.value);
+                });
+                
+                document.getElementById('saveButton').innerHTML = '<span class="mc-icon mc-diamond"></span> Update Location';
+                
+                window.scrollTo({ top: form.offsetTop - 20, behavior: 'smooth' });
+                form.closest('.form-container').style.boxShadow = '0 0 15px var(--accent-warning)';
+                setTimeout(() => {
+                    form.closest('.form-container').style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.3)';
+                }, 1500);
+            }
+        }
+
+        function deleteCoordinate(id) {
+            if (confirm('Are you sure you want to delete this location? This action cannot be undone.')) {
+                let coordinates = getCoordinates();
+                coordinates = coordinates.filter(coord => coord.id !== id);
+                saveCoordinates(coordinates);
+                loadCoordinates(); // Refresh current view
+                if (document.getElementById('favorites').classList.contains('active')) {
+                    loadFavorites(); // Refresh favorites if active
+                }
+                showToast('Location deleted successfully.');
+            }
+        }
+
+        function resetForm() {
+            const form = document.getElementById('coordinateForm');
+            form.reset();
+            delete form.dataset.editId;
+            document.getElementById('saveButton').innerHTML = '<span class="mc-icon mc-diamond"></span> Save Location';
+            document.getElementById('weather').value = 'clear';
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-weather') === 'clear');
+            });
+            document.getElementById('importance').value = 50;
+            updateHealthBar();
+        }
+        
+        function toggleFavorite(id) {
+            const coordinates = getCoordinates();
+            const index = coordinates.findIndex(coord => coord.id === id);
+            if (index !== -1) {
+                coordinates[index].favorite = !coordinates[index].favorite;
+                saveCoordinates(coordinates);
+                loadCoordinates(); // Refresh main list
+                if (document.getElementById('favorites').classList.contains('active')) {
+                    loadFavorites(); // Refresh favorites if active
+                }
+                showToast(coordinates[index].favorite ? 'Added to favorites!' : 'Removed from favorites.');
+            }
+        }
+        
+        function updateHealthBar() {
+            const importanceInput = document.getElementById('importance');
+            const value = importanceInput.value;
+            document.querySelector('.health-fill').style.width = `${value}%`;
+            document.getElementById('importanceValue').textContent = value; // Update text display
+        }
+        
+        function updateXPBar() {
+            const coordinates = getCoordinates();
+            const usage = JSON.stringify(coordinates).length;
+            const maxUsage = 5 * 1024 * 1024; // Approx 5MB
+            const percentage = Math.min(100, (usage / maxUsage) * 100);
+            document.querySelector('.xp-fill').style.width = `${percentage}%`;
+        }
+        
+        function exportCoordinates() {
+            const coordinates = getCoordinates();
+            if (coordinates.length === 0) {
+                showToast('No coordinates to export.', 'warning');
+                return;
+            }
+            const dataStr = JSON.stringify(coordinates, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const exportFileName = `minecraft-coordinates-${new Date().toISOString().slice(0,10)}.json`;
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileName);
+            linkElement.click();
+            showToast('Coordinates exported successfully!');
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!Array.isArray(importedData)) throw new Error('Invalid file format.');
+                    
+                    const validItems = importedData.filter(item => 
+                        item.name && item.x !== undefined && item.y !== undefined && item.z !== undefined && item.dimension
+                    );
+
+                    if (validItems.length === 0) {
+                         showToast('No valid coordinates found in the file.', 'error');
+                         return;
+                    }
+
+                    let currentCoords = getCoordinates();
+                    // Simple merge: add new, skip duplicates by name and coords (can be improved)
+                    const newCoords = validItems.filter(imported => 
+                        !currentCoords.some(existing => 
+                            existing.name === imported.name && 
+                            existing.x === imported.x && 
+                            existing.y === imported.y && 
+                            existing.z === imported.z &&
+                            existing.dimension === imported.dimension
+                        )
+                    ).map(item => ({...item, id: Date.now() + '-' + Math.random().toString(36).substr(2,9), timestamp: item.timestamp || Date.now()}));
+                    
+                    saveCoordinates([...currentCoords, ...newCoords]);
+                    loadCoordinates();
+                    if (document.getElementById('favorites').classList.contains('active')) loadFavorites();
+                    showToast(`Imported ${newCoords.length} new coordinates successfully!`);
+                } catch (error) {
+                    showToast(`Import error: ${error.message}`, 'error');
+                } finally {
+                    event.target.value = null; // Reset file input
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function generateTeleportCommand(coordinate) {
+            const playerName = prompt("Enter player name for teleport command (or leave blank for selector @p):", "@p");
+            if (playerName === null) return; // User cancelled
+            const command = `/tp ${playerName.trim() || '@p'} ${coordinate.x} ${coordinate.y} ${coordinate.z}`;
+            navigator.clipboard.writeText(command).then(() => {
+                showToast('Teleport command copied to clipboard!');
+            }).catch(err => {
+                showToast('Failed to copy command.', 'error');
+            });
+        }
+
+        function showTeleportGeneratorInfo() {
+            showToast("To generate a teleport command, go to the 'Favorites' or 'View Locations' tab and click the <i class='fas fa-terminal'></i> icon on a specific location.", "info", 5000);
+        }
+        
+        function showHelp() {
+            alert("Minecraft Coordinates Logger - Help\n\n" +
+                  "Tabs:\n" +
+                  "- Add Location: Fill the form to save new coordinates.\n" +
+                  "- View Locations: See all your saved locations. Use filters and sorting.\n" +
+                  "- Favorites: Access your starred locations quickly.\n\n" +
+                  "Actions on Locations:\n" +
+                  "- Star (<i class='fas fa-star'></i>): Toggle favorite status.\n" +
+                  "- Edit (<i class='fas fa-edit'></i>): Modify the location details.\n" +
+                  "- Delete (<i class='fas fa-trash-alt'></i>): Remove the location.\n" +
+                  "- Copy Coords (<i class='fas fa-copy'></i>): Copy X, Y, Z to clipboard.\n" +
+                  "- TP Command (<i class='fas fa-terminal'></i> in Favorites): Generate /tp command.\n\n" +
+                  "Toolbar (Bottom Right):\n" +
+                  "- Terminal (<i class='fas fa-terminal'></i>): Info about TP command generation.\n" +
+                  "- Import (<i class='fas fa-file-import'></i>): Load coordinates from a JSON file.\n" +
+                  "- Export (<i class='fas fa-file-export'></i>): Save all coordinates to a JSON file.\n" +
+                  "- Help (<i class='fas fa-question-circle'></i>): Show this help message.\n\n" +
+                  "Top Right Toggle (<i class='fas fa-moon'></i>/<i class='fas fa-sun'></i>): Switch between dark and darker mode.\n\n" +
+                  "Data is saved in your browser's local storage.");
+        }
+        
+        function toggleDarkMode() {
+            document.body.classList.toggle('darker-mode');
+            const isDarkerMode = document.body.classList.contains('darker-mode');
+            const toggleIcon = document.querySelector('.dark-mode-toggle i');
+            
+            if (isDarkerMode) {
+                document.documentElement.style.setProperty('--bg-primary', '#0a0a0a');
+                document.documentElement.style.setProperty('--bg-secondary', '#181818'); // Slightly lighter secondary for darker
+                toggleIcon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                document.documentElement.style.setProperty('--bg-primary', '#1a1a1a');
+                document.documentElement.style.setProperty('--bg-secondary', '#2d2d2d');
+                toggleIcon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+        
+        function startDayNightCycle() {
+            const sun = document.querySelector('.sun');
+            const moon = document.querySelector('.moon');
+            let isDay = true;
+
+            function cycle() {
+                const bodyWidth = document.body.clientWidth;
+                const bodyHeight = document.body.clientHeight * 0.4; // Limit vertical movement
+
+                if (isDay) {
+                    sun.style.opacity = '1';
+                    moon.style.opacity = '0';
+                    sun.style.transform = `translate(${bodyWidth * 0.8}px, ${bodyHeight * 0.1}px) scale(1.2)`; // Sun high
+                    moon.style.transform = `translate(${bodyWidth * 0.1}px, ${bodyHeight * 0.8}px) scale(0.8)`; // Moon low
+                } else {
+                    sun.style.opacity = '0';
+                    moon.style.opacity = '1';
+                    sun.style.transform = `translate(${bodyWidth * 0.1}px, ${bodyHeight * 0.8}px) scale(0.8)`; // Sun low
+                    moon.style.transform = `translate(${bodyWidth * 0.8}px, ${bodyHeight * 0.1}px) scale(1.2)`; // Moon high
+                }
+                isDay = !isDay;
+            }
+            cycle(); // Initial position
+            setInterval(cycle, 20000); // Cycle every 20 seconds
+        }
+        
+        function showToast(message, type = 'success', duration = 3000) {
+            const container = document.querySelector('.toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`; // Allow type for styling (e.g., error, warning)
+            toast.innerHTML = message; // Use innerHTML to allow icons in messages
+
+            if (type === 'error') toast.style.backgroundColor = 'var(--accent-danger)';
+            else if (type === 'warning') toast.style.backgroundColor = 'var(--accent-warning)';
+            else if (type === 'info') toast.style.backgroundColor = 'var(--accent-info)';
+            
+            container.appendChild(toast);
+
+            // Trigger reflow for transition
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 300); // Allow fade out animation
+            }, duration);
+        }
+
+    </script>
+</body>
+</html>
