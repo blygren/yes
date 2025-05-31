@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Checklist - Dark Mode</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #121212; /* Dark background */
+            color: #e0e0e0; /* Light text */
+        }
+        .container {
+            background-color: #1e1e1e; /* Slightly lighter dark for container */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            max-width: 800px;
+            margin: auto;
+        }
+        h1 {
+            color: #76ff03; /* Vibrant green */
+            text-align: center;
+        }
+        .progress-section {
+            margin-bottom: 20px;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #333;
+            border-radius: 4px;
+            height: 25px;
+            position: relative;
+            overflow: hidden; /* Ensures inner bar respects border-radius */
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #76ff03; /* Vibrant green */
+            border-radius: 4px;
+            transition: width 0.3s ease-in-out;
+            text-align: center; /* For potential text inside bar */
+            line-height: 25px; /* Vertically center text if added */
+            color: #121212;
+            font-weight: bold;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #b0b0b0;
+        }
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .controls input[type="text"] {
+            padding: 8px 10px;
+            border-radius: 4px;
+            border: 1px solid #383838;
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            width: 50%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+        .controls .buttons-group {
+            display: flex;
+            gap: 10px;
+        }
+        .controls button {
+            background-color: #76ff03; /* Vibrant green */
+            color: #121212; /* Dark text for contrast on button */
+            border: none;
+            padding: 10px 15px;
+            /* margin: 0 5px; */ /* Removed as gap is used */
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .controls button:hover {
+            background-color: #64dd17; /* Slightly darker green on hover */
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #2c2c2c; /* Darker list items */
+            margin-bottom: 10px;
+            padding: 12px 15px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            border: 1px solid #383838; /* Subtle border */
+        }
+        input[type="checkbox"] {
+            margin-right: 12px;
+            transform: scale(1.3);
+            accent-color: #76ff03; /* Green accent for checkbox */
+        }
+        label {
+            flex-grow: 1;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: #888; /* Dimmer color for completed tasks */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minecraft Task Checklist</h1>
+
+        <div class="progress-section">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">0% Complete</div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="searchBar" onkeyup="searchTasks()" placeholder="Search tasks...">
+            <div class="buttons-group">
+                <button onclick="tickAllVisibleTasks()">Tick All Visible</button>
+                <button onclick="untickAllVisibleTasks()">Untick All Visible</button>
+            </div>
+        </div>
+
+        <ul id="taskList">
+            <li>
+                <input type="checkbox" id="task1" onchange="toggleComplete(this)">
+                <label for="task1" id="label1">Punch a tree to get wood</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task2" onchange="toggleComplete(this)">
+                <label for="task2" id="label2">Craft a crafting table</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task3" onchange="toggleComplete(this)">
+                <label for="task3" id="label3">Craft wooden tools (pickaxe, axe, shovel, sword)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task4" onchange="toggleComplete(this)">
+                <label for="task4" id="label4">Gather stone with wooden pickaxe</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task5" onchange="toggleComplete(this)">
+                <label for="task5" id="label5">Craft stone tools</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task6" onchange="toggleComplete(this)">
+                <label for="task6" id="label6">Find and mine coal</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task7" onchange="toggleComplete(this)">
+                <label for="task7" id="label7">Craft torches</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task8" onchange="toggleComplete(this)">
+                <label for="task8" id="label8">Find and mine iron ore</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task9" onchange="toggleComplete(this)">
+                <label for="task9" id="label9">Smelt iron ore in a furnace</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task10" onchange="toggleComplete(this)">
+                <label for="task10" id="label10">Craft iron tools and armor</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task11" onchange="toggleComplete(this)">
+                <label for="task11" id="label11">Build a basic shelter</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task12" onchange="toggleComplete(this)">
+                <label for="task12" id="label12">Find or make a bed</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task13" onchange="toggleComplete(this)">
+                <label for="task13" id="label13">Start a farm (wheat, carrots, potatoes)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task14" onchange="toggleComplete(this)">
+                <label for="task14" id="label14">Find diamonds</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task15" onchange="toggleComplete(this)">
+                <label for="task15" id="label15">Craft a diamond pickaxe</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task16" onchange="toggleComplete(this)">
+                <label for="task16" id="label16">Mine obsidian</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task17" onchange="toggleComplete(this)">
+                <label for="task17" id="label17">Build a Nether portal</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task18" onchange="toggleComplete(this)">
+                <label for="task18" id="label18">Explore the Nether</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task19" onchange="toggleComplete(this)">
+                <label for="task19" id="label19">Find a Nether Fortress</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task20" onchange="toggleComplete(this)">
+                <label for="task20" id="label20">Gather Blaze Rods</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task21" onchange="toggleComplete(this)">
+                <label for="task21" id="label21">Brew potions</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task22" onchange="toggleComplete(this)">
+                <label for="task22" id="label22">Find the End Portal</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task23" onchange="toggleComplete(this)">
+                <label for="task23" id="label23">Defeat the Ender Dragon</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task24" onchange="toggleComplete(this)">
+                <label for="task24" id="label24">Obtain an Elytra</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task25" onchange="toggleComplete(this)">
+                <label for="task25" id="label25">Find a Shulker Box</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task26" onchange="toggleComplete(this)">
+                <label for="task26" id="label26">Enchant a Diamond Sword with Sharpness V</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task27" onchange="toggleComplete(this)">
+                <label for="task27" id="label27">Enchant a Diamond Pickaxe with Efficiency V</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task28" onchange="toggleComplete(this)">
+                <label for="task28" id="label28">Enchant Diamond Armor with Protection IV</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task29" onchange="toggleComplete(this)">
+                <label for="task29" id="label29">Find an End City</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task30" onchange="toggleComplete(this)">
+                <label for="task30" id="label30">Obtain Dragon's Breath</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task31" onchange="toggleComplete(this)">
+                <label for="task31" id="label31">Craft Lingering Potions</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task32" onchange="toggleComplete(this)">
+                <label for="task32" id="label32">Find a Woodland Mansion</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task33" onchange="toggleComplete(this)">
+                <label for="task33" id="label33">Defeat an Evoker and get a Totem of Undying</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task34" onchange="toggleComplete(this)">
+                <label for="task34" id="label34">Find an Ocean Monument</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task35" onchange="toggleComplete(this)">
+                <label for="task35" id="label35">Defeat an Elder Guardian</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task36" onchange="toggleComplete(this)">
+                <label for="task36" id="label36">Obtain a Sponge</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task37" onchange="toggleComplete(this)">
+                <label for="task37" id="label37">Craft a Conduit</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task38" onchange="toggleComplete(this)">
+                <label for="task38" id="label38">Find a Buried Treasure</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task39" onchange="toggleComplete(this)">
+                <label for="task39" id="label39">Obtain a Heart of the Sea</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task40" onchange="toggleComplete(this)">
+                <label for="task40" id="label40">Tame a Horse</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task41" onchange="toggleComplete(this)">
+                <label for="task41" id="label41">Tame a Wolf (Dog)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task42" onchange="toggleComplete(this)">
+                <label for="task42" id="label42">Tame an Ocelot (Cat)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task43" onchange="toggleComplete(this)">
+                <label for="task43" id="label43">Breed two Pandas</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task44" onchange="toggleComplete(this)">
+                <label for="task44" id="label44">Build an Iron Golem</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task45" onchange="toggleComplete(this)">
+                <label for="task45" id="label45">Build a Snow Golem</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task46" onchange="toggleComplete(this)">
+                <label for="task46" id="label46">Trade with a Villager</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task47" onchange="toggleComplete(this)">
+                <label for="task47" id="label47">Cure a Zombie Villager</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task48" onchange="toggleComplete(this)">
+                <label for="task48" id="label48">Obtain a Trident</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task49" onchange="toggleComplete(this)">
+                <label for="task49" id="label49">Enchant a Trident with Loyalty</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task50" onchange="toggleComplete(this)">
+                <label for="task50" id="label50">Enchant a Trident with Channeling</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task51" onchange="toggleComplete(this)">
+                <label for="task51" id="label51">Find a Pillager Outpost</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task52" onchange="toggleComplete(this)">
+                <label for="task52" id="label52">Successfully defend a Village from a Raid</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task53" onchange="toggleComplete(this)">
+                <label for="task53" id="label53">Obtain a Crossbow</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task54" onchange="toggleComplete(this)">
+                <label for="task54" id="label54">Enchant a Crossbow with Multishot or Piercing</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task55" onchange="toggleComplete(this)">
+                <label for="task55" id="label55">Craft a full set of Netherite Armor</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task56" onchange="toggleComplete(this)">
+                <label for="task56" id="label56">Craft a Netherite Sword</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task57" onchange="toggleComplete(this)">
+                <label for="task57" id="label57">Craft a Netherite Pickaxe</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task58" onchange="toggleComplete(this)">
+                <label for="task58" id="label58">Find Ancient Debris</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task59" onchange="toggleComplete(this)">
+                <label for="task59" id="label59">Craft a Lodestone</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task60" onchange="toggleComplete(this)">
+                <label for="task60" id="label60">Use a Compass on a Lodestone</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task61" onchange="toggleComplete(this)">
+                <label for="task61" id="label61">Find a Bastion Remnant</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task62" onchange="toggleComplete(this)">
+                <label for="task62" id="label62">Barter with a Piglin</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task63" onchange="toggleComplete(this)">
+                <label for="task63" id="label63">Obtain a Pigstep Music Disc</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task64" onchange="toggleComplete(this)">
+                <label for="task64" id="label64">Obtain a Netherite Ingot</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task65" onchange="toggleComplete(this)">
+                <label for="task65" id="label65">Kill a Wither</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task66" onchange="toggleComplete(this)">
+                <label for="task66" id="label66">Obtain a Nether Star</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task67" onchange="toggleComplete(this)">
+                <label for="task67" id="label67">Craft a Beacon</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task68" onchange="toggleComplete(this)">
+                <label for="task68" id="label68">Create a full power Beacon</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task69" onchange="toggleComplete(this)">
+                <label for="task69" id="label69">Find a Geode</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task70" onchange="toggleComplete(this)">
+                <label for="task70" id="label70">Obtain Amethyst Shards</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task71" onchange="toggleComplete(this)">
+                <label for="task71" id="label71">Craft a Spyglass</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task72" onchange="toggleComplete(this)">
+                <label for="task72" id="label72">Craft Tinted Glass</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task73" onchange="toggleComplete(this)">
+                <label for="task73" id="label73">Capture an Axolotl in a Bucket</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task74" onchange="toggleComplete(this)">
+                <label for="task74" id="label74">Breed Axolotls</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task75" onchange="toggleComplete(this)">
+                <label for="task75" id="label75">Find a Lush Cave</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task76" onchange="toggleComplete(this)">
+                <label for="task76" id="label76">Obtain Spore Blossoms</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task77" onchange="toggleComplete(this)">
+                <label for="task77" id="label77">Obtain Glow Berries</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task78" onchange="toggleComplete(this)">
+                <label for="task78" id="label78">Find a Dripstone Cave</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task79" onchange="toggleComplete(this)">
+                <label for="task79" id="label79">Collect water with Pointed Dripstone</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task80" onchange="toggleComplete(this)">
+                <label for="task80" id="label80">Ride a Strider with a Warped Fungus on a Stick</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task81" onchange="toggleComplete(this)">
+                <label for="task81" id="label81">Find a Trial Chamber</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task82" onchange="toggleComplete(this)">
+                <label for="task82" id="label82">Obtain a Trial Key</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task83" onchange="toggleComplete(this)">
+                <label for="task83" id="label83">Unlock a Vault with a Trial Key</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task84" onchange="toggleComplete(this)">
+                <label for="task84" id="label84">Defeat a Breeze</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task85" onchange="toggleComplete(this)">
+                <label for="task85" id="label85">Obtain a Wind Charge</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task86" onchange="toggleComplete(this)">
+                <label for="task86" id="label86">Craft a Mace</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task87" onchange="toggleComplete(this)">
+                <label for="task87" id="label87">Apply a Heavy Core to a Mace</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task88" onchange="toggleComplete(this)">
+                <label for="task88" id="label88">Find an Armadillo</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task89" onchange="toggleComplete(this)">
+                <label for="task89" id="label89">Obtain Armadillo Scutes</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task90" onchange="toggleComplete(this)">
+                <label for="task90" id="label90">Craft Wolf Armor</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task91" onchange="toggleComplete(this)">
+                <label for="task91" id="label91">Dye Wolf Armor</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task92" onchange="toggleComplete(this)">
+                <label for="task92" id="label92">Find all 16 types of Dyed Terracotta</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task93" onchange="toggleComplete(this)">
+                <label for="task93" id="label93">Craft a full set of Copper Blocks (Block, Cut, Stairs, Slab)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task94" onchange="toggleComplete(this)">
+                <label for="task94" id="label94">Wax a Copper Block</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task95" onchange="toggleComplete(this)">
+                <label for="task95" id="label95">Scrape wax off a Copper Block with an Axe</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task96" onchange="toggleComplete(this)">
+                <label for="task96" id="label96">Observe a Copper Block fully oxidize</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task97" onchange="toggleComplete(this)">
+                <label for="task97" id="label97">Craft a Lightning Rod</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task98" onchange="toggleComplete(this)">
+                <label for="task98" id="label98">Have a Lightning Rod struck by lightning</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task99" onchange="toggleComplete(this)">
+                <label for="task99" id="label99">Find a Sniffer Egg in Suspicious Sand/Gravel</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task100" onchange="toggleComplete(this)">
+                <label for="task100" id="label100">Hatch a Sniffer</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task101" onchange="toggleComplete(this)">
+                <label for="task101" id="label101">Obtain a Torchflower Seed from a Sniffer</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task102" onchange="toggleComplete(this)">
+                <label for="task102" id="label102">Obtain a Pitcher Pod from a Sniffer</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task103" onchange="toggleComplete(this)">
+                <label for="task103" id="label103">Craft a Decorated Pot</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task104" onchange="toggleComplete(this)">
+                <label for="task104" id="label104">Find a Cherry Grove biome</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task105" onchange="toggleComplete(this)">
+                <label for="task105" id="label105">Collect Cherry Wood and Petals</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task106" onchange="toggleComplete(this)">
+                <label for="task106" id="label106">Craft a full set of Cherry Wood items (Planks, Stairs, Slab, Door, etc.)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task107" onchange="toggleComplete(this)">
+                <label for="task107" id="label107">Find a Trail Ruin structure</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task108" onchange="toggleComplete(this)">
+                <label for="task108" id="label108">Use a Brush on Suspicious Sand/Gravel</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task109" onchange="toggleComplete(this)">
+                <label for="task109" id="label109">Obtain a Pottery Sherd</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task110" onchange="toggleComplete(this)">
+                <label for="task110" id="label110">Craft a Decorated Pot with 4 different Sherds</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task111" onchange="toggleComplete(this)">
+                <label for="task111" id="label111">Obtain a Smithing Template (e.g., Netherite Upgrade, Armor Trim)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task112" onchange="toggleComplete(this)">
+                <label for="task112" id="label112">Trim a piece of Armor using a Smithing Table</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task113" onchange="toggleComplete(this)">
+                <label for="task113" id="label113">Find a Camel</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task114" onchange="toggleComplete(this)">
+                <label for="task114" id="label114">Ride a Camel with a friend</label>
+            </li>
+            <li>
+                <input type="checkbox" id="task115" onchange="toggleComplete(this)">
+                <label for="task115" id="label115">Craft a Bookshelf that can store books</label>
+            </li>
+            <!-- 
+                ADD MORE TASKS HERE TO REACH OVER 200. 
+                Follow the pattern:
+                <li>
+                    <input type="checkbox" id="taskN" onchange="toggleComplete(this)">
+                    <label for="taskN" id="labelN">Description of task N</label>
+                </li>
+                Ensure each "taskN" and "labelN" has a unique number N.
+            -->
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTasks();
+            updateProgressBar(); // Initial progress bar update
+        });
+
+        function toggleComplete(checkbox) {
+            const label = document.querySelector(`label[for="${checkbox.id}"]`);
+            if (label) {
+                if (checkbox.checked) {
+                    label.classList.add('completed');
+                } else {
+                    label.classList.remove('completed');
+                }
+            }
+            saveTaskState(checkbox.id, checkbox.checked);
+            updateProgressBar();
+        }
+
+        function saveTaskState(taskId, isChecked) {
+            let tasks = JSON.parse(localStorage.getItem('minecraftTaskStates')) || {};
+            tasks[taskId] = isChecked;
+            localStorage.setItem('minecraftTaskStates', JSON.stringify(tasks));
+        }
+
+        function loadTasks() {
+            let tasks = JSON.parse(localStorage.getItem('minecraftTaskStates')) || {};
+            const checkboxes = document.querySelectorAll('#taskList input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                const label = document.querySelector(`label[for="${checkbox.id}"]`);
+                if (tasks[checkbox.id] === true) { // Explicitly check for true
+                    checkbox.checked = true;
+                    if (label) label.classList.add('completed');
+                } else {
+                    checkbox.checked = false;
+                    if (label) label.classList.remove('completed');
+                }
+            });
+            // Call updateProgressBar from DOMContentLoaded after loadTasks
+        }
+
+        function updateProgressBar() {
+            const allCheckboxes = document.querySelectorAll('#taskList input[type="checkbox"]');
+            const checkedCheckboxes = document.querySelectorAll('#taskList input[type="checkbox"]:checked');
+            const totalTasks = allCheckboxes.length;
+            const completedTasks = checkedCheckboxes.length;
+
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            if (totalTasks === 0) {
+                progressBar.style.width = '0%';
+                progressText.textContent = '0% Complete (No tasks)';
+                return;
+            }
+
+            const percentage = (completedTasks / totalTasks) * 100;
+            progressBar.style.width = percentage + '%';
+            // progressBar.textContent = Math.round(percentage) + '%'; // Optional: text inside bar
+            progressText.textContent = Math.round(percentage) + '% Complete (' + completedTasks + '/' + totalTasks + ')';
+        }
+
+        function searchTasks() {
+            const input = document.getElementById('searchBar');
+            const filter = input.value.toLowerCase();
+            const ul = document.getElementById('taskList');
+            const li = ul.getElementsByTagName('li');
+
+            for (let i = 0; i < li.length; i++) {
+                const label = li[i].getElementsByTagName('label')[0];
+                if (label) {
+                    const txtValue = label.textContent || label.innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        li[i].style.display = "";
+                    } else {
+                        li[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function tickAllVisibleTasks() {
+            const checkboxes = document.querySelectorAll('#taskList li:not([style*="display: none"]) input[type="checkbox"]');
+            let tasksState = JSON.parse(localStorage.getItem('minecraftTaskStates')) || {};
+            checkboxes.forEach(checkbox => {
+                if (!checkbox.checked) {
+                    checkbox.checked = true;
+                    const label = document.querySelector(`label[for="${checkbox.id}"]`);
+                    if (label) label.classList.add('completed');
+                    tasksState[checkbox.id] = true;
+                }
+            });
+            localStorage.setItem('minecraftTaskStates', JSON.stringify(tasksState));
+            updateProgressBar();
+        }
+
+        function untickAllVisibleTasks() {
+            const checkboxes = document.querySelectorAll('#taskList li:not([style*="display: none"]) input[type="checkbox"]');
+            let tasksState = JSON.parse(localStorage.getItem('minecraftTaskStates')) || {};
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    checkbox.checked = false;
+                    const label = document.querySelector(`label[for="${checkbox.id}"]`);
+                    if (label) label.classList.remove('completed');
+                    tasksState[checkbox.id] = false; 
+                }
+            });
+            localStorage.setItem('minecraftTaskStates', JSON.stringify(tasksState));
+            updateProgressBar();
+        }
+    </script>
+</body>
+</html>
