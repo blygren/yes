@@ -95,3 +95,6 @@
 [MC COORDS](https://blygren.github.io/yes/minecraft-coordinates-logger.html)
 
 [MC checklist](https://blygren.github.io/yes/minecraft_checklist.html)
+
+[LINK TO ALL](https://blygren.github.io/yes/LinkALL.html)
+
