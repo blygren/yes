@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhysCode - Game Launcher</title>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+New:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000000;
+            min-height: 100vh;
+            color: #00ff41;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Matrix Rain Background */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .matrix-column {
+            position: absolute;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #00ff41;
+            writing-mode: vertical-lr;
+            text-orientation: upright;
+            animation: matrix-fall linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes matrix-fall {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #00ff41;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #00ff41;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            color: #00dd33;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 500px;
+            padding: 15px 20px;
+            border: 2px solid #00ff41;
+            border-radius: 5px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+        }
+
+        .search-box::placeholder {
+            color: #00aa33;
+        }
+
+        .search-box:focus {
+            outline: none;
+            box-shadow: 0 0 25px rgba(0, 255, 65, 0.5);
+        }
+
+        .filter-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 40px;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff41;
+            border-radius: 5px;
+            color: #00ff41;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+
+        .filter-tab:hover, .filter-tab.active {
+            background: rgba(0, 255, 65, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .category {
+            margin-bottom: 50px;
+        }
+
+        .category-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+            color: #00ff41;
+            text-shadow: 0 0 15px #00ff41;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+
+        .category-title::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 3px;
+            background: #00ff41;
+            margin: 10px auto;
+            border-radius: 2px;
+            box-shadow: 0 0 10px #00ff41;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .game-card {
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            padding: 25px;
+            text-decoration: none;
+            color: #00ff41;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .game-card:hover::before {
+            left: 100%;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            background: rgba(0, 255, 65, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 255, 65, 0.4);
+        }
+
+        .game-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+
+        .game-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.4;
+            color: #00dd33;
+            font-family: 'Courier New', monospace;
+        }
+
+        .game-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid #00ff41;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+
+        /* Matrix characters animation */
+        .matrix-char {
+            color: #00ff41;
+            text-shadow: 0 0 5px #00ff41;
+        }
+    </style>
+</head>
+<body>
+    <!-- Matrix Rain Background -->
+    <div class="matrix-bg" id="matrixBg"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>PhysCode</h1>
+            <p>Interactive Physics & Game Simulations</p>
+        </div>
+
+        <div class="search-container">
+            <input type="text" class="search-box" placeholder="Search games..." id="searchBox">
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-category="all">All Games</button>
+            <button class="filter-tab" data-category="physics">Physics</button>
+            <button class="filter-tab" data-category="art">Art & Visual</button>
+            <button class="filter-tab" data-category="simulation">Simulation</button>
+            <button class="filter-tab" data-category="tools">Tools</button>
+            <button class="filter-tab" data-category="games">Games</button>
+        </div>
+
+        <div class="category" data-category="physics">
+            <h2 class="category-title">🔬 Physics Simulations</h2>
+            <div class="games-grid">
+                <a href="https://blygren.github.io/yes/Cube%20Water%20Mug.html" class="game-card">
+                    <div class="game-icon">💧</div>
+                    <div class="game-title">Mug Game</div>
+                    <div class="game-description">Interactive water physics simulation with realistic fluid dynamics</div>
+                </a>
+                <a href="https://blygren.github.io/yes/Doge.html" class="game-card">
+                    <div class="game-icon">⏳</div>
+                    <div class="game-title">Falling Sand</div>
+                    <div class="game-description">Classic falling sand simulation with particle physics</div>
+                </a>
+                <a href="https://blygren.github.io/yes/Ropes.html" class="game-card">
+                    <div class="game-icon">🪢</div>
+                    <div class="game-title">Ropes</div>
+                    <div class="game-description">Realistic rope physics with constraints and interactions</div>
+                </a>
+                <a href="https://blygren.github.io/yes/ropesss.html" class="game-card">
+                    <div class="game-icon">🎯</div>
+                    <div class="game-title">Better Ropes</div>
+                    <div class="game-description">Enhanced rope simulation with improved physics</div>
+                </a>
+                <a href="https://blygren.github.io/yes/orbital-mechanics.html" class="game-card">
+                    <div class="game-icon">🌌</div>
+                    <div class="game-title">Orbit</div>
+                    <div class="game-description">Gravitational physics and orbital mechanics simulation</div>
+                </a>
+                <a href="https://blygren.github.io/yes/blackhole.html" class="game-card">
+                    <div class="game-icon">🕳️</div>
+                    <div class="game-title">Blackhole</div>
+                    <div class="game-description">Explore the physics of black holes and spacetime</div>
+                </a>
+                <a href="https://blygren.github.io/yes/plasma-physics.html" class="game-card">
+                    <div class="game-icon">⚡</div>
+                    <div class="game-title">Plasma Physics</div>
+                    <div class="game-description">Advanced plasma state physics simulation</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="category" data-category="simulation">
+            <h2 class="category-title">⚡ Dynamic Simulations</h2>
+            <div class="games-grid">
+                <a href="https://blygren.github.io/yes/fire_simulation.html" class="game-card">
+                    <div class="game-icon">🔥</div>
+                    <div class="game-title">Fire</div>
+                    <div class="game-description">Realistic fire and combustion simulation</div>
+                </a>
+                <a href="https://blygren.github.io/yes/cloth_simulation.html" class="game-card">
+                    <div class="game-icon">🧶</div>
+                    <div class="game-title">Cloth</div>
+                    <div class="game-description">Soft-body cloth physics with tearing and interaction</div>
+                </a>
+                <a href="https://blygren.github.io/yes/marshmallow-simulation.html" class="game-card">
+                    <div class="game-icon">🍡</div>
+                    <div class="game-title">Marshmallow Softbody</div>
+                    <div class="game-description">Squishy marshmallow physics simulation</div>
+                </a>
+                <a href="https://blygren.github.io/yes/index.html" class="game-card">
+                    <div class="game-icon">🍮</div>
+                    <div class="game-title">Jelly</div>
+                    <div class="game-description">Bouncy jelly physics with deformation</div>
+                </a>
+                <a href="https://blygren.github.io/yes/airflow_simulation.html" class="game-card">
+                    <div class="game-icon">💨</div>
+                    <div class="game-title">Air Flow</div>
+                    <div class="game-description">Fluid dynamics and air current simulation</div>
+                </a>
+                <a href="https://blygren.github.io/yes/interactive_grass.html" class="game-card">
+                    <div class="game-icon">🌱</div>
+                    <div class="game-title">Grass Simulation</div>
+                    <div class="game-description">Interactive grass that responds to wind and touch</div>
+                </a>
+                <a href="https://blygren.github.io/yes/WaterWave.html" class="game-card">
+                    <div class="game-icon">🌊</div>
+                    <div class="game-title">Wave Water</div>
+                    <div class="game-description">Realistic water wave physics and interactions</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="category" data-category="art">
+            <h2 class="category-title">🎨 Art & Visual Effects</h2>
+            <div class="games-grid">
+                <a href="https://blygren.github.io/yes/Art.html" class="game-card">
+                    <div class="game-icon">🎨</div>
+                    <div class="game-title">Art</div>
+                    <div class="game-description">Creative digital art and drawing tools</div>
+                </a>
+                <a href="https://blygren.github.io/yes/d.html" class="game-card">
+                    <div class="game-icon">✨</div>
+                    <div class="game-title">Particles</div>
+                    <div class="game-description">Beautiful particle effects and animations</div>
+                </a>
+                <a href="https://blygren.github.io/yes/color-mixer.html" class="game-card">
+                    <div class="game-icon">🌈</div>
+                    <div class="game-title">Colour Mixer</div>
+                    <div class="game-description">Interactive color mixing and blending</div>
+                </a>
+                <a href="https://blygren.github.io/yes/image%20pixeliser.html" class="game-card">
+                    <div class="game-icon">🖼️</div>
+                    <div class="game-title">Image Mod</div>
+                    <div class="game-description">Pixelate and modify images with effects</div>
+                </a>
+                <a href="https://blygren.github.io/yes/Fractals.html" class="game-card">
+                    <div class="game-icon">🔮</div>
+                    <div class="game-title">Fractals</div>
+                    <div class="game-description">Generate and explore beautiful fractal patterns</div>
+                </a>
+                <a href="https://blygren.github.io/yes/combined.html" class="game-card">
+                    <div class="game-icon">🎭</div>
+                    <div class="game-title">Dye</div>
+                    <div class="game-description">Fluid dye mixing and color diffusion</div>
+                </a>
+                <a href="https://blygren.github.io/yes/rainbow-bouncing-ball.html" class="game-card">
+                    <div class="game-icon">🌈</div>
+                    <div class="game-title">Rainbow Balls</div>
+                    <div class="game-description">Colorful bouncing balls with rainbow trails</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="category" data-category="games">
+            <h2 class="category-title">🎮 Interactive Games</h2>
+            <div class="games-grid">
+                <a href="https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimeete.html" class="game-card">
+                    <div class="game-icon">🎲</div>
+                    <div class="game-title">Cube Game Ultimate</div>
+                    <div class="game-description">Advanced 3D cube puzzle game</div>
+                </a>
+                <a href="https://blygren.github.io/yes/gg.html" class="game-card">
+                    <div class="game-icon">⏸️</div>
+                    <div class="game-title">Cube Game Pause</div>
+                    <div class="game-description">Pausable cube game with advanced mechanics</div>
+                </a>
+                <a href="https://blygren.github.io/yes/CoolBallsSimulation.html" class="game-card">
+                    <div class="game-icon">⚽</div>
+                    <div class="game-title">Advanced Ball</div>
+                    <div class="game-description">Interactive ball physics with advanced features</div>
+                </a>
+                <a href="https://blygren.github.io/yes/TheBetterBallGame.html" class="game-card">
+                    <div class="game-icon">🏀</div>
+                    <div class="game-title">Better Ball Game</div>
+                    <div class="game-description">Enhanced ball game with improved mechanics</div>
+                </a>
+                <a href="https://blygren.github.io/yes/WarPixels.html" class="game-card">
+                    <div class="game-icon">⚔️</div>
+                    <div class="game-title">Pixel War</div>
+                    <div class="game-description">Strategic pixel-based warfare game</div>
+                </a>
+                <a href="https://blygren.github.io/yes/CrazySlimes.html" class="game-card">
+                    <div class="game-icon">🟢</div>
+                    <div class="game-title">Crazy Slimes</div>
+                    <div class="game-description">Fun slime physics and interactions</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="category" data-category="tools">
+            <h2 class="category-title">🛠️ Tools & Utilities</h2>
+            <div class="games-grid">
+                <a href="https://blygren.github.io/yes/sound%20generator.html" class="game-card">
+                    <div class="game-icon">🎵</div>
+                    <div class="game-title">Sound Generator</div>
+                    <div class="game-description">Create and manipulate audio waves and sounds</div>
+                </a>
+                <a href="https://blygren.github.io/yes/Webcode.html" class="game-card">
+                    <div class="game-icon">💻</div>
+                    <div class="game-title">Code Editor</div>
+                    <div class="game-description">Web-based code editor and compiler</div>
+                </a>
+                <a href="https://blygren.github.io/yes/minecraft-coordinates-logger.html" class="game-card">
+                    <div class="game-icon">📍</div>
+                    <div class="game-title">MC Coords</div>
+                    <div class="game-description">Minecraft coordinate logging tool</div>
+                </a>
+                <a href="https://blygren.github.io/yes/minecraft_checklist.html" class="game-card">
+                    <div class="game-icon">✅</div>
+                    <div class="game-title">MC Checklist</div>
+                    <div class="game-description">Minecraft progress tracking checklist</div>
+                </a>
+                <a href="https://blygren.github.io/yes/Cool%20keyboard.html" class="game-card">
+                    <div class="game-icon">⌨️</div>
+                    <div class="game-title">Keyboard</div>
+                    <div class="game-description">Virtual keyboard with sound effects</div>
+                </a>
+                <a href="https://blygren.github.io/yes/Completed%20Trainable%20Model.html" class="game-card">
+                    <div class="game-icon">🤖</div>
+                    <div class="game-title">Chatbot</div>
+                    <div class="game-description">AI chatbot with trainable responses</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="category" data-category="misc">
+            <h2 class="category-title">🌟 Special Features</h2>
+            <div class="games-grid">
+                <a href="https://blygren.github.io/yes/game_hub.html" class="game-card">
+                    <div class="game-icon">🏠</div>
+                    <div class="game-title">Main Hub</div>
+                    <div class="game-description">Central hub for all games and simulations</div>
+                </a>
+                <a href="https://blygren.github.io/yes/space-gen-combined.html" class="game-card">
+                    <div class="game-icon">🗺️</div>
+                    <div class="game-title">Star Map</div>
+                    <div class="game-description">Procedural star system generator</div>
+                </a>
+                <a href="https://blygren.github.io/yes/Chaos.html" class="game-card">
+                    <div class="game-icon">🌪️</div>
+                    <div class="game-title">Chaos Box</div>
+                    <div class="game-description">Chaotic system simulations and fractals</div>
+                </a>
+                <a href="https://blygren.github.io/yes/archive.html" class="game-card">
+                    <div class="game-icon">📚</div>
+                    <div class="game-title">Archive</div>
+                    <div class="game-description">Collection of older projects and experiments</div>
+                </a>
+                <a href="https://blygren.github.io/yes/MobileTest.html" class="game-card">
+                    <div class="game-icon">📱</div>
+                    <div class="game-title">Mobile Test</div>
+                    <div class="game-description">Mobile compatibility testing interface</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Matrix rain effect
+        function createMatrixRain() {
+            const matrixBg = document.getElementById('matrixBg');
+            const characters = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            
+            function createColumn() {
+                const column = document.createElement('div');
+                column.className = 'matrix-column';
+                column.style.left = Math.random() * window.innerWidth + 'px';
+                column.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                column.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                
+                let text = '';
+                for (let i = 0; i < Math.random() * 20 + 10; i++) {
+                    text += characters.charAt(Math.floor(Math.random() * characters.length));
+                }
+                column.textContent = text;
+                
+                matrixBg.appendChild(column);
+                
+                setTimeout(() => {
+                    column.remove();
+                }, 5000);
+            }
+            
+            setInterval(createColumn, 100);
+        }
+
+        // Start matrix rain
+        createMatrixRain();
+
+        const searchBox = document.getElementById('searchBox');
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        const categories = document.querySelectorAll('.category');
+        const gameCards = document.querySelectorAll('.game-card');
+
+        // Search functionality
+        searchBox.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            gameCards.forEach(card => {
+                const title = card.querySelector('.game-title').textContent.toLowerCase();
+                const description = card.querySelector('.game-description').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide categories based on visible cards
+            categories.forEach(category => {
+                const visibleCards = category.querySelectorAll('.game-card[style*="block"], .game-card:not([style*="none"])');
+                if (visibleCards.length > 0 && searchTerm !== '') {
+                    category.style.display = 'block';
+                } else if (searchTerm !== '') {
+                    category.style.display = 'none';
+                } else {
+                    category.style.display = 'block';
+                }
+            });
+        });
+
+        // Filter functionality
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const category = this.dataset.category;
+                
+                // Update active tab
+                filterTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Clear search
+                searchBox.value = '';
+                
+                // Show/hide categories and cards
+                if (category === 'all') {
+                    categories.forEach(cat => cat.style.display = 'block');
+                    gameCards.forEach(card => card.style.display = 'block');
+                } else {
+                    categories.forEach(cat => {
+                        if (cat.dataset.category === category) {
+                            cat.style.display = 'block';
+                        } else {
+                            cat.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        });
+
+        // Add some interactive effects
+        gameCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
