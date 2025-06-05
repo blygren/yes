@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced AI Drawing Canvas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(15, 15, 35, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #f8fafc;
+            margin-bottom: 30px;
+            font-size: 2.8em;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .controls-panel {
+            background: linear-gradient(145deg, #1e293b, #334155);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .controls-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .controls-panel::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
+
+        .controls-panel::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            border-radius: 4px;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #2d3748, #4a5568);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .section-title {
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #f8fafc;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            font-size: 0.95em;
+            color: #cbd5e0;
+            margin-bottom: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85em;
+        }
+
+        .control-group input,
+        .control-group select {
+            padding: 12px 15px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            background: rgba(15, 15, 35, 0.8);
+            color: #e2e8f0;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            background: rgba(15, 15, 35, 0.95);
+        }
+
+        .control-group select {
+            cursor: pointer;
+        }
+
+        .control-group input[type="color"] {
+            padding: 4px;
+            height: 45px;
+            width: 80px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .range-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .range-group input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .range-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+        }
+
+        .range-group input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .range-value {
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            min-width: 40px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #4a5568, #718096);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 85, 104, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #718096, #a0aec0);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f56565, #fc8181);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 101, 101, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #48bb78, #68d391);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #drawingCanvas {
+            border: 3px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            background: #ffffff;
+            cursor: crosshair;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        #drawingCanvas:hover {
+            box-shadow: 0 20px 45px rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+
+        .canvas-info {
+            margin-top: 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.95em;
+            line-height: 1.6;
+            background: rgba(15, 15, 35, 0.6);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .stats-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(15, 15, 35, 0.9);
+            color: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: rgba(15, 15, 35, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-group:hover {
+            background: rgba(15, 15, 35, 0.5);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #8b5cf6;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            margin: 0;
+            font-size: 0.9em;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls-panel {
+                max-height: none;
+            }
+            
+            h1 {
+                font-size: 2.2em;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #7c3aed, #0891b2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 AI Drawing Studio</h1>
+        
+        <div class="main-content">
+            <div class="controls-panel">
+                <!-- Agent Settings -->
+                <div class="control-section">
+                    <div class="section-title">🤖 Agent Settings</div>
+                    
+                    <div class="control-group">
+                        <label for="agentType">Agent Type:</label>
+                        <select id="agentType">
+                            <option value="wanderer">🚶 Wanderer</option>
+                            <option value="spiral">🌀 Spiral Artist</option>
+                            <option value="tracker">🎯 Path Tracker</option>
+                            <option value="dancer">💃 Dancer</option>
+                            <option value="painter">🎨 Splatter Painter</option>
+                            <option value="orbiter">🪐 Orbiter</option>
+                            <option value="flocking">🐦 Flocking Bird</option>
+                            <option value="wave">🌊 Wave Rider</option>
+                            <option value="fractal">🌿 Fractal Walker</option>
+                            <option value="lightning">⚡ Lightning Bug</option>
+                            <option value="flower">🌸 Flower Bloomer</option>
+                            <option value="galaxy">🌌 Galaxy Spinner</option>
+                            <option value="quantum">⚛️ Quantum Jumper</option>
+                            <option value="vine">🌱 Vine Grower</option>
+                            <option value="firework">🎆 Firework</option>
+                            <option value="magnet">🧲 Magnetic Field</option>
+                            <option value="tornado">🌪️ Tornado</option>
+                            <option value="neural">🧠 Neural Network</option>
+                            <option value="crystal">💎 Crystal Growth</option>
+                            <option value="aurora">🌈 Aurora Wave</option>
+                            <option value="DNA">🧬 DNA Helix</option>
+                            <option value="plasma">⚡ Plasma Ball</option>
+                            <option value="constellation">⭐ Constellation</option>
+                            <option value="blackhole">🕳️ Black Hole</option>
+                            <option value="phoenix">🔥 Phoenix</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="colorPicker">Color:</label>
+                        <input type="color" id="colorPicker" value="#ff4757">
+                    </div>
+
+                    <div class="control-group">
+                        <label>Speed:</label>
+                        <div class="range-group">
+                            <input type="range" id="speedRange" min="0.5" max="8" step="0.5" value="2">
+                            <span class="range-value" id="speedValue">2</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Brush Size:</label>
+                        <div class="range-group">
+                            <input type="range" id="sizeRange" min="1" max="25" value="5">
+                            <span class="range-value" id="sizeValue">5</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Life Span:</label>
+                        <div class="range-group">
+                            <input type="range" id="lifespanRange" min="100" max="5000" step="100" value="2000">
+                            <span class="range-value" id="lifespanValue">2000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drawing Settings -->
+                <div class="control-section">
+                    <div class="section-title">🎨 Drawing Settings</div>
+                    
+                    <div class="control-group">
+                        <label>Trail Opacity:</label>
+                        <div class="range-group">
+                            <input type="range" id="trailOpacity" min="0" max="100" value="5">
+                            <span class="range-value" id="trailValue">5</span>
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="randomColors">
+                        <label for="randomColors">Random Colors</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showAgents" checked>
+                        <label for="showAgents">Show Agents</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="connectAgents">
+                        <label for="connectAgents">Connect Nearby Agents</label>
+                    </div>
+                </div>
+
+                <!-- Environment Settings -->
+                <div class="control-section">
+                    <div class="section-title">🌍 Environment</div>
+                    
+                    <div class="control-group">
+                        <label>Gravity:</label>
+                        <div class="range-group">
+                            <input type="range" id="gravityRange" min="0" max="2" step="0.1" value="0">
+                            <span class="range-value" id="gravityValue">0</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Wind Force:</label>
+                        <div class="range-group">
+                            <input type="range" id="windRange" min="0" max="3" step="0.1" value="0">
+                            <span class="range-value" id="windValue">0</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="boundaryBehavior">Boundary Behavior:</label>
+                        <select id="boundaryBehavior">
+                            <option value="wrap">Wrap Around</option>
+                            <option value="bounce">Bounce</option>
+                            <option value="stop">Stop at Edge</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="control-section">
+                    <div class="section-title">⚡ Actions</div>
+                    
+                    <div class="button-group">
+                        <button id="addAgentButton" class="btn btn-primary">Add Agent</button>
+                        <button id="addMultipleButton" class="btn btn-secondary">Add 5 Agents</button>
+                        <button id="pauseButton" class="btn btn-secondary">Pause</button>
+                        <button id="downloadButton" class="btn btn-success">Download Image</button>
+                        <button id="clearCanvasButton" class="btn btn-danger">Clear Canvas</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="drawingCanvas"></canvas>
+                <div class="stats-panel" id="statsPanel">
+                    Active Agents: <span id="agentCount">0</span><br>
+                    FPS: <span id="fpsCounter">60</span>
+                </div>
+                <div class="canvas-info">
+                    Click on the canvas to place agents • Configure settings on the left • Watch the AI create art!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('drawingCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // UI Elements
+            const colorPicker = document.getElementById('colorPicker');
+            const speedRange = document.getElementById('speedRange');
+            const speedValue = document.getElementById('speedValue');
+            const sizeRange = document.getElementById('sizeRange');
+            const sizeValue = document.getElementById('sizeValue');
+            const lifespanRange = document.getElementById('lifespanRange');
+            const lifespanValue = document.getElementById('lifespanValue');
+            const trailOpacity = document.getElementById('trailOpacity');
+            const trailValue = document.getElementById('trailValue');
+            const agentType = document.getElementById('agentType');
+            const randomColors = document.getElementById('randomColors');
+            const showAgents = document.getElementById('showAgents');
+            const connectAgents = document.getElementById('connectAgents');
+            const gravityRange = document.getElementById('gravityRange');
+            const gravityValue = document.getElementById('gravityValue');
+            const windRange = document.getElementById('windRange');
+            const windValue = document.getElementById('windValue');
+            const boundaryBehavior = document.getElementById('boundaryBehavior');
+            const addAgentButton = document.getElementById('addAgentButton');
+            const addMultipleButton = document.getElementById('addMultipleButton');
+            const pauseButton = document.getElementById('pauseButton');
+            const downloadButton = document.getElementById('downloadButton');
+            const clearCanvasButton = document.getElementById('clearCanvasButton');
+            const agentCount = document.getElementById('agentCount');
+            const fpsCounter = document.getElementById('fpsCounter');
+
+            canvas.width = 800;
+            canvas.height = 600;
+
+            let agents = [];
+            let animationFrameId;
+            let isPaused = false;
+            let frameCount = 0;
+            let lastTime = performance.now();
+
+            // Update range value displays
+            const ranges = [
+                { input: speedRange, display: speedValue },
+                { input: sizeRange, display: sizeValue },
+                { input: lifespanRange, display: lifespanValue },
+                { input: trailOpacity, display: trailValue },
+                { input: gravityRange, display: gravityValue },
+                { input: windRange, display: windValue }
+            ];
+
+            ranges.forEach(({ input, display }) => {
+                input.addEventListener('input', () => display.textContent = input.value);
+            });
+
+            // Agent Classes
+            class BaseAgent {
+                constructor(x, y, config) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = (Math.random() - 0.5) * 4;
+                    this.vy = (Math.random() - 0.5) * 4;
+                    this.color = config.randomColors ? this.getRandomColor() : config.color;
+                    this.speed = parseFloat(config.speed);
+                    this.size = parseInt(config.size);
+                    this.maxLifespan = parseInt(config.lifespan);
+                    this.lifespan = this.maxLifespan;
+                    this.age = 0;
+                    this.trail = [];
+                    this.maxTrailLength = 20;
+                }
+
+                getRandomColor() {
+                    const colors = ['#ff4757', '#5352ed', '#2ed573', '#ffa502', '#ff3838', '#1e90ff', '#ff6b9d', '#c44569'];
+                    return colors[Math.floor(Math.random() * colors.length)];
+                }
+
+                update(environment) {
+                    // Apply environmental effects
+                    this.vy += environment.gravity;
+                    this.vx += environment.wind;
+
+                    // Age and lifecycle
+                    this.age++;
+                    this.lifespan--;
+
+                    // Store trail
+                    this.trail.push({ x: this.x, y: this.y });
+                    if (this.trail.length > this.maxTrailLength) {
+                        this.trail.shift();
+                    }
+
+                    // Handle boundaries
+                    this.handleBoundaries(environment.boundaryBehavior);
+                }
+
+                handleBoundaries(behavior) {
+                    switch (behavior) {
+                        case 'wrap':
+                            if (this.x > canvas.width) this.x = 0;
+                            if (this.x < 0) this.x = canvas.width;
+                            if (this.y > canvas.height) this.y = 0;
+                            if (this.y < 0) this.y = canvas.height;
+                            break;
+                        case 'bounce':
+                            if (this.x > canvas.width || this.x < 0) this.vx *= -0.8;
+                            if (this.y > canvas.height || this.y < 0) this.vy *= -0.8;
+                            this.x = Math.max(0, Math.min(canvas.width, this.x));
+                            this.y = Math.max(0, Math.min(canvas.height, this.y));
+                            break;
+                        case 'stop':
+                            if (this.x > canvas.width || this.x < 0 || this.y > canvas.height || this.y < 0) {
+                                this.vx = 0;
+                                this.vy = 0;
+                            }
+                            this.x = Math.max(0, Math.min(canvas.width, this.x));
+                            this.y = Math.max(0, Math.min(canvas.height, this.y));
+                            break;
+                    }
+                }
+
+                draw(context, showAgent) {
+                    // Draw trail
+                    context.strokeStyle = this.color;
+                    context.lineWidth = this.size * 0.5;
+                    context.beginPath();
+                    for (let i = 1; i < this.trail.length; i++) {
+                        context.moveTo(this.trail[i - 1].x, this.trail[i - 1].y);
+                        context.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    context.stroke();
+
+                    // Draw agent
+                    if (showAgent) {
+                        const alpha = this.lifespan / this.maxLifespan;
+                        context.fillStyle = this.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                        context.beginPath();
+                        context.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2);
+                        context.fill();
+                    }
+                }
+
+                isDead() {
+                    return this.lifespan <= 0;
+                }
+            }
+
+            class WandererAgent extends BaseAgent {
+                update(environment) {
+                    this.vx += (Math.random() - 0.5) * 0.5;
+                    this.vy += (Math.random() - 0.5) * 0.5;
+                    
+                    // Apply speed limit
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (currentSpeed > this.speed) {
+                        this.vx = (this.vx / currentSpeed) * this.speed;
+                        this.vy = (this.vy / currentSpeed) * this.speed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+            }
+
+            class SpiralAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.angle = 0;
+                    this.radius = 1;
+                    this.centerX = x;
+                    this.centerY = y;
+                }
+
+                update(environment) {
+                    this.angle += 0.1;
+                    this.radius += 0.5;
+                    
+                    this.x = this.centerX + Math.cos(this.angle) * this.radius;
+                    this.y = this.centerY + Math.sin(this.angle) * this.radius;
+
+                    super.update(environment);
+                }
+            }
+
+            class LightningAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.energy = 100;
+                    this.zapTimer = 0;
+                }
+
+                update(environment) {
+                    this.zapTimer++;
+                    
+                    if (this.zapTimer > 20 && this.energy > 10) {
+                        // Create lightning effect
+                        const zapDistance = Math.random() * 80 + 20;
+                        const zapAngle = Math.random() * Math.PI * 2;
+                        const zapX = this.x + Math.cos(zapAngle) * zapDistance;
+                        const zapY = this.y + Math.sin(zapAngle) * zapDistance;
+                        
+                        ctx.strokeStyle = this.color;
+                        ctx.lineWidth = this.size * 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        
+                        // Jagged lightning path
+                        const segments = 5;
+                        for (let i = 1; i <= segments; i++) {
+                            const t = i / segments;
+                            const segX = this.x + (zapX - this.x) * t + (Math.random() - 0.5) * 20;
+                            const segY = this.y + (zapY - this.y) * t + (Math.random() - 0.5) * 20;
+                            ctx.lineTo(segX, segY);
+                        }
+                        ctx.stroke();
+                        
+                        this.energy -= 10;
+                        this.zapTimer = 0;
+                    }
+
+                    if (this.energy < 100) this.energy += 0.5;
+
+                    this.vx += (Math.random() - 0.5) * 0.5;
+                    this.vy += (Math.random() - 0.5) * 0.5;
+
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > this.speed) {
+                        this.vx = (this.vx / speed) * this.speed;
+                        this.vy = (this.vy / speed) * this.speed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+            }
+
+            class TrackerAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.targetX = Math.random() * canvas.width;
+                    this.targetY = Math.random() * canvas.height;
+                    this.targetChangeTimer = 0;
+                }
+
+                update(environment) {
+                    this.targetChangeTimer++;
+                    if (this.targetChangeTimer > 120) {
+                        this.targetX = Math.random() * canvas.width;
+                        this.targetY = Math.random() * canvas.height;
+                        this.targetChangeTimer = 0;
+                    }
+
+                    const dx = this.targetX - this.x;
+                    const dy = this.targetY - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 5) {
+                        this.vx += (dx / distance) * 0.3;
+                        this.vy += (dy / distance) * 0.3;
+                    }
+
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (currentSpeed > this.speed) {
+                        this.vx = (this.vx / currentSpeed) * this.speed;
+                        this.vy = (this.vy / currentSpeed) * this.speed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+            }
+
+            class DancerAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.danceAngle = 0;
+                }
+
+                update(environment) {
+                    this.danceAngle += 0.15;
+                    
+                    this.vx = Math.cos(this.danceAngle) * this.speed;
+                    this.vy = Math.sin(this.danceAngle * 2) * this.speed;
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+            }
+
+            class PainterAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.splatterTimer = 0;
+                }
+
+                update(environment) {
+                    this.splatterTimer++;
+                    
+                    if (this.splatterTimer > 30) {
+                        for (let i = 0; i < 3; i++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const distance = Math.random() * 20;
+                            const splatterX = this.x + Math.cos(angle) * distance;
+                            const splatterY = this.y + Math.sin(angle) * distance;
+                            
+                            ctx.fillStyle = this.color + '40';
+                            ctx.beginPath();
+                            ctx.arc(splatterX, splatterY, Math.random() * this.size, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        this.splatterTimer = 0;
+                    }
+
+                    this.vx += (Math.random() - 0.5) * 2;
+                    this.vy += (Math.random() - 0.5) * 2;
+
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (currentSpeed > this.speed) {
+                        this.vx = (this.vx / currentSpeed) * this.speed;
+                        this.vy = (this.vy / currentSpeed) * this.speed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+            }
+
+            class OrbiterAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.centerX = x;
+                    this.centerY = y;
+                    this.orbitRadius = Math.random() * 50 + 30;
+                    this.orbitSpeed = Math.random() * 0.1 + 0.05;
+                    this.angle = Math.random() * Math.PI * 2;
+                }
+
+                update(environment) {
+                    this.angle += this.orbitSpeed;
+                    this.orbitRadius += Math.sin(this.age * 0.02) * 0.5;
+                    
+                    this.x = this.centerX + Math.cos(this.angle) * this.orbitRadius;
+                    this.y = this.centerY + Math.sin(this.angle) * this.orbitRadius;
+
+                    super.update(environment);
+                }
+            }
+
+            class FlockingAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.maxSpeed = this.speed;
+                }
+
+                update(environment) {
+                    const nearby = agents.filter(agent => 
+                        agent !== this && this.distance(agent) < 60
+                    );
+
+                    const separation = this.separate(nearby);
+                    const alignment = this.align(nearby);
+                    const cohesion = this.cohesion(nearby);
+
+                    this.vx += separation.x * 1.5 + alignment.x + cohesion.x;
+                    this.vy += separation.y * 1.5 + alignment.y + cohesion.y;
+
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > this.maxSpeed) {
+                        this.vx = (this.vx / speed) * this.maxSpeed;
+                        this.vy = (this.vy / speed) * this.maxSpeed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+
+                distance(other) {
+                    const dx = this.x - other.x;
+                    const dy = this.y - other.y;
+                    return Math.sqrt(dx * dx + dy * dy);
+                }
+
+                separate(nearby) {
+                    const desiredSeparation = 25;
+                    let steer = { x: 0, y: 0 };
+                    let count = 0;
+
+                    nearby.forEach(other => {
+                        const d = this.distance(other);
+                        if (d > 0 && d < desiredSeparation) {
+                            const diff = { x: this.x - other.x, y: this.y - other.y };
+                            const len = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+                            diff.x = (diff.x / len) / d;
+                            diff.y = (diff.y / len) / d;
+                            steer.x += diff.x;
+                            steer.y += diff.y;
+                            count++;
+                        }
+                    });
+
+                    if (count > 0) {
+                        steer.x /= count;
+                        steer.y /= count;
+                    }
+                    return steer;
+                }
+
+                align(nearby) {
+                    const neighborDist = 50;
+                    let sum = { x: 0, y: 0 };
+                    let count = 0;
+
+                    nearby.forEach(other => {
+                        if (this.distance(other) < neighborDist) {
+                            sum.x += other.vx;
+                            sum.y += other.vy;
+                            count++;
+                        }
+                    });
+
+                    if (count > 0) {
+                        sum.x /= count;
+                        sum.y /= count;
+                        return { x: sum.x * 0.1, y: sum.y * 0.1 };
+                    }
+                    return { x: 0, y: 0 };
+                }
+
+                cohesion(nearby) {
+                    const neighborDist = 50;
+                    let sum = { x: 0, y: 0 };
+                    let count = 0;
+
+                    nearby.forEach(other => {
+                        if (this.distance(other) < neighborDist) {
+                            sum.x += other.x;
+                            sum.y += other.y;
+                            count++;
+                        }
+                    });
+
+                    if (count > 0) {
+                        sum.x /= count;
+                        sum.y /= count;
+                        const steer = { x: sum.x - this.x, y: sum.y - this.y };
+                        return { x: steer.x * 0.01, y: steer.y * 0.01 };
+                    }
+                    return { x: 0, y: 0 };
+                }
+            }
+
+            class WaveAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.waveOffset = Math.random() * Math.PI * 2;
+                    this.waveAmplitude = Math.random() * 30 + 20;
+                    this.waveFrequency = Math.random() * 0.02 + 0.01;
+                }
+
+                update(environment) {
+                    this.x += this.speed;
+                    this.y += Math.sin(this.age * this.waveFrequency + this.waveOffset) * this.waveAmplitude * 0.1;
+
+                    super.update(environment);
+                }
+            }
+
+            class FractalAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.branches = [];
+                    this.branchTimer = 0;
+                }
+
+                update(environment) {
+                    this.branchTimer++;
+                    
+                    if (this.branchTimer > 60 && this.branches.length < 3) {
+                        const angle = Math.random() * Math.PI * 2;
+                        this.branches.push({
+                            x: this.x,
+                            y: this.y,
+                            vx: Math.cos(angle) * this.speed * 0.7,
+                            vy: Math.sin(angle) * this.speed * 0.7,
+                            life: 30
+                        });
+                        this.branchTimer = 0;
+                    }
+
+                    this.branches = this.branches.filter(branch => {
+                        branch.x += branch.vx;
+                        branch.y += branch.vy;
+                        branch.life--;
+                        return branch.life > 0;
+                    });
+
+                    this.vx += (Math.random() - 0.5) * 0.3;
+                    this.vy += (Math.random() - 0.5) * 0.3;
+
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > this.speed) {
+                        this.vx = (this.vx / speed) * this.speed;
+                        this.vy = (this.vy / speed) * this.speed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    super.draw(context, showAgent);
+                    
+                    context.strokeStyle = this.color + '80';
+                    context.lineWidth = this.size * 0.3;
+                    this.branches.forEach(branch => {
+                        context.beginPath();
+                        context.arc(branch.x, branch.y, this.size * 0.3, 0, Math.PI * 2);
+                        context.stroke();
+                    });
+                }
+            }
+
+            class FlowerAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.petalCount = Math.floor(Math.random() * 8) + 5;
+                    this.bloomRadius = 0;
+                    this.maxBloomRadius = Math.random() * 40 + 30;
+                }
+
+                update(environment) {
+                    if (this.bloomRadius < this.maxBloomRadius) {
+                        this.bloomRadius += 0.5;
+                    }
+
+                    this.x += Math.sin(this.age * 0.01) * 0.2;
+                    this.y += Math.cos(this.age * 0.01) * 0.2;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    context.fillStyle = this.color + '60';
+                    for (let i = 0; i < this.petalCount; i++) {
+                        const angle = (i / this.petalCount) * Math.PI * 2;
+                        const petalX = this.x + Math.cos(angle) * this.bloomRadius;
+                        const petalY = this.y + Math.sin(angle) * this.bloomRadius;
+                        
+                        context.beginPath();
+                        context.arc(petalX, petalY, this.size, 0, Math.PI * 2);
+                        context.fill();
+                    }
+
+                    context.fillStyle = this.color;
+                    context.beginPath();
+                    context.arc(this.x, this.y, this.size * 0.5, 0, Math.PI * 2);
+                    context.fill();
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class GalaxyAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.centerX = x;
+                    this.centerY = y;
+                    this.arms = [];
+                    this.armCount = Math.floor(Math.random() * 3) + 2;
+                    
+                    for (let i = 0; i < this.armCount; i++) {
+                        this.arms.push({
+                            angle: (i / this.armCount) * Math.PI * 2,
+                            radius: 0,
+                            particles: []
+                        });
+                    }
+                }
+
+                update(environment) {
+                    this.arms.forEach(arm => {
+                        arm.angle += 0.02;
+                        arm.radius += 0.3;
+                        
+                        if (arm.radius > 100) arm.radius = 0;
+                        
+                        if (Math.random() < 0.3) {
+                            arm.particles.push({
+                                x: this.centerX + Math.cos(arm.angle) * arm.radius,
+                                y: this.centerY + Math.sin(arm.angle) * arm.radius,
+                                life: 60
+                            });
+                        }
+                        
+                        arm.particles = arm.particles.filter(particle => {
+                            particle.life--;
+                            return particle.life > 0;
+                        });
+                    });
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    this.arms.forEach(arm => {
+                        arm.particles.forEach(particle => {
+                            const alpha = particle.life / 60;
+                            context.fillStyle = this.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                            context.beginPath();
+                            context.arc(particle.x, particle.y, this.size * 0.3, 0, Math.PI * 2);
+                            context.fill();
+                        });
+                    });
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class QuantumAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.quantumPositions = [];
+                    this.jumpTimer = 0;
+                    this.jumpCooldown = Math.random() * 60 + 30;
+                }
+
+                update(environment) {
+                    this.jumpTimer++;
+                    
+                    if (this.jumpTimer > this.jumpCooldown) {
+                        const jumpDistance = Math.random() * 100 + 50;
+                        const jumpAngle = Math.random() * Math.PI * 2;
+                        
+                        this.quantumPositions.push({
+                            x: this.x,
+                            y: this.y,
+                            life: 30
+                        });
+                        
+                        this.x += Math.cos(jumpAngle) * jumpDistance;
+                        this.y += Math.sin(jumpAngle) * jumpDistance;
+                        
+                        this.jumpTimer = 0;
+                        this.jumpCooldown = Math.random() * 60 + 30;
+                    } else {
+                        this.x += this.vx;
+                        this.y += this.vy;
+                    }
+
+                    this.quantumPositions = this.quantumPositions.filter(pos => {
+                        pos.life--;
+                        return pos.life > 0;
+                    });
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    this.quantumPositions.forEach(pos => {
+                        const alpha = pos.life / 30;
+                        context.fillStyle = this.color + Math.floor(alpha * 100).toString(16).padStart(2, '0');
+                        context.beginPath();
+                        context.arc(pos.x, pos.y, this.size * alpha, 0, Math.PI * 2);
+                        context.fill();
+                    });
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class VineAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.vineSegments = [{ x: x, y: y }];
+                    this.growthDirection = Math.random() * Math.PI * 2;
+                    this.segmentDistance = 5;
+                }
+
+                update(environment) {
+                    this.growthDirection += (Math.random() - 0.5) * 0.3;
+                    
+                    const lastSegment = this.vineSegments[this.vineSegments.length - 1];
+                    const nextX = lastSegment.x + Math.cos(this.growthDirection) * this.segmentDistance;
+                    const nextY = lastSegment.y + Math.sin(this.growthDirection) * this.segmentDistance;
+                    
+                    this.vineSegments.push({ x: nextX, y: nextY });
+                    
+                    if (this.vineSegments.length > 50) {
+                        this.vineSegments.shift();
+                    }
+                    
+                    this.x = nextX;
+                    this.y = nextY;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    context.strokeStyle = this.color;
+                    context.lineWidth = this.size * 0.5;
+                    context.beginPath();
+                    
+                    for (let i = 1; i < this.vineSegments.length; i++) {
+                        context.moveTo(this.vineSegments[i - 1].x, this.vineSegments[i - 1].y);
+                        context.lineTo(this.vineSegments[i].x, this.vineSegments[i].y);
+                    }
+                    context.stroke();
+
+                    if (Math.random() < 0.1) {
+                        const segment = this.vineSegments[Math.floor(Math.random() * this.vineSegments.length)];
+                        context.fillStyle = this.color + '80';
+                        context.beginPath();
+                        context.arc(segment.x, segment.y, this.size * 0.7, 0, Math.PI * 2);
+                        context.fill();
+                    }
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class FireworkAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.phase = 'rising';
+                    this.targetHeight = Math.random() * 200 + 100;
+                    this.explosionParticles = [];
+                }
+
+                update(environment) {
+                    if (this.phase === 'rising') {
+                        this.vy = -this.speed * 2;
+                        this.y += this.vy;
+                        
+                        if (this.y <= canvas.height - this.targetHeight) {
+                            this.phase = 'exploding';
+                            this.createExplosion();
+                        }
+                    } else if (this.phase === 'exploding') {
+                        this.explosionParticles = this.explosionParticles.filter(particle => {
+                            particle.x += particle.vx;
+                            particle.y += particle.vy;
+                            particle.vy += 0.1;
+                            particle.life--;
+                            return particle.life > 0;
+                        });
+                        
+                        if (this.explosionParticles.length === 0) {
+                            this.lifespan = 0;
+                        }
+                    }
+
+                    super.update(environment);
+                }
+
+                createExplosion() {
+                    const particleCount = Math.random() * 20 + 15;
+                    for (let i = 0; i < particleCount; i++) {
+                        const angle = (i / particleCount) * Math.PI * 2;
+                        const speed = Math.random() * 4 + 2;
+                        this.explosionParticles.push({
+                            x: this.x,
+                            y: this.y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            life: Math.random() * 60 + 30
+                        });
+                    }
+                }
+
+                draw(context, showAgent) {
+                    if (this.phase === 'rising') {
+                        context.fillStyle = this.color;
+                        context.beginPath();
+                        context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        context.fill();
+                    } else {
+                        this.explosionParticles.forEach(particle => {
+                            const alpha = particle.life / 60;
+                            context.fillStyle = this.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                            context.beginPath();
+                            context.arc(particle.x, particle.y, this.size * 0.5, 0, Math.PI * 2);
+                            context.fill();
+                        });
+                    }
+                }
+            }
+
+            class MagnetAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.fieldStrength = Math.random() * 2 + 1;
+                    this.polarity = Math.random() > 0.5 ? 1 : -1;
+                    this.fieldLines = [];
+                }
+
+                update(environment) {
+                    this.fieldLines = [];
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i / 8) * Math.PI * 2;
+                        this.fieldLines.push({
+                            startX: this.x + Math.cos(angle) * 20,
+                            startY: this.y + Math.sin(angle) * 20,
+                            endX: this.x + Math.cos(angle) * 60,
+                            endY: this.y + Math.sin(angle) * 60
+                        });
+                    }
+
+                    agents.forEach(other => {
+                        if (other !== this && other.constructor !== MagnetAgent) {
+                            const dx = other.x - this.x;
+                            const dy = other.y - this.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance < 100 && distance > 0) {
+                                const force = (this.fieldStrength * this.polarity) / (distance * distance);
+                                other.vx += (dx / distance) * force;
+                                other.vy += (dy / distance) * force;
+                            }
+                        }
+                    });
+
+                    this.x += Math.sin(this.age * 0.01) * 0.5;
+                    this.y += Math.cos(this.age * 0.01) * 0.5;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    context.strokeStyle = this.color + '30';
+                    context.lineWidth = 1;
+                    this.fieldLines.forEach(line => {
+                        context.beginPath();
+                        context.moveTo(line.startX, line.startY);
+                        context.lineTo(line.endX, line.endY);
+                        context.stroke();
+                    });
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class TornadoAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.debris = [];
+                    this.intensity = 0;
+                    this.maxIntensity = Math.random() * 5 + 3;
+                }
+
+                update(environment) {
+                    if (this.intensity < this.maxIntensity) {
+                        this.intensity += 0.1;
+                    }
+
+                    if (Math.random() < 0.5) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = Math.random() * this.intensity * 20;
+                        this.debris.push({
+                            x: this.x + Math.cos(angle) * radius,
+                            y: this.y + Math.sin(angle) * radius,
+                            angle: angle,
+                            radius: radius,
+                            life: 60
+                        });
+                    }
+
+                    this.debris = this.debris.filter(particle => {
+                        particle.angle += 0.2;
+                        particle.radius = Math.max(0, particle.radius - 0.5);
+                        particle.x = this.x + Math.cos(particle.angle) * particle.radius;
+                        particle.y = this.y + Math.sin(particle.angle) * particle.radius;
+                        particle.life--;
+                        return particle.life > 0 && particle.radius > 0;
+                    });
+
+                    this.vx += (Math.random() - 0.5) * 0.3;
+                    this.vy += (Math.random() - 0.5) * 0.3;
+
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > this.speed) {
+                        this.vx = (this.vx / speed) * this.speed;
+                        this.vy = (this.vy / speed) * this.speed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    this.debris.forEach(particle => {
+                        const alpha = particle.life / 60;
+                        context.fillStyle = this.color + Math.floor(alpha * 128).toString(16).padStart(2, '0');
+                        context.beginPath();
+                        context.arc(particle.x, particle.y, this.size * 0.3, 0, Math.PI * 2);
+                        context.fill();
+                    });
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class NeuralAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.neurons = [];
+                    this.connections = [];
+                    this.pulseTimer = 0;
+                }
+
+                update(environment) {
+                    this.pulseTimer++;
+
+                    if (this.neurons.length < 5) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const distance = Math.random() * 50 + 20;
+                        this.neurons.push({
+                            x: this.x + Math.cos(angle) * distance,
+                            y: this.y + Math.sin(angle) * distance,
+                            activation: 0
+                        });
+                    }
+
+                    if (this.pulseTimer > 30 && this.connections.length < 8) {
+                        if (this.neurons.length >= 2) {
+                            const neuron1 = this.neurons[Math.floor(Math.random() * this.neurons.length)];
+                            const neuron2 = this.neurons[Math.floor(Math.random() * this.neurons.length)];
+                            if (neuron1 !== neuron2) {
+                                this.connections.push({
+                                    from: neuron1,
+                                    to: neuron2,
+                                    strength: Math.random(),
+                                    pulse: 0
+                                });
+                            }
+                        }
+                        this.pulseTimer = 0;
+                    }
+
+                    this.connections.forEach(conn => {
+                        conn.pulse = (conn.pulse + 0.1) % 1;
+                    });
+
+                    this.x += Math.sin(this.age * 0.005) * 0.2;
+                    this.y += Math.cos(this.age * 0.005) * 0.2;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    context.strokeStyle = this.color + '60';
+                    context.lineWidth = 2;
+                    this.connections.forEach(conn => {
+                        context.beginPath();
+                        context.moveTo(conn.from.x, conn.from.y);
+                        context.lineTo(conn.to.x, conn.to.y);
+                        context.stroke();
+
+                        const pulseX = conn.from.x + (conn.to.x - conn.from.x) * conn.pulse;
+                        const pulseY = conn.from.y + (conn.to.y - conn.from.y) * conn.pulse;
+                        context.fillStyle = this.color;
+                        context.beginPath();
+                        context.arc(pulseX, pulseY, 3, 0, Math.PI * 2);
+                        context.fill();
+                    });
+
+                    this.neurons.forEach(neuron => {
+                        context.fillStyle = this.color + '80';
+                        context.beginPath();
+                        context.arc(neuron.x, neuron.y, this.size * 0.6, 0, Math.PI * 2);
+                        context.fill();
+                    });
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class CrystalAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.crystalNodes = [{ x: x, y: y, size: this.size }];
+                    this.growthTimer = 0;
+                }
+
+                update(environment) {
+                    this.growthTimer++;
+
+                    if (this.growthTimer > 40 && this.crystalNodes.length < 12) {
+                        const parentNode = this.crystalNodes[Math.floor(Math.random() * this.crystalNodes.length)];
+                        const angle = Math.random() * Math.PI * 2;
+                        const distance = this.size * 2;
+                        
+                        this.crystalNodes.push({
+                            x: parentNode.x + Math.cos(angle) * distance,
+                            y: parentNode.y + Math.sin(angle) * distance,
+                            size: this.size * (0.5 + Math.random() * 0.5)
+                        });
+                        this.growthTimer = 0;
+                    }
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    context.strokeStyle = this.color;
+                    context.lineWidth = 2;
+                    
+                    for (let i = 1; i < this.crystalNodes.length; i++) {
+                        context.beginPath();
+                        context.moveTo(this.crystalNodes[0].x, this.crystalNodes[0].y);
+                        context.lineTo(this.crystalNodes[i].x, this.crystalNodes[i].y);
+                        context.stroke();
+                    }
+
+                    this.crystalNodes.forEach(node => {
+                        context.fillStyle = this.color + '60';
+                        context.strokeStyle = this.color;
+                        context.lineWidth = 1;
+                        context.beginPath();
+                        
+                        for (let i = 0; i < 6; i++) {
+                            const angle = (i / 6) * Math.PI * 2;
+                            const x = node.x + Math.cos(angle) * node.size;
+                            const y = node.y + Math.sin(angle) * node.size;
+                            if (i === 0) context.moveTo(x, y);
+                            else context.lineTo(x, y);
+                        }
+                        context.closePath();
+                        context.fill();
+                        context.stroke();
+                    });
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class AuroraAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.wavePoints = [];
+                    this.colors = ['#00ff88', '#0088ff', '#8800ff', '#ff0088'];
+                    this.currentColorIndex = 0;
+                }
+
+                update(environment) {
+                    this.wavePoints.push({
+                        x: this.x,
+                        y: this.y,
+                        life: 100,
+                        offset: Math.random() * Math.PI * 2
+                    });
+
+                    this.wavePoints = this.wavePoints.filter(point => {
+                        point.life--;
+                        return point.life > 0;
+                    });
+
+                    if (this.age % 120 === 0) {
+                        this.currentColorIndex = (this.currentColorIndex + 1) % this.colors.length;
+                    }
+
+                    this.x += this.speed;
+                    this.y += Math.sin(this.age * 0.05) * 2;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    if (this.wavePoints.length > 1) {
+                        context.strokeStyle = this.colors[this.currentColorIndex] + '40';
+                        context.lineWidth = this.size;
+                        context.beginPath();
+                        
+                        for (let i = 0; i < this.wavePoints.length - 1; i++) {
+                            const point1 = this.wavePoints[i];
+                            const point2 = this.wavePoints[i + 1];
+                            
+                            const y1 = point1.y + Math.sin(point1.offset + this.age * 0.1) * 20;
+                            const y2 = point2.y + Math.sin(point2.offset + this.age * 0.1) * 20;
+                            
+                            context.moveTo(point1.x, y1);
+                            context.lineTo(point2.x, y2);
+                        }
+                        context.stroke();
+                    }
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class DNAAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.helixRadius = 20;
+                    this.helixHeight = 0;
+                    this.strand1Points = [];
+                    this.strand2Points = [];
+                }
+
+                update(environment) {
+                    const angle1 = this.helixHeight * 0.2;
+                    const angle2 = angle1 + Math.PI;
+                    
+                    this.strand1Points.push({
+                        x: this.x + Math.cos(angle1) * this.helixRadius,
+                        y: this.y + this.helixHeight,
+                        life: 60
+                    });
+                    
+                    this.strand2Points.push({
+                        x: this.x + Math.cos(angle2) * this.helixRadius,
+                        y: this.y + this.helixHeight,
+                        life: 60
+                    });
+
+                    this.strand1Points = this.strand1Points.filter(p => --p.life > 0);
+                    this.strand2Points = this.strand2Points.filter(p => --p.life > 0);
+
+                    this.helixHeight += 2;
+                    if (this.helixHeight > 100) this.helixHeight = 0;
+
+                    this.y += this.speed * 0.5;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    context.strokeStyle = this.color;
+                    context.lineWidth = 3;
+                    
+                    context.beginPath();
+                    this.strand1Points.forEach((point, i) => {
+                        if (i === 0) context.moveTo(point.x, point.y);
+                        else context.lineTo(point.x, point.y);
+                    });
+                    context.stroke();
+
+                    context.beginPath();
+                    this.strand2Points.forEach((point, i) => {
+                        if (i === 0) context.moveTo(point.x, point.y);
+                        else context.lineTo(point.x, point.y);
+                    });
+                    context.stroke();
+
+                    context.strokeStyle = this.color + '60';
+                    context.lineWidth = 1;
+                    const minLength = Math.min(this.strand1Points.length, this.strand2Points.length);
+                    for (let i = 0; i < minLength; i += 3) {
+                        context.beginPath();
+                        context.moveTo(this.strand1Points[i].x, this.strand1Points[i].y);
+                        context.lineTo(this.strand2Points[i].x, this.strand2Points[i].y);
+                        context.stroke();
+                    }
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class PlasmaAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.plasmaParticles = [];
+                    this.energyLevel = 100;
+                }
+
+                update(environment) {
+                    if (this.energyLevel > 20) {
+                        for (let i = 0; i < 3; i++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const speed = Math.random() * 3 + 1;
+                            this.plasmaParticles.push({
+                                x: this.x,
+                                y: this.y,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                life: 30,
+                                charge: Math.random() > 0.5 ? 1 : -1
+                            });
+                        }
+                        this.energyLevel -= 5;
+                    }
+
+                    if (this.energyLevel < 100) this.energyLevel += 1;
+
+                    this.plasmaParticles = this.plasmaParticles.filter(particle => {
+                        particle.x += particle.vx;
+                        particle.y += particle.vy;
+                        
+                        this.plasmaParticles.forEach(other => {
+                            if (other !== particle) {
+                                const dx = other.x - particle.x;
+                                const dy = other.y - particle.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance < 30 && distance > 0) {
+                                    const force = (particle.charge * other.charge) / (distance * distance);
+                                    particle.vx -= (dx / distance) * force * 0.1;
+                                    particle.vy -= (dy / distance) * force * 0.1;
+                                }
+                            }
+                        });
+                        
+                        particle.life--;
+                        return particle.life > 0;
+                    });
+
+                    this.vx += (Math.random() - 0.5) * 0.2;
+                    this.vy += (Math.random() - 0.5) * 0.2;
+
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > this.speed) {
+                        this.vx = (this.vx / speed) * this.speed;
+                        this.vy = (this.vy / speed) * this.speed;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    this.plasmaParticles.forEach(particle => {
+                        const alpha = particle.life / 30;
+                        const color = particle.charge > 0 ? '#ff4444' : '#4444ff';
+                        context.fillStyle = color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                        context.beginPath();
+                        context.arc(particle.x, particle.y, this.size * 0.4, 0, Math.PI * 2);
+                        context.fill();
+                    });
+
+                    context.strokeStyle = this.color + '80';
+                    context.lineWidth = 1;
+                    for (let i = 0; i < this.plasmaParticles.length; i++) {
+                        for (let j = i + 1; j < this.plasmaParticles.length; j++) {
+                            const p1 = this.plasmaParticles[i];
+                            const p2 = this.plasmaParticles[j];
+                            const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+                            
+                            if (distance < 25) {
+                                context.beginPath();
+                                context.moveTo(p1.x, p1.y);
+                                context.lineTo(p2.x, p2.y);
+                                context.stroke();
+                            }
+                        }
+                    }
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class ConstellationAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.stars = [];
+                    this.starFormationTimer = 0;
+                }
+
+                update(environment) {
+                    this.starFormationTimer++;
+
+                    if (this.starFormationTimer > 45 && this.stars.length < 8) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const distance = Math.random() * 60 + 30;
+                        this.stars.push({
+                            x: this.x + Math.cos(angle) * distance,
+                            y: this.y + Math.sin(angle) * distance,
+                            brightness: Math.random(),
+                            twinkle: Math.random() * Math.PI * 2
+                        });
+                        this.starFormationTimer = 0;
+                    }
+
+                    this.stars.forEach(star => {
+                        star.twinkle += 0.1;
+                        star.brightness = 0.5 + Math.sin(star.twinkle) * 0.5;
+                    });
+
+                    this.x += Math.sin(this.age * 0.008) * 0.3;
+                    this.y += Math.cos(this.age * 0.008) * 0.3;
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    context.strokeStyle = this.color + '40';
+                    context.lineWidth = 1;
+                    for (let i = 0; i < this.stars.length - 1; i++) {
+                        context.beginPath();
+                        context.moveTo(this.stars[i].x, this.stars[i].y);
+                        context.lineTo(this.stars[i + 1].x, this.stars[i + 1].y);
+                        context.stroke();
+                    }
+
+                    this.stars.forEach(star => {
+                        const alpha = star.brightness;
+                        context.fillStyle = this.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                        context.beginPath();
+                        context.arc(star.x, star.y, this.size * 0.8 * alpha, 0, Math.PI * 2);
+                        context.fill();
+
+                        context.strokeStyle = this.color + Math.floor(alpha * 128).toString(16).padStart(2, '0');
+                        context.lineWidth = 1;
+                        for (let i = 0; i < 4; i++) {
+                            const rayAngle = (i / 4) * Math.PI * 2;
+                            const rayLength = this.size * alpha;
+                            context.beginPath();
+                            context.moveTo(star.x, star.y);
+                            context.lineTo(
+                                star.x + Math.cos(rayAngle) * rayLength,
+                                star.y + Math.sin(rayAngle) * rayLength
+                            );
+                            context.stroke();
+                        }
+                    });
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class BlackHoleAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.eventHorizon = this.size * 3;
+                    this.accretionDisk = [];
+                    this.mass = Math.random() * 5 + 3;
+                }
+
+                update(environment) {
+                    agents.forEach(other => {
+                        if (other !== this) {
+                            const dx = this.x - other.x;
+                            const dy = this.y - other.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance < 150 && distance > this.eventHorizon) {
+                                const force = (this.mass * 0.5) / (distance * distance);
+                                other.vx += (dx / distance) * force;
+                                other.vy += (dy / distance) * force;
+                            } else if (distance <= this.eventHorizon) {
+                                other.lifespan = 0;
+                                this.mass += 0.1;
+                                this.eventHorizon = this.size * 3 * Math.sqrt(this.mass / 3);
+                            }
+                        }
+                    });
+
+                    if (Math.random() < 0.3) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = this.eventHorizon + Math.random() * 40;
+                        this.accretionDisk.push({
+                            angle: angle,
+                            radius: radius,
+                            speed: Math.sqrt(this.mass / radius) * 0.5,
+                            life: 120
+                        });
+                    }
+
+                    this.accretionDisk = this.accretionDisk.filter(particle => {
+                        particle.angle += particle.speed;
+                        particle.radius -= 0.2;
+                        particle.life--;
+                        return particle.life > 0 && particle.radius > this.eventHorizon;
+                    });
+
+                    super.update(environment);
+                }
+
+                draw(context, showAgent) {
+                    this.accretionDisk.forEach(particle => {
+                        const x = this.x + Math.cos(particle.angle) * particle.radius;
+                        const y = this.y + Math.sin(particle.angle) * particle.radius;
+                        const alpha = particle.life / 120;
+                        
+                        context.fillStyle = '#ffaa00' + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                        context.beginPath();
+                        context.arc(x, y, 2, 0, Math.PI * 2);
+                        context.fill();
+                    });
+
+                    context.fillStyle = '#000000';
+                    context.strokeStyle = this.color;
+                    context.lineWidth = 2;
+                    context.beginPath();
+                    context.arc(this.x, this.y, this.eventHorizon, 0, Math.PI * 2);
+                    context.fill();
+                    context.stroke();
+
+                    context.strokeStyle = this.color + '20';
+                    context.lineWidth = 1;
+                    for (let i = 1; i <= 3; i++) {
+                        context.beginPath();
+                        context.arc(this.x, this.y, this.eventHorizon + i * 15, 0, Math.PI * 2);
+                        context.stroke();
+                    }
+
+                    super.draw(context, showAgent);
+                }
+            }
+
+            class PhoenixAgent extends BaseAgent {
+                constructor(x, y, config) {
+                    super(x, y, config);
+                    this.phase = 'flying';
+                    this.fireParticles = [];
+                    this.rebornTimer = 0;
+                    this.originalLifespan = this.maxLifespan;
+                }
+
+                update(environment) {
+                    if (this.phase === 'flying') {
+                        this.vx += (Math.random() - 0.5) * 0.4;
+                        this.vy += (Math.random() - 0.5) * 0.4;
+
+                        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                        if (speed > this.speed) {
+                            this.vx = (this.vx / speed) * this.speed;
+                            this.vy = (this.vy / speed) * this.speed;
+                        }
+
+                        this.x += this.vx;
+                        this.y += this.vy;
+
+                        this.fireParticles.push({
+                            x: this.x + (Math.random() - 0.5) * 10,
+                            y: this.y + (Math.random() - 0.5) * 10,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            life: 30,
+                            color: Math.random() > 0.5 ? '#ff4400' : '#ffaa00'
+                        });
+
+                        if (this.lifespan <= 0) {
+                            this.phase = 'burning';
+                            this.rebornTimer = 60;
+                        }
+                    } else if (this.phase === 'burning') {
+                        for (let i = 0; i < 5; i++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const speed = Math.random() * 6 + 2;
+                            this.fireParticles.push({
+                                x: this.x,
+                                y: this.y,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                life: 60,
+                                color: Math.random() > 0.3 ? '#ff0000' : '#ffff00'
+                            });
+                        }
+
+                        this.rebornTimer--;
+                        if (this.rebornTimer <= 0) {
+                            this.phase = 'reborn';
+                            this.lifespan = this.originalLifespan;
+                            this.age = 0;
+                        }
+                    } else if (this.phase === 'reborn') {
+                        this.phase = 'flying';
+                    }
+
+                    this.fireParticles = this.fireParticles.filter(particle => {
+                        particle.x += particle.vx;
+                        particle.y += particle.vy;
+                        particle.vy += 0.1;
+                        particle.life--;
+                        return particle.life > 0;
+                    });
+
+                    if (this.phase !== 'burning') {
+                        super.update(environment);
+                    }
+                }
+
+                draw(context, showAgent) {
+                    this.fireParticles.forEach(particle => {
+                        const alpha = particle.life / 60;
+                        context.fillStyle = particle.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                        context.beginPath();
+                        context.arc(particle.x, particle.y, this.size * 0.4 * alpha, 0, Math.PI * 2);
+                        context.fill();
+                    });
+
+                    if (this.phase !== 'burning') {
+                        super.draw(context, showAgent);
+                    }
+                }
+
+                isDead() {
+                    return false;
+                }
+            }
+
+            // Agent factory (complete)
+            function createAgent(x, y, type, config) {
+                switch (type) {
+                    case 'spiral': return new SpiralAgent(x, y, config);
+                    case 'tracker': return new TrackerAgent(x, y, config);
+                    case 'dancer': return new DancerAgent(x, y, config);
+                    case 'painter': return new PainterAgent(x, y, config);
+                    case 'orbiter': return new OrbiterAgent(x, y, config);
+                    case 'flocking': return new FlockingAgent(x, y, config);
+                    case 'wave': return new WaveAgent(x, y, config);
+                    case 'fractal': return new FractalAgent(x, y, config);
+                    case 'lightning': return new LightningAgent(x, y, config);
+                    case 'flower': return new FlowerAgent(x, y, config);
+                    case 'galaxy': return new GalaxyAgent(x, y, config);
+                    case 'quantum': return new QuantumAgent(x, y, config);
+                    case 'vine': return new VineAgent(x, y, config);
+                    case 'firework': return new FireworkAgent(x, y, config);
+                    case 'magnet': return new MagnetAgent(x, y, config);
+                    case 'tornado': return new TornadoAgent(x, y, config);
+                    case 'neural': return new NeuralAgent(x, y, config);
+                    case 'crystal': return new CrystalAgent(x, y, config);
+                    case 'aurora': return new AuroraAgent(x, y, config);
+                    case 'DNA': return new DNAAgent(x, y, config);
+                    case 'plasma': return new PlasmaAgent(x, y, config);
+                    case 'constellation': return new ConstellationAgent(x, y, config);
+                    case 'blackhole': return new BlackHoleAgent(x, y, config);
+                    case 'phoenix': return new PhoenixAgent(x, y, config);
+                    default: return new WandererAgent(x, y, config);
+                }
+            }
+
+            function getCurrentConfig() {
+                return {
+                    color: colorPicker.value,
+                    speed: speedRange.value,
+                    size: sizeRange.value,
+                    lifespan: lifespanRange.value,
+                    randomColors: randomColors.checked
+                };
+            }
+
+            function getEnvironment() {
+                return {
+                    gravity: parseFloat(gravityRange.value),
+                    wind: parseFloat(windRange.value),
+                    boundaryBehavior: boundaryBehavior.value
+                };
+            }
+
+            function addAgent(x, y) {
+                const config = getCurrentConfig();
+                const agent = createAgent(x, y, agentType.value, config);
+                agents.push(agent);
+                updateStats();
+                if (!animationFrameId && !isPaused) {
+                    animate();
+                }
+            }
+
+            function updateStats() {
+                agentCount.textContent = agents.length;
+            }
+
+            function updateFPS(currentTime) {
+                frameCount++;
+                if (currentTime - lastTime >= 1000) {
+                    fpsCounter.textContent = frameCount;
+                    frameCount = 0;
+                    lastTime = currentTime;
+                }
+            }
+
+            function drawConnections() {
+                if (!connectAgents.checked) return;
+                
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                
+                for (let i = 0; i < agents.length; i++) {
+                    for (let j = i + 1; j < agents.length; j++) {
+                        const dx = agents[i].x - agents[j].x;
+                        const dy = agents[i].y - agents[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(agents[i].x, agents[i].y);
+                            ctx.lineTo(agents[j].x, agents[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function animate() {
+                if (isPaused) return;
+
+                const currentTime = performance.now();
+                updateFPS(currentTime);
+
+                // Apply trail effect
+                const opacity = parseInt(trailOpacity.value) / 100;
+                if (opacity > 0) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                const environment = getEnvironment();
+                
+                // Update and draw agents
+                agents = agents.filter(agent => {
+                    agent.update(environment);
+                    agent.draw(ctx, showAgents.checked);
+                    return !agent.isDead();
+                });
+
+                // Draw connections
+                drawConnections();
+
+                updateStats();
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            // Event listeners
+            addAgentButton.addEventListener('click', () => {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                addAgent(x, y);
+            });
+
+            addMultipleButton.addEventListener('click', () => {
+                for (let i = 0; i < 5; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    addAgent(x, y);
+                }
+            });
+
+            canvas.addEventListener('click', (event) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                addAgent(x, y);
+            });
+
+            pauseButton.addEventListener('click', () => {
+                isPaused = !isPaused;
+                pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+                pauseButton.className = isPaused ? 'btn btn-success' : 'btn btn-secondary';
+                if (!isPaused) animate();
+            });
+
+            downloadButton.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.download = `ai-art-${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+
+            clearCanvasButton.addEventListener('click', () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                agents = [];
+                updateStats();
+            });
+
+            // Initialize
+            updateStats();
+        });
+    </script>
+</body>
+</html>
