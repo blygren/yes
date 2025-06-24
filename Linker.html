@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhysCode Hub</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                linear-gradient(0deg, rgba(255, 0, 255, 0.05) 0%, rgba(0, 255, 255, 0.05) 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 0, 0.03) 2px,
+                    rgba(0, 255, 0, 0.03) 4px
+                );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            margin: 1rem;
+            position: relative;
+            box-shadow: 
+                0 0 20px #00ff00,
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff);
+            z-index: -1;
+            animation: neonBorder 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes neonBorder {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.5); }
+        }
+
+        header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #00ffff;
+            margin-bottom: 0.5rem;
+            text-shadow: 
+                0 0 5px #00ffff,
+                0 0 10px #00ffff,
+                0 0 15px #00ffff,
+                0 0 20px #00ffff;
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 98% { transform: translate(0); }
+            99% { transform: translate(2px, 0); }
+            100% { transform: translate(-2px, 0); }
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: #ff00ff;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 10px #ff00ff;
+            font-weight: 400;
+        }
+
+        .search-container {
+            max-width: 400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 0 10px rgba(0, 255, 0, 0.5),
+                inset 0 0 10px rgba(0, 255, 0, 0.1);
+        }
+
+        #searchInput:focus {
+            border-color: #00ffff;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.8),
+                inset 0 0 10px rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+        }
+
+        #searchInput::placeholder {
+            color: rgba(0, 255, 0, 0.5);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .category {
+            margin-bottom: 3rem;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff00ff;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(255, 0, 255, 0.3),
+                inset 0 0 20px rgba(255, 0, 255, 0.1);
+        }
+
+        .category::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            pointer-events: none;
+        }
+
+        .category h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 
+                0 0 5px #00ffff,
+                0 0 10px #00ffff;
+            border-bottom: 2px solid #00ffff;
+            padding-bottom: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .sim-button {
+            display: block;
+            padding: 1rem 1.5rem;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ff00;
+            text-decoration: none;
+            border: 2px solid #00ff00;
+            font-weight: bold;
+            text-align: center;
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 0 10px rgba(0, 255, 0, 0.3),
+                inset 0 0 10px rgba(0, 255, 0, 0.1);
+        }
+
+        .sim-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .sim-button:hover::before {
+            left: 100%;
+        }
+
+        .sim-button:hover {
+            color: #000;
+            background: #00ff00;
+            border-color: #00ffff;
+            box-shadow: 
+                0 0 20px #00ff00,
+                0 0 30px #00ff00,
+                inset 0 0 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(-3px) scale(1.05);
+        }
+
+        .sim-button:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .category.hidden {
+            display: none;
+        }
+
+        .sim-button.hidden {
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ff00ff;
+            margin-top: 3rem;
+            border-top: 2px solid #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #00ff00;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .loading-text {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 20px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #00ffff);
+            width: 0%;
+            animation: loadProgress 3s ease-in-out forwards;
+        }
+
+        @keyframes loadProgress {
+            100% { width: 100%; }
+        }
+
+        @keyframes cursor-blink {
+            0%, 50% { border-right: 2px solid #00ff00; }
+            51%, 100% { border-right: 2px solid transparent; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+            border: 1px solid #00ff00;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00ff00, #00ffff);
+            border: 1px solid #000;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #00ffff, #ff00ff);
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .category {
+                padding: 1rem;
+                margin: 1rem 0.5rem;
+            }
+            
+            .button-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sim-button {
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            header {
+                margin: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header {
+                padding: 1rem;
+            }
+            
+            header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .category h2 {
+                font-size: 1.5rem;
+                letter-spacing: 1px;
+            }
+            
+            .sim-button {
+                letter-spacing: 0.5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>PhysCode Hub</h1>
+        <p>Physics Simulations, Games, and Interactive Experiences</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search simulations...">
+        </div>
+    </header>
+
+    <main>
+        <section class="category" data-category="physics">
+            <h2>Physics Simulations</h2>
+            <div class="button-grid">
+                <a href="https://blygren.github.io/yes/Doge.html" class="sim-button" data-name="falling sand">Falling Sand</a>
+                <a href="https://blygren.github.io/yes/Ropes.html" class="sim-button" data-name="ropes">Ropes</a>
+                <a href="https://blygren.github.io/yes/ropesss.html" class="sim-button" data-name="better ropes">Better Ropes</a>
+                <a href="https://blygren.github.io/yes/cloth_simulation.html" class="sim-button" data-name="cloth">Cloth Simulation</a>
+                <a href="https://blygren.github.io/yes/marshmallow-simulation.html" class="sim-button" data-name="marshmallow softbody">Marshmallow Softbody</a>
+                <a href="https://blygren.github.io/yes/index.html" class="sim-button" data-name="jelly">Jelly</a>
+                <a href="https://blygren.github.io/yes/airflow_simulation.html" class="sim-button" data-name="air flow">Air Flow</a>
+                <a href="https://blygren.github.io/yes/plasma-physics.html" class="sim-button" data-name="plasma physics">Plasma Physics</a>
+                <a href="https://blygren.github.io/yes/softbody-smiley.html" class="sim-button" data-name="softbody smile">Softbody Smile</a>
+                <a href="https://blygren.github.io/yes/WaterWave.html" class="sim-button" data-name="wave water">Wave Water</a>
+                <a href="https://blygren.github.io/yes/orbital-mechanics.html" class="sim-button" data-name="orbit">Orbital Mechanics</a>
+                <a href="https://blygren.github.io/yes/Trajectory.html" class="sim-button" data-name="trajectory">Trajectory</a>
+                <a href="https://blygren.github.io/yes/blackhole.html" class="sim-button" data-name="blackhole">Black Hole</a>
+            </div>
+        </section>
+
+        <section class="category" data-category="particles">
+            <h2>Particle Systems</h2>
+            <div class="button-grid">
+                <a href="https://blygren.github.io/yes/d.html" class="sim-button" data-name="particles">Particles</a>
+                <a href="https://blygren.github.io/yes/fire_simulation.html" class="sim-button" data-name="fire">Fire Simulation</a>
+                <a href="https://blygren.github.io/yes/interactive_grass.html" class="sim-button" data-name="grass simulation">Grass Simulation</a>
+                <a href="https://blygren.github.io/yes/combined.html" class="sim-button" data-name="dye">Dye Simulation</a>
+                <a href="https://blygren.github.io/yes/CrazySlimes.html" class="sim-button" data-name="crazy slimes">Crazy Slimes</a>
+            </div>
+        </section>
+
+        <section class="category" data-category="games">
+            <h2>Games & Interactive</h2>
+            <div class="button-grid">
+                <a href="https://blygren.github.io/yes/Cube%20Water%20Mug.html" class="sim-button" data-name="mug game">Mug Game</a>
+                <a href="https://blygren.github.io/yes/game_hub.html" class="sim-button" data-name="main hub">Main Hub</a>
+                <a href="https://blygren.github.io/yes/Cube%20Game%206.0%20Ultimeete.html" class="sim-button" data-name="cube game ultimate">Cube Game Ultimate</a>
+                <a href="https://blygren.github.io/yes/gg.html" class="sim-button" data-name="cube game pause">Cube Game Pause</a>
+                <a href="https://blygren.github.io/yes/CoolBallsSimulation.html" class="sim-button" data-name="advanced ball">Advanced Ball</a>
+                <a href="https://blygren.github.io/yes/Flipped%20Ball.html" class="sim-button" data-name="advanced ball fix">Advanced Ball (Fix)</a>
+                <a href="https://blygren.github.io/yes/TheBetterBallGame.html" class="sim-button" data-name="better ball game">Better Ball Game</a>
+                <a href="https://blygren.github.io/yes/rainbow-bouncing-ball.html" class="sim-button" data-name="rainbow balls">Rainbow Balls</a>
+                <a href="https://blygren.github.io/yes/WarPixels.html" class="sim-button" data-name="pixel war">Pixel War</a>
+                <a href="https://blygren.github.io/yes/Ropepixel.html" class="sim-button" data-name="pixel rope">Pixel Rope</a>
+            </div>
+        </section>
+
+        <section class="category" data-category="creative">
+            <h2>Creative & Art</h2>
+            <div class="button-grid">
+                <a href="https://blygren.github.io/yes/Art.html" class="sim-button" data-name="art">Art</a>
+                <a href="https://blygren.github.io/yes/GenArt.html" class="sim-button" data-name="generative art">Generative Art</a>
+                <a href="https://blygren.github.io/yes/color-mixer.html" class="sim-button" data-name="colour mixer">Colour Mixer</a>
+                <a href="https://blygren.github.io/yes/image-to-softbody.html" class="sim-button" data-name="image to softbody">Image to Softbody</a>
+                <a href="https://blygren.github.io/yes/image%20pixeliser.html" class="sim-button" data-name="image mod">Image Pixeliser</a>
+                <a href="https://blygren.github.io/yes/Fractals.html" class="sim-button" data-name="fractals">Fractals</a>
+                <a href="https://blygren.github.io/yes/space-gen-combined.html" class="sim-button" data-name="star map">Star Map</a>
+            </div>
+        </section>
+
+        <section class="category" data-category="audio">
+            <h2>Audio & Music</h2>
+            <div class="button-grid">
+                <a href="https://blygren.github.io/yes/sound%20generator.html" class="sim-button" data-name="sound">Sound Generator</a>
+                <a href="https://blygren.github.io/yes/Beats.html" class="sim-button" data-name="beats">Beats</a>
+            </div>
+        </section>
+
+        <section class="category" data-category="tools">
+            <h2>Tools & Utilities</h2>
+            <div class="button-grid">
+                <a href="https://blygren.github.io/yes/Completed%20Trainable%20Model.html" class="sim-button" data-name="chatbot">Chatbot</a>
+                <a href="https://blygren.github.io/yes/Webcode.html" class="sim-button" data-name="code">Code Editor</a>
+                <a href="https://blygren.github.io/yes/Cool%20keyboard.html" class="sim-button" data-name="keyboard">Virtual Keyboard</a>
+                <a href="https://blygren.github.io/yes/minecraft-coordinates-logger.html" class="sim-button" data-name="mc coords">MC Coordinates</a>
+                <a href="https://blygren.github.io/yes/minecraft_checklist.html" class="sim-button" data-name="mc checklist">MC Checklist</a>
+                <a href="https://blygren.github.io/yes/MobileTest.html" class="sim-button" data-name="mobile test">Mobile Test</a>
+                <a href="https://blygren.github.io/yes/Skibidi.html" class="sim-button" data-name="video player">Video Player</a>
+            </div>
+        </section>
+
+        <section class="category" data-category="experimental">
+            <h2>Experimental</h2>
+            <div class="button-grid">
+                <a href="https://blygren.github.io/yes/Chaos.html" class="sim-button" data-name="chaosbox">Chaos Box</a>
+                <a href="https://blygren.github.io/yes/Connection.html" class="sim-button" data-name="connections">Connections</a>
+                <a href="https://blygren.github.io/yes/scissors_simulation.html" class="sim-button" data-name="paper">Paper Cutting</a>
+                <a href="https://blygren.github.io/yes/Preserving.html" class="sim-button" data-name="preserve">Preserve</a>
+                <a href="https://blygren.github.io/yes/wat.html" class="sim-button" data-name="liquorice">Liquorice</a>
+                <a href="https://blygren.github.io/yes/archive.html" class="sim-button" data-name="archive">Archive</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 PhysCode Hub - Interactive Physics Simulations</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create retro loading screen
+            createLoadingScreen();
+            
+            const searchInput = document.getElementById('searchInput');
+            const categories = document.querySelectorAll('.category');
+            const buttons = document.querySelectorAll('.sim-button');
+
+            // Retro sound effects (using Web Audio API)
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            function playRetroSound(frequency, duration, type = 'square') {
+                try {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = type;
+                    
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration);
+                } catch(e) {
+                    // Fallback if audio context fails
+                    console.log('Audio not available');
+                }
+            }
+
+            // Search functionality with retro effects
+            searchInput.addEventListener('input', function() {
+                playRetroSound(800, 0.1);
+                
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                if (searchTerm === '') {
+                    categories.forEach(category => {
+                        category.classList.remove('hidden');
+                        const categoryButtons = category.querySelectorAll('.sim-button');
+                        categoryButtons.forEach(button => {
+                            button.classList.remove('hidden');
+                        });
+                    });
+                    return;
+                }
+
+                categories.forEach(category => {
+                    const categoryButtons = category.querySelectorAll('.sim-button');
+                    let hasVisibleButtons = false;
+
+                    categoryButtons.forEach(button => {
+                        const buttonName = button.getAttribute('data-name').toLowerCase();
+                        const buttonText = button.textContent.toLowerCase();
+                        
+                        if (buttonName.includes(searchTerm) || buttonText.includes(searchTerm)) {
+                            button.classList.remove('hidden');
+                            hasVisibleButtons = true;
+                        } else {
+                            button.classList.add('hidden');
+                        }
+                    });
+
+                    if (hasVisibleButtons) {
+                        category.classList.remove('hidden');
+                    } else {
+                        category.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Add click analytics with retro sound
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    playRetroSound(1200, 0.2);
+                    const buttonName = this.getAttribute('data-name');
+                    console.log(`Clicked: ${buttonName}`);
+                    
+                    this.style.animation = 'none';
+                    setTimeout(() => {
+                        this.style.animation = 'pulse 0.3s ease-in-out';
+                    }, 10);
+                });
+                
+                button.addEventListener('mouseenter', function() {
+                    playRetroSound(600, 0.1, 'sine');
+                });
+            });
+
+            // Enhanced keyboard navigation with sounds
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    playRetroSound(1000, 0.3);
+                    const visibleButtons = document.querySelectorAll('.sim-button:not(.hidden)');
+                    if (visibleButtons.length > 0) {
+                        visibleButtons[0].click();
+                    }
+                }
+            });
+
+            // Retro loading animation
+            function createLoadingScreen() {
+                const loadingScreen = document.createElement('div');
+                loadingScreen.className = 'loading-screen';
+                loadingScreen.innerHTML = `
+                    <div class="loading-text">INITIALIZING PHYSCODE HUB...</div>
+                    <div class="loading-bar">
+                        <div class="loading-progress"></div>
+                    </div>
+                `;
+                document.body.appendChild(loadingScreen);
+                
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => {
+                        loadingScreen.remove();
+                        initializeRetroEffects();
+                    }, 500);
+                }, 3000);
+            }
+
+            // Initialize retro effects after loading
+            function initializeRetroEffects() {
+                const categories = document.querySelectorAll('.category');
+                categories.forEach((category, index) => {
+                    setTimeout(() => {
+                        category.style.opacity = '0';
+                        category.style.transform = 'translateX(-50px)';
+                        category.style.transition = 'all 0.5s ease';
+                        
+                        setTimeout(() => {
+                            category.style.opacity = '1';
+                            category.style.transform = 'translateX(0)';
+                            playRetroSound(400 + (index * 100), 0.3, 'triangle');
+                        }, 100);
+                    }, index * 200);
+                });
+                
+                createMatrixRain();
+            }
+
+            // Matrix rain background effect
+            function createMatrixRain() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.style.position = 'fixed';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.pointerEvents = 'none';
+                canvas.style.zIndex = '-1';
+                canvas.style.opacity = '0.1';
+                
+                document.body.appendChild(canvas);
+                
+                function resizeCanvas() {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+                
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+                
+                const chars = '01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const fontSize = 14;
+                const columns = canvas.width / fontSize;
+                const drops = [];
+                
+                for (let x = 0; x < columns; x++) {
+                    drops[x] = 1;
+                }
+                
+                function drawMatrix() {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.fillStyle = '#00ff00';
+                    ctx.font = fontSize + 'px Orbitron';
+                    
+                    for (let i = 0; i < drops.length; i++) {
+                        const text = chars[Math.floor(Math.random() * chars.length)];
+                        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                        
+                        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                            drops[i] = 0;
+                        }
+                        drops[i]++;
+                    }
+                }
+                
+                setInterval(drawMatrix, 50);
+            }
+
+            // Add retro terminal cursor effect to search input
+            searchInput.addEventListener('focus', function() {
+                this.style.animation = 'cursor-blink 1s infinite';
+            });
+
+            searchInput.addEventListener('blur', function() {
+                this.style.animation = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
