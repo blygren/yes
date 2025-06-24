@@ -96,7 +96,7 @@
 
 [MC checklist](https://blygren.github.io/yes/minecraft_checklist.html)
 
-[LINK TO ALL](https://blygren.github.io/yes/LinkALL.html)
+[LINK TO ALL](https://blygren.github.io/yes/Linker.html)
 
 [GenArt](https://blygren.github.io/yes/GenArt.html)
 
