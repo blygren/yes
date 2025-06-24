@@ -22,12 +22,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            touch-action: none;
+            justify-content: flex-start;
+            touch-action: pan-y;
             -webkit-user-select: none;
             user-select: none;
             color: #e5e5e5;
-            padding: 10px;
+            padding: 20px 10px;
         }
 
         .container {
@@ -210,11 +210,14 @@
         /* Mobile optimizations */
         @media (max-width: 768px) {
             body {
-                padding: 15px 10px;
+                padding: 20px 10px;
+                justify-content: flex-start;
+                touch-action: pan-y;
             }
             
             .container {
                 gap: 15px;
+                min-height: auto;
             }
             
             .main-content {
@@ -251,6 +254,10 @@
         }
 
         @media (max-width: 480px) {
+            body {
+                padding: 15px 10px;
+            }
+            
             .ball-container, .controls-panel {
                 padding: 15px;
             }
