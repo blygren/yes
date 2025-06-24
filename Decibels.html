@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .visualizer {
+            position: relative;
+            width: 100%;
+            height: 70%;
+            overflow: hidden;
+        }
+
+        .circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff0066, #ff9500);
+            transition: all 0.2s;
+        }
+
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .particle {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .waves {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+        }
+
+        .wave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            opacity: 0;
+        }
+
+        .info {
+            width: 80%;
+            max-width: 300px;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .decibel-meter {
+            width: 100%;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .meter-fill {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(to right, #00ff00, #ffff00, #ff0000);
+            transition: width 0.2s;
+        }
+
+        .decibel-value {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #ff0066;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #cc0052;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="visualizer">
+            <div class="circle"></div>
+            <div class="particles"></div>
+            <div class="waves"></div>
+        </div>
+        <div class="info">
+            <div class="decibel-meter">
+                <div class="meter-fill"></div>
+            </div>
+            <div class="decibel-value">0 dB</div>
+            <button id="startBtn">Start Listening</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startBtn = document.getElementById('startBtn');
+            const circle = document.querySelector('.circle');
+            const particles = document.querySelector('.particles');
+            const waves = document.querySelector('.waves');
+            const meterFill = document.querySelector('.meter-fill');
+            const decibelValue = document.querySelector('.decibel-value');
+            
+            let audioContext;
+            let analyser;
+            let microphone;
+            let isListening = false;
+            let animationFrame;
+            
+            // Create initial waves
+            for (let i = 0; i < 5; i++) {
+                const wave = document.createElement('div');
+                wave.classList.add('wave');
+                waves.appendChild(wave);
+            }
+            
+            startBtn.addEventListener('click', async () => {
+                if (isListening) {
+                    stopListening();
+                    startBtn.textContent = 'Start Listening';
+                    isListening = false;
+                    return;
+                }
+                
+                try {
+                    // Initialize audio context
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 1024;
+                    
+                    // Get microphone access
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    
+                    // Start analysis
+                    startListening();
+                    startBtn.textContent = 'Stop Listening';
+                    isListening = true;
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    alert('Could not access microphone. Please ensure you have granted permission.');
+                }
+            });
+            
+            function startListening() {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                const analyze = () => {
+                    analyser.getByteFrequencyData(dataArray);
+                    
+                    // Calculate volume level (simple average)
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        sum += dataArray[i];
+                    }
+                    const average = sum / dataArray.length;
+                    
+                    // Map average to decibel range (rough approximation)
+                    const minDb = 0;
+                    const maxDb = 120;
+                    const db = Math.round((average / 255) * (maxDb - minDb) + minDb);
+                    
+                    // Update UI
+                    updateVisuals(db);
+                    
+                    animationFrame = requestAnimationFrame(analyze);
+                };
+                
+                analyze();
+            }
+            
+            function stopListening() {
+                if (microphone) {
+                    cancelAnimationFrame(animationFrame);
+                    audioContext.close();
+                }
+            }
+            
+            function updateVisuals(db) {
+                // Update meter
+                const percentage = Math.min((db / 120) * 100, 100);
+                meterFill.style.width = `${percentage}%`;
+                decibelValue.textContent = `${db} dB`;
+                
+                // Scale and color the circle based on volume
+                const scale = 1 + (percentage / 100) * 4;
+                const hue = 300 - (percentage * 2.7); // Red at high volume, blue at low
+                circle.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                circle.style.background = `radial-gradient(circle, hsl(${hue}, 100%, 50%), hsl(${hue + 30}, 100%, 50%))`;
+                
+                // Create particles based on volume
+                if (db > 20) {
+                    const particleCount = Math.floor(db / 10);
+                    for (let i = 0; i < particleCount; i++) {
+                        createParticle(percentage);
+                    }
+                }
+                
+                // Animate waves
+                animateWaves(percentage);
+            }
+            
+            function createParticle(intensity) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random position
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                
+                // Size based on intensity
+                const size = 2 + (Math.random() * intensity / 10);
+                
+                // Random direction and speed based on intensity
+                const speedX = (Math.random() - 0.5) * intensity / 10;
+                const speedY = (Math.random() - 0.5) * intensity / 10;
+                
+                // Set initial styles
+                particle.style.left = `${x}%`;
+                particle.style.top = `${y}%`;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.opacity = '0.8';
+                
+                particles.appendChild(particle);
+                
+                // Animate and remove
+                let posX = x;
+                let posY = y;
+                let opacity = 0.8;
+                
+                function animateParticle() {
+                    if (opacity <= 0) {
+                        particle.remove();
+                        return;
+                    }
+                    
+                    posX += speedX;
+                    posY += speedY;
+                    opacity -= 0.01;
+                    
+                    particle.style.left = `${posX}%`;
+                    particle.style.top = `${posY}%`;
+                    particle.style.opacity = opacity;
+                    
+                    requestAnimationFrame(animateParticle);
+                }
+                
+                animateParticle();
+            }
+            
+            function animateWaves(intensity) {
+                const waves = document.querySelectorAll('.wave');
+                waves.forEach((wave, index) => {
+                    const size = 50 + (index * 50) + (intensity * 2);
+                    const opacity = 0.8 - (index * 0.15);
+                    const animDuration = 1 + (index * 0.8);
+                    
+                    wave.style.width = `${size}px`;
+                    wave.style.height = `${size}px`;
+                    wave.style.opacity = opacity;
+                    wave.style.animation = `pulse ${animDuration}s infinite`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
