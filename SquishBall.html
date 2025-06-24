@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Squishy Stress Ball</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            background-image: 
+                linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            color: #e5e5e5;
+            padding: 10px;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            color: #00ff88;
+            margin-bottom: 10px;
+            font-size: clamp(1.8rem, 6vw, 2.8rem);
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .ball-container {
+            background: rgba(15, 15, 15, 0.9);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .controls-panel {
+            background: rgba(15, 15, 15, 0.9);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .controls-title {
+            color: #00ff88;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            font-weight: 300;
+            text-align: center;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: block;
+            color: #b3b3b3;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ff88;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ff88;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .color-picker-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            border-color: #00ff88;
+        }
+
+        .color-option.active {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+        }
+
+        .color-option.active::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+
+        #stressBall {
+            border-radius: 50%;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 
+                inset -10px -10px 20px rgba(0,0,0,0.3),
+                0 15px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .instructions {
+            color: #888;
+            margin-top: 15px;
+            font-size: clamp(0.8rem, 2.5vw, 1rem);
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            padding: 2px 8px;
+            margin-left: 10px;
+            font-size: 0.8rem;
+            color: #00ff88;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px 10px;
+            }
+            
+            .container {
+                gap: 15px;
+            }
+            
+            .main-content {
+                gap: 15px;
+            }
+            
+            .ball-container, .controls-panel {
+                padding: 20px;
+                margin: 0;
+            }
+            
+            .controls-title {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+            
+            .control-group {
+                margin-bottom: 15px;
+            }
+            
+            .slider::-webkit-slider-thumb {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .color-option {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .color-picker-container {
+                gap: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ball-container, .controls-panel {
+                padding: 15px;
+            }
+            
+            .color-picker-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* Large screens - side by side layout */
+        @media (min-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr 300px;
+                gap: 30px;
+            }
+            
+            .ball-container {
+                padding: 40px;
+            }
+        }
+
+        /* Prevent text selection and context menu on mobile */
+        canvas {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 136, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Virtual Stress Ball</h1>
+        <div class="main-content">
+            <div class="ball-container">
+                <canvas id="stressBall"></canvas>
+                <p class="instructions">Touch and drag to squish the ball!</p>
+            </div>
+            <div class="controls-panel">
+                <h2 class="controls-title">Customize Ball</h2>
+                
+                <div class="control-group">
+                    <label class="control-label">
+                        Squishiness 
+                        <span class="value-display" id="squishValue">50</span>
+                    </label>
+                    <input type="range" class="slider" id="squishSlider" min="10" max="100" value="50">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">
+                        Ball Size 
+                        <span class="value-display" id="sizeValue">100</span>
+                    </label>
+                    <input type="range" class="slider" id="sizeSlider" min="50" max="150" value="100">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">
+                        Bounce Back Speed 
+                        <span class="value-display" id="bounceValue">50</span>
+                    </label>
+                    <input type="range" class="slider" id="bounceSlider" min="10" max="100" value="50">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Ball Color</label>
+                    <div class="color-picker-container">
+                        <div class="color-option active" data-color="red" style="background: linear-gradient(45deg, #ff6b6b, #ee5a52);"></div>
+                        <div class="color-option" data-color="blue" style="background: linear-gradient(45deg, #4ecdc4, #36a2eb);"></div>
+                        <div class="color-option" data-color="green" style="background: linear-gradient(45deg, #26d0ce, #1a9cb0);"></div>
+                        <div class="color-option" data-color="purple" style="background: linear-gradient(45deg, #a8e6cf, #7fcdcd);"></div>
+                        <div class="color-option" data-color="orange" style="background: linear-gradient(45deg, #ffa726, #ff7043);"></div>
+                        <div class="color-option" data-color="pink" style="background: linear-gradient(45deg, #f8bbd9, #e91e63);"></div>
+                        <div class="color-option" data-color="yellow" style="background: linear-gradient(45deg, #fff176, #ffeb3b);"></div>
+                        <div class="color-option" data-color="dark" style="background: linear-gradient(45deg, #424242, #212121);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SquishyBall {
+            constructor() {
+                this.canvas = document.getElementById('stressBall');
+                this.ctx = this.canvas.getContext('2d');
+                this.isPressed = false;
+                this.touchPoints = [];
+                this.deformations = [];
+                this.baseRadius = 100;
+                this.currentRadius = this.baseRadius;
+                this.centerX = 0;
+                this.centerY = 0;
+                
+                // Customizable properties
+                this.squishiness = 50;
+                this.ballSize = 100;
+                this.bounceSpeed = 50;
+                this.currentColor = 'red';
+                this.colors = {
+                    red: { primary: '#ff6b6b', secondary: '#ee5a52', glow: 'rgba(255, 107, 107, 0.3)' },
+                    blue: { primary: '#4ecdc4', secondary: '#36a2eb', glow: 'rgba(78, 205, 196, 0.3)' },
+                    green: { primary: '#26d0ce', secondary: '#1a9cb0', glow: 'rgba(38, 208, 206, 0.3)' },
+                    purple: { primary: '#a8e6cf', secondary: '#7fcdcd', glow: 'rgba(168, 230, 207, 0.3)' },
+                    orange: { primary: '#ffa726', secondary: '#ff7043', glow: 'rgba(255, 167, 38, 0.3)' },
+                    pink: { primary: '#f8bbd9', secondary: '#e91e63', glow: 'rgba(248, 187, 217, 0.3)' },
+                    yellow: { primary: '#fff176', secondary: '#ffeb3b', glow: 'rgba(255, 241, 118, 0.3)' },
+                    dark: { primary: '#424242', secondary: '#212121', glow: 'rgba(66, 66, 66, 0.3)' }
+                };
+                
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.setupControls();
+                this.animate();
+            }
+            
+            setupCanvas() {
+                const container = this.canvas.parentElement;
+                const size = Math.min(container.clientWidth - 40, 300);
+                
+                this.canvas.width = size;
+                this.canvas.height = size;
+                this.canvas.style.width = size + 'px';
+                this.canvas.style.height = size + 'px';
+                
+                this.centerX = size / 2;
+                this.centerY = size / 2;
+                this.updateBallSize();
+            }
+            
+            updateBallSize() {
+                const size = Math.min(this.canvas.width, this.canvas.height);
+                this.baseRadius = (size * 0.35) * (this.ballSize / 100);
+                this.currentRadius = this.baseRadius;
+            }
+            
+            setupControls() {
+                // Squishiness slider
+                const squishSlider = document.getElementById('squishSlider');
+                const squishValue = document.getElementById('squishValue');
+                squishSlider.addEventListener('input', (e) => {
+                    this.squishiness = parseInt(e.target.value);
+                    squishValue.textContent = this.squishiness;
+                });
+                
+                // Size slider
+                const sizeSlider = document.getElementById('sizeSlider');
+                const sizeValue = document.getElementById('sizeValue');
+                sizeSlider.addEventListener('input', (e) => {
+                    this.ballSize = parseInt(e.target.value);
+                    sizeValue.textContent = this.ballSize + '%';
+                    this.updateBallSize();
+                });
+                
+                // Bounce speed slider
+                const bounceSlider = document.getElementById('bounceSlider');
+                const bounceValue = document.getElementById('bounceValue');
+                bounceSlider.addEventListener('input', (e) => {
+                    this.bounceSpeed = parseInt(e.target.value);
+                    bounceValue.textContent = this.bounceSpeed;
+                });
+                
+                // Color picker
+                const colorOptions = document.querySelectorAll('.color-option');
+                colorOptions.forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        colorOptions.forEach(opt => opt.classList.remove('active'));
+                        option.classList.add('active');
+                        this.currentColor = option.dataset.color;
+                    });
+                });
+            }
+            
+            setupEventListeners() {
+                // Mouse events
+                this.canvas.addEventListener('mousedown', (e) => this.handleStart(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMove(e));
+                this.canvas.addEventListener('mouseup', () => this.handleEnd());
+                this.canvas.addEventListener('mouseleave', () => this.handleEnd());
+                
+                // Touch events
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.handleStart(e);
+                });
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    this.handleMove(e);
+                });
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.handleEnd();
+                });
+                
+                // Resize handler
+                window.addEventListener('resize', () => this.setupCanvas());
+            }
+            
+            getEventPos(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+            
+            handleStart(e) {
+                const pos = this.getEventPos(e);
+                const distance = Math.sqrt(
+                    Math.pow(pos.x - this.centerX, 2) + 
+                    Math.pow(pos.y - this.centerY, 2)
+                );
+                
+                if (distance <= this.currentRadius) {
+                    this.isPressed = true;
+                    const intensity = (this.squishiness / 100) * 0.5;
+                    this.addDeformation(pos.x, pos.y, intensity);
+                }
+            }
+            
+            handleMove(e) {
+                if (!this.isPressed) return;
+                
+                const pos = this.getEventPos(e);
+                const intensity = (this.squishiness / 100) * 0.3;
+                this.addDeformation(pos.x, pos.y, intensity);
+            }
+            
+            handleEnd() {
+                this.isPressed = false;
+            }
+            
+            addDeformation(x, y, intensity) {
+                this.deformations.push({
+                    x: x,
+                    y: y,
+                    intensity: intensity,
+                    life: 1.0
+                });
+            }
+            
+            updateDeformations() {
+                const bounceRate = 0.01 + (this.bounceSpeed / 100) * 0.03;
+                this.deformations = this.deformations.filter(deform => {
+                    deform.life -= bounceRate;
+                    deform.intensity *= 0.95;
+                    return deform.life > 0;
+                });
+            }
+            
+            drawBall() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                const color = this.colors[this.currentColor];
+                
+                // Create gradient
+                const gradient = this.ctx.createRadialGradient(
+                    this.centerX - this.baseRadius * 0.3,
+                    this.centerY - this.baseRadius * 0.3,
+                    0,
+                    this.centerX,
+                    this.centerY,
+                    this.baseRadius
+                );
+                
+                gradient.addColorStop(0, color.primary);
+                gradient.addColorStop(0.7, color.secondary);
+                gradient.addColorStop(1, color.secondary);
+                
+                this.ctx.fillStyle = gradient;
+                
+                // Draw deformed ball
+                this.ctx.beginPath();
+                const segments = 32;
+                
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    let radius = this.baseRadius;
+                    
+                    // Apply deformations
+                    this.deformations.forEach(deform => {
+                        const pointX = this.centerX + Math.cos(angle) * radius;
+                        const pointY = this.centerY + Math.sin(angle) * radius;
+                        const distance = Math.sqrt(
+                            Math.pow(pointX - deform.x, 2) + 
+                            Math.pow(pointY - deform.y, 2)
+                        );
+                        
+                        if (distance < this.baseRadius) {
+                            const effect = (1 - distance / this.baseRadius) * deform.intensity * deform.life;
+                            radius -= effect * 40;
+                        }
+                    });
+                    
+                    const x = this.centerX + Math.cos(angle) * radius;
+                    const y = this.centerY + Math.sin(angle) * radius;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+                
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                // Add shadow and glow
+                this.ctx.shadowColor = 'rgba(0,0,0,0.4)';
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowOffsetX = 8;
+                this.ctx.shadowOffsetY = 8;
+                
+                // Update canvas shadow for current color
+                this.canvas.style.boxShadow = `
+                    inset -10px -10px 20px rgba(0,0,0,0.3),
+                    0 15px 30px rgba(0,0,0,0.5),
+                    0 0 20px ${color.glow}`;
+                
+                // Add highlight
+                const highlight = this.ctx.createRadialGradient(
+                    this.centerX - this.baseRadius * 0.4,
+                    this.centerY - this.baseRadius * 0.4,
+                    0,
+                    this.centerX - this.baseRadius * 0.4,
+                    this.centerY - this.baseRadius * 0.4,
+                    this.baseRadius * 0.5
+                );
+                highlight.addColorStop(0, 'rgba(255,255,255,0.4)');
+                highlight.addColorStop(1, 'rgba(255,255,255,0)');
+                
+                this.ctx.fillStyle = highlight;
+                this.ctx.fill();
+            }
+            
+            animate() {
+                this.updateDeformations();
+                this.drawBall();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize the stress ball when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SquishyBall();
+        });
+    </script>
+</body>
+</html>
