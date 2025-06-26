@@ -476,6 +476,55 @@
             50% { transform: scale(1.05); opacity: 0.9; }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        /* Favorites styling */
+        .favorite-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: rgba(255, 255, 0, 0.5);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .favorite-icon:hover {
+            transform: scale(1.2);
+            color: rgba(255, 255, 0, 0.8);
+        }
+
+        .favorite-icon.active {
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00;
+            animation: star-pulse 1.5s infinite;
+        }
+
+        @keyframes star-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .favorites-empty {
+            text-align: center;
+            padding: 2rem;
+            color: #ff00ff;
+            font-style: italic;
+        }
+
+        .sim-button {
+            position: relative;
+        }
+
+        /* No favorites message styling */
+        .no-favorites {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px dashed #00ffff;
+            padding: 1.5rem;
+            text-align: center;
+            color: #ff00ff;
+        }
     </style>
 </head>
 <body>
@@ -488,6 +537,17 @@
     </header>
 
     <main>
+        <!-- Favorites Section - Add at the top -->
+        <section class="category" id="favorites-section" data-category="favorites">
+            <h2><i class="fas fa-star"></i> My Favorites</h2>
+            <div class="button-grid" id="favorites-container">
+                <!-- Favorites will be added here dynamically -->
+                <div class="no-favorites">
+                    <p>No favorites added yet. Click the star icon on any simulation to add it to your favorites.</p>
+                </div>
+            </div>
+        </section>
+
         <!-- News Section - Add before other sections -->
         <section class="category" data-category="news">
             <h2>Latest Updates</h2>
@@ -661,6 +721,9 @@
                             button.classList.remove('hidden');
                         });
                     });
+                    
+                    // Show all favorites
+                    updateFavoritesSection();
                     return;
                 }
 
@@ -680,12 +743,26 @@
                         }
                     });
 
-                    if (hasVisibleButtons) {
+                    if (hasVisibleButtons || category.id === 'favorites-section') {
                         category.classList.remove('hidden');
                     } else {
                         category.classList.add('hidden');
                     }
                 });
+                
+                // Filter favorites based on search
+                if(favorites.length > 0) {
+                    const visibleFavorites = favorites.filter(fav => 
+                        fav.name.toLowerCase().includes(searchTerm) || 
+                        fav.text.toLowerCase().includes(searchTerm)
+                    );
+                    
+                    if(visibleFavorites.length === 0) {
+                        favoritesSection.classList.add('hidden');
+                    } else {
+                        favoritesSection.classList.remove('hidden');
+                    }
+                }
             });
 
             // Add click analytics with retro sound
@@ -713,6 +790,202 @@
                     const visibleButtons = document.querySelectorAll('.sim-button:not(.hidden)');
                     if (visibleButtons.length > 0) {
                         visibleButtons[0].click();
+                    }
+                }
+            });
+
+            // Favorites functionality
+            let favorites = JSON.parse(localStorage.getItem('physCodeFavorites')) || [];
+            const favoritesContainer = document.getElementById('favorites-container');
+            const favoritesSection = document.getElementById('favorites-section');
+            
+            // Initialize favorite buttons
+            function initFavorites() {
+                // Add star icon to each simulation button
+                buttons.forEach(button => {
+                    const favoriteIcon = document.createElement('i');
+                    favoriteIcon.className = 'fas fa-star favorite-icon';
+                    favoriteIcon.setAttribute('title', 'Add to favorites');
+                    
+                    // Check if this item is already a favorite
+                    const buttonHref = button.getAttribute('href');
+                    if(favorites.some(fav => fav.href === buttonHref)) {
+                        favoriteIcon.classList.add('active');
+                    }
+                    
+                    // Toggle favorite on click
+                    favoriteIcon.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const buttonText = button.textContent.trim();
+                        const buttonName = button.getAttribute('data-name');
+                        const iconHtml = button.querySelector('.icon-container').innerHTML;
+                        
+                        // Toggle favorite status
+                        if(favoriteIcon.classList.contains('active')) {
+                            // Remove from favorites
+                            favorites = favorites.filter(fav => fav.href !== buttonHref);
+                            favoriteIcon.classList.remove('active');
+                            playRetroSound(600, 0.2, 'triangle');
+                        } else {
+                            // Add to favorites
+                            favorites.push({
+                                href: buttonHref,
+                                name: buttonName,
+                                text: buttonText,
+                                icon: iconHtml
+                            });
+                            favoriteIcon.classList.add('active');
+                            playRetroSound(800, 0.3, 'sine');
+                        }
+                        
+                        // Save to localStorage
+                        localStorage.setItem('physCodeFavorites', JSON.stringify(favorites));
+                        
+                        // Update favorites display
+                        updateFavoritesSection();
+                    });
+                    
+                    button.appendChild(favoriteIcon);
+                });
+                
+                // Initial update of favorites section
+                updateFavoritesSection();
+            }
+            
+            // Update favorites section
+            function updateFavoritesSection() {
+                // Clear current favorites
+                favoritesContainer.innerHTML = '';
+                
+                if(favorites.length === 0) {
+                    const emptyMessage = document.createElement('div');
+                    emptyMessage.className = 'no-favorites';
+                    emptyMessage.innerHTML = '<p>No favorites added yet. Click the star icon on any simulation to add it to your favorites.</p>';
+                    favoritesContainer.appendChild(emptyMessage);
+                } else {
+                    // Add all favorites
+                    favorites.forEach(fav => {
+                        const favButton = document.createElement('a');
+                        favButton.href = fav.href;
+                        favButton.className = 'sim-button';
+                        favButton.setAttribute('data-name', fav.name);
+                        
+                        // Add icon container and text
+                        const iconContainer = document.createElement('div');
+                        iconContainer.className = 'icon-container';
+                        iconContainer.innerHTML = fav.icon;
+                        
+                        favButton.appendChild(iconContainer);
+                        favButton.appendChild(document.createTextNode(fav.text.replace(fav.name, '')));
+                        
+                        // Add remove from favorites icon
+                        const removeIcon = document.createElement('i');
+                        removeIcon.className = 'fas fa-times favorite-icon';
+                        removeIcon.style.color = '#ff00ff';
+                        removeIcon.setAttribute('title', 'Remove from favorites');
+                        
+                        removeIcon.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Remove from favorites
+                            favorites = favorites.filter(item => item.href !== fav.href);
+                            localStorage.setItem('physCodeFavorites', JSON.stringify(favorites));
+                            
+                            // Update original button's star
+                            const originalButton = document.querySelector(`.sim-button[href="${fav.href}"]`);
+                            if(originalButton) {
+                                const starIcon = originalButton.querySelector('.favorite-icon');
+                                if(starIcon) starIcon.classList.remove('active');
+                            }
+                            
+                            // Play sound and update display
+                            playRetroSound(500, 0.2, 'sawtooth');
+                            updateFavoritesSection();
+                        });
+                        
+                        favButton.appendChild(removeIcon);
+                        
+                        // Add click sound effect
+                        favButton.addEventListener('click', function() {
+                            playRetroSound(1200, 0.2);
+                        });
+                        
+                        favButton.addEventListener('mouseenter', function() {
+                            playRetroSound(600, 0.1, 'sine');
+                        });
+                        
+                        favoritesContainer.appendChild(favButton);
+                    });
+                }
+                
+                // Show/hide favorites section based on content
+                if(favorites.length === 0 && searchInput.value.trim() !== '') {
+                    favoritesSection.classList.add('hidden');
+                } else {
+                    favoritesSection.classList.remove('hidden');
+                }
+            }
+            
+            // Update search functionality to work with favorites
+            const originalSearchListener = searchInput.oninput;
+            searchInput.oninput = null;
+            
+            searchInput.addEventListener('input', function() {
+                playRetroSound(800, 0.1);
+                
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                if (searchTerm === '') {
+                    categories.forEach(category => {
+                        category.classList.remove('hidden');
+                        const categoryButtons = category.querySelectorAll('.sim-button');
+                        categoryButtons.forEach(button => {
+                            button.classList.remove('hidden');
+                        });
+                    });
+                    
+                    // Show all favorites
+                    updateFavoritesSection();
+                    return;
+                }
+
+                categories.forEach(category => {
+                    const categoryButtons = category.querySelectorAll('.sim-button');
+                    let hasVisibleButtons = false;
+
+                    categoryButtons.forEach(button => {
+                        const buttonName = button.getAttribute('data-name').toLowerCase();
+                        const buttonText = button.textContent.toLowerCase();
+                        
+                        if (buttonName.includes(searchTerm) || buttonText.includes(searchTerm)) {
+                            button.classList.remove('hidden');
+                            hasVisibleButtons = true;
+                        } else {
+                            button.classList.add('hidden');
+                        }
+                    });
+
+                    if (hasVisibleButtons || category.id === 'favorites-section') {
+                        category.classList.remove('hidden');
+                    } else {
+                        category.classList.add('hidden');
+                    }
+                });
+                
+                // Filter favorites based on search
+                if(favorites.length > 0) {
+                    const visibleFavorites = favorites.filter(fav => 
+                        fav.name.toLowerCase().includes(searchTerm) || 
+                        fav.text.toLowerCase().includes(searchTerm)
+                    );
+                    
+                    if(visibleFavorites.length === 0) {
+                        favoritesSection.classList.add('hidden');
+                    } else {
+                        favoritesSection.classList.remove('hidden');
                     }
                 }
             });
@@ -757,6 +1030,7 @@
                 });
                 
                 createMatrixRain();
+                initFavorites(); // Initialize favorites system
             }
 
             // Matrix rain background effect
