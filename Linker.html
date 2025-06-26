@@ -377,6 +377,8 @@
             margin-bottom: 1rem;
             position: relative;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .news-item:hover {
@@ -400,6 +402,61 @@
 
         .news-content {
             color: #00ff00;
+        }
+        
+        .news-media {
+            display: flex;
+            margin-top: 1rem;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .news-thumbnail {
+            max-width: 100px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        .news-thumbnail:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+        
+        .pixel-image-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .pixel-image-modal img {
+            max-width: 90%;
+            max-height: 90vh;
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+        }
+        
+        .pixel-image-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #00ffff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .pixel-image-close:hover {
+            color: #ff00ff;
+            transform: scale(1.2);
         }
 
         /* Roadmap Styling */
@@ -552,10 +609,14 @@
         <section class="category" data-category="news">
             <h2>Latest Updates</h2>
             <div class="news-item">
-                <div class="new-label">NEW!</div>
-                <div class="news-date">June 15, 2025</div>
-                <div class="news-title">Icons Added to All Simulations</div>
-                <div class="news-content">All simulations now feature intuitive icons to help you quickly identify your favorite experiences.</div>
+                <div class="new-label">SUPER COOL</div>
+                <div class="news-date">June 16, 2025</div>
+                <div class="news-title">New Simulation: PixelWorld!</div>
+                <div class="news-content">A new experimental simulation, PixelWorld, has been added under the Experimental category. Explore a world made of pixels!</div>
+                <div class="news-media">
+                    <img src="https://s14.gifyu.com/images/bH6Ma.png" alt="PixelWorld Preview" class="news-thumbnail" onclick="openPixelModal()">
+                    <div class="news-media-caption">Preview the simulation ↑</div>
+                </div>
             </div>
             <div class="news-item">
                 <div class="news-date">June 10, 2025</div>
@@ -563,6 +624,12 @@
                 <div class="news-content">Experience the gravitational forces of a black hole with our new physics simulator.</div>
             </div>
         </section>
+
+        <!-- Pixel Image Modal -->
+        <div id="pixelImageModal" class="pixel-image-modal">
+            <span class="pixel-image-close" onclick="closePixelModal()">&times;</span>
+            <img src="https://s14.gifyu.com/images/bH6Ma.png" alt="PixelWorld Full Preview">
+        </div>
 
         <section class="category" data-category="physics">
             <h2>Physics Simulations</h2>
@@ -650,6 +717,7 @@
                 <a href="https://blygren.github.io/yes/scissors_simulation.html" class="sim-button" data-name="paper"><div class="icon-container"><i class="fas fa-cut"></i></div>Paper Cutting</a>
                 <a href="https://blygren.github.io/yes/Preserving.html" class="sim-button" data-name="preserve"><div class="icon-container"><i class="fas fa-prescription-bottle"></i></div>Preserve</a>
                 <a href="https://blygren.github.io/yes/wat.html" class="sim-button" data-name="liquorice"><div class="icon-container"><i class="fas fa-candy-cane"></i></div>Liquorice</a>
+                <a href="https://blygren.github.io/yes/PixelWorld.html" class="sim-button" data-name="pixelworld"><div class="icon-container"><i class="fas fa-globe-americas"></i></div>PixelWorld</a>
             </div>
         </section>
 
@@ -1094,6 +1162,24 @@
 
             searchInput.addEventListener('blur', function() {
                 this.style.animation = 'none';
+            });
+            
+            // Modal functions for PixelWorld image
+            window.openPixelModal = function() {
+                document.getElementById('pixelImageModal').style.display = 'flex';
+                playRetroSound(1000, 0.2, 'sine');
+            }
+            
+            window.closePixelModal = function() {
+                document.getElementById('pixelImageModal').style.display = 'none';
+                playRetroSound(800, 0.1, 'triangle');
+            }
+            
+            // Close modal when clicking outside the image
+            document.getElementById('pixelImageModal').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    closePixelModal();
+                }
             });
         });
     </script>
