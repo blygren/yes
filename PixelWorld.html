@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Sand Ecosystem</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            background-color: #282c34;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        #controls {
+            width: 200px;
+            padding: 20px;
+            background-color: #20232a;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        #controls h1, #controls h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+
+        #controls h2 {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            background-color: #3c4049;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: left;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #4d525e;
+        }
+
+        .element-btn {
+            border-left: 5px solid var(--element-color);
+        }
+
+        .element-btn.active, #pause-toggle.active {
+            background-color: #61dafb;
+            color: #20232a;
+            font-weight: bold;
+        }
+
+        #rain-toggle.active {
+            background-color: #1e90ff;
+        }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        #simulationCanvas {
+            border: 2px solid #61dafb;
+            background-color: #87CEEB;
+            cursor: crosshair;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="controls">
+            <h1>Elements</h1>
+            <button data-element="dirt" class="element-btn" style="--element-color: #966919;">Dirt</button>
+            <button data-element="water" class="element-btn" style="--element-color: #1e90ff;">Water</button>
+            <button data-element="grass" class="element-btn" style="--element-color: #32cd32;">Grass</button>
+            <button data-element="wood" class="element-btn" style="--element-color: #8b4513;">Wood</button>
+            <button data-element="leaves" class="element-btn" style="--element-color: #006400;">Leaves</button>
+            <button data-element="animal" class="element-btn" style="--element-color: #ffc0cb;">Animal</button>
+            <button data-element="fire" class="element-btn" style="--element-color: #ff4500;">Fire</button>
+            <button data-element="lava" class="element-btn" style="--element-color: #ff6600;">Lava</button>
+            <button data-element="steam" class="element-btn" style="--element-color: #a9a9a9;">Steam</button>
+            <button data-element="acid" class="element-btn" style="--element-color: #7fff00;">Acid</button>
+            <button data-element="oil" class="element-btn" style="--element-color: #3d3d3d;">Oil</button>
+            <button data-element="cloner" class="element-btn" style="--element-color: #ff00ff;">Cloner</button>
+            <button data-element="gunpowder" class="element-btn" style="--element-color: #505050;">Gunpowder</button>
+            <button data-element="ice" class="element-btn" style="--element-color: #a0e8ff;">Ice</button>
+            <button data-element="virus" class="element-btn" style="--element-color: #a832a8;">Virus</button>
+            <button data-element="cure" class="element-btn" style="--element-color: #00ffff;">Cure</button>
+            <button data-element="eraser" class="element-btn" style="--element-color: #ffffff;">Eraser</button>
+            <button data-element="stone" class="element-btn" style="--element-color: #808080;">Stone</button>
+            
+            <h2>Actions</h2>
+            <button id="pause-toggle">Pause</button>
+            <label for="rain-select" style="display: block; margin-bottom: 5px; margin-top: 10px;">Rain Type</label>
+            <select id="rain-select" style="width: 100%; margin-bottom: 10px;">
+                <option value="none">None</option>
+                <option value="water">Water</option>
+                <option value="dirt">Dirt</option>
+                <option value="acid">Acid</option>
+                <option value="oil">Oil</option>
+                <option value="lava">Lava</option>
+                <option value="gunpowder">Gunpowder</option>
+            </select>
+            <button id="reset">Reset Landscape</button>
+            <button id="clear">Clear</button>
+
+            <h2>Tools</h2>
+            <label for="brush-size">Brush Size: <span id="brush-size-value">5</span></label>
+            <input type="range" id="brush-size" min="1" max="25" value="5">
+            <label for="bg-color" style="display: block; margin-top: 10px;">Background Color</label>
+            <input type="color" id="bg-color" value="#87CEEB" style="width: 100%; border: none; padding: 0; height: 30px;">
+        </div>
+        <main>
+            <canvas id="simulationCanvas"></canvas>
+        </main>
+    </div>
+    <script>
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let scale;
+        let width, height; // World dimensions
+        let viewWidth, viewHeight; // Canvas dimensions in cells
+        let camX = 0, camY = 0; // Camera position (top-left corner of the viewport)
+
+        const EMPTY = 0;
+        const DIRT = 1;
+        const WATER = 2;
+        const GRASS = 3;
+        const STONE = 4;
+        const FIRE = 5;
+        const WOOD = 6;
+        const LEAVES = 7;
+        const ANIMAL = 8;
+        const ACID = 9;
+        const OIL = 10;
+        const CLONER = 11;
+        const LAVA = 12;
+        const STEAM = 13;
+        const DEAD_PLANT = 14;
+        const GUNPOWDER = 15;
+        const ICE = 16;
+        const VIRUS = 17;
+        const CURE = 18;
+        const CLOUD = 19;
+
+
+        const colors = {
+            [EMPTY]: '#87CEEB',
+            [DIRT]: '#966919',
+            [WATER]: '#1e90ff',
+            [GRASS]: '#32cd32',
+            [STONE]: '#808080',
+            [FIRE]: '#ff4500',
+            [WOOD]: '#8b4513',
+            [LEAVES]: '#006400',
+            [ANIMAL]: '#ffc0cb',
+            [ACID]: '#7fff00',
+            [OIL]: '#3d3d3d',
+            [CLONER]: '#ff00ff',
+            [LAVA]: '#ff6600',
+            [STEAM]: '#a9a9a9',
+            [DEAD_PLANT]: '#8b8378',
+            [GUNPOWDER]: '#505050',
+            [ICE]: '#a0e8ff',
+            [VIRUS]: '#a832a8',
+            [CURE]: '#00ffff',
+            [CLOUD]: '#ffffff',
+        };
+
+        let grid;
+        let currentElement = DIRT;
+        let isMouseDown = false;
+        let rainElement = EMPTY;
+        let isPaused = false;
+        let brushSize = 5;
+
+        function resizeCanvas() {
+            const main = document.querySelector('main');
+            const availableWidth = main.clientWidth - 4; // account for border
+            const availableHeight = main.clientHeight - 4;
+
+            const isInitial = !grid;
+
+            if (isInitial) {
+                scale = 8;
+            }
+
+            canvas.width = availableWidth;
+            canvas.height = availableHeight;
+            
+            viewWidth = Math.floor(canvas.width / scale);
+            viewHeight = Math.floor(canvas.height / scale);
+            
+            if (isInitial) {
+                // World dimensions are larger
+                width = viewWidth * 5;
+                height = viewHeight * 5;
+
+                // Center camera initially on the generated terrain
+                camX = Math.floor(width / 2 - viewWidth / 2);
+                camY = Math.floor((height - viewHeight) * 0.75);
+
+                grid = new Array(width * height).fill(EMPTY);
+                generateLandscape();
+            } else {
+                // On resize, just clamp camera
+                camX = Math.max(0, Math.min(width - viewWidth, camX));
+                camY = Math.max(0, Math.min(height - viewHeight, camY));
+            }
+        }
+
+        function getIndex(x, y) {
+            return y * width + x;
+        }
+
+        function get(x, y) {
+            if (x < 0 || x >= width || y < 0 || y >= height) return STONE;
+            return grid[getIndex(x, y)];
+        }
+
+        function set(x, y, value) {
+            if (x < 0 || x >= width || y < 0 || y >= height) return;
+            grid[getIndex(x, y)] = value;
+        }
+
+        function swap(x1, y1, x2, y2) {
+            const val1 = get(x1, y1);
+            const val2 = get(x2, y2);
+            set(x1, y1, val2);
+            set(x2, y2, val1);
+        }
+
+        function isElementNearby(x, y, radius, elements) {
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const neighbor = get(x + dx, y + dy);
+                    if (elements.includes(neighbor)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function isWaterNearby(x, y, radius = 3) {
+            return isElementNearby(x, y, radius, [WATER]);
+        }
+
+        function isSolid(element) {
+            // Elements that contribute to ambient occlusion
+            return [DIRT, STONE, WOOD, GRASS, DEAD_PLANT, ICE, GUNPOWDER, CLONER].includes(element);
+        }
+
+        function darkenColor(hex, percent) {
+            if (!hex || hex.length < 7) return '#000';
+            let r = parseInt(hex.slice(1, 3), 16);
+            let g = parseInt(hex.slice(3, 5), 16);
+            let b = parseInt(hex.slice(5, 7), 16);
+
+            const factor = 1 - percent / 100;
+            r = Math.floor(r * factor);
+            g = Math.floor(g * factor);
+            b = Math.floor(b * factor);
+
+            return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).padStart(6, '0')}`;
+        }
+
+        function growTree(x, y) {
+            const trunkHeight = 5 + Math.floor(Math.random() * 5);
+            for (let i = 0; i < trunkHeight; i++) {
+                if (get(x, y - i) === EMPTY) {
+                    set(x, y - i, WOOD);
+                }
+            }
+            const canopyY = y - trunkHeight;
+            const radius = 4 + Math.floor(Math.random() * 2);
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    if (dx * dx + dy * dy > radius * radius) continue;
+                    if (get(x + dx, canopyY + dy) === EMPTY) {
+                        set(x + dx, canopyY + dy, LEAVES);
+                    }
+                }
+            }
+        }
+
+        function generateLandscape() {
+            if (!grid) return;
+            grid.fill(EMPTY);
+            // Create terrain
+            for (let x = 0; x < width; x++) {
+                const groundHeight = Math.floor(height * 0.75 + Math.sin(x / 20) * 5 + Math.random() * 4 - 2);
+                for (let y = groundHeight; y < height; y++) {
+                    if (y > groundHeight + 5 && Math.random() < 0.3) {
+                        set(x, y, STONE);
+                    } else {
+                        set(x, y, DIRT);
+                    }
+                }
+                // Place grass on top
+                if (get(x, groundHeight - 1) === EMPTY) {
+                    set(x, groundHeight - 1, GRASS);
+                }
+            }
+
+            // Grow trees
+            for (let i = 0; i < Math.floor(width / 20); i++) {
+                const x = Math.floor(Math.random() * width);
+                for (let y = 0; y < height; y++) {
+                    if (get(x, y) === GRASS) {
+                        growTree(x, y);
+                        break;
+                    }
+                }
+            }
+
+            // Generate clouds
+            for (let i = 0; i < width / 15; i++) {
+                const startX = Math.floor(Math.random() * width);
+                const startY = Math.floor(Math.random() * height * 0.2);
+                const cloudWidth = 15 + Math.floor(Math.random() * 30);
+                const cloudHeight = 4 + Math.floor(Math.random() * 8);
+
+                for (let y = startY; y < startY + cloudHeight; y++) {
+                    for (let x = startX; x < startX + cloudWidth; x++) {
+                        if (get(x, y) === EMPTY && Math.random() < 0.6) {
+                            set(x, y, CLOUD);
+                        }
+                    }
+                }
+            }
+        }
+
+        function handleWeather() {
+            if (rainElement !== EMPTY && Math.random() < 0.5) {
+                for (let i = 0; i < viewWidth / 10; i++) {
+                    const x = Math.floor(camX + Math.random() * viewWidth);
+                    if (get(x, 0) === EMPTY) {
+                        set(x, 0, rainElement);
+                    }
+                }
+            }
+        }
+
+        function update() {
+            handleWeather();
+            const processed = new Set();
+
+            for (let y = height - 1; y >= 0; y--) {
+                for (let x = 0; x < width; x++) {
+                    const index = getIndex(x, y);
+                    if (processed.has(index)) continue;
+
+                    const current = get(x, y);
+
+                    if (current === DIRT) {
+                        // Dirt is now static unless something moves it
+                    } else if (current === WATER) {
+                        // Evaporation
+                        if (isElementNearby(x, y, 1, [LAVA])) {
+                            set(x, y, STEAM);
+                            continue;
+                        }
+                        // Freezing
+                        if (!isElementNearby(x, y, 2, [FIRE, LAVA]) && Math.random() < 0.0001) {
+                            set(x, y, ICE);
+                            continue;
+                        }
+
+                        if (get(x, y + 1) === EMPTY) {
+                            swap(x, y, x, y + 1);
+                        } else if (get(x, y + 1) === OIL) {
+                            swap(x, y, x, y + 1);
+                        } else {
+                            const dir = Math.random() < 0.5 ? -1 : 1;
+                            if (get(x + dir, y) === EMPTY) {
+                                swap(x, y, x + dir, y);
+                            } else if (get(x - dir, y) === EMPTY) {
+                                swap(x, y, x - dir, y);
+                            }
+                        }
+                    } else if (current === GRASS) {
+                        // Spread to adjacent dirt with sunlight and water
+                        if (get(x, y - 1) === EMPTY && Math.random() < 0.01) {
+                            if (isWaterNearby(x, y, 7)) {
+                                const dir = Math.random() < 0.5 ? -1 : 1;
+                                if (get(x + dir, y) === DIRT && get(x + dir, y - 1) === EMPTY) {
+                                    set(x + dir, y, GRASS);
+                                }
+                            } else if (Math.random() < 0.0025) { // Chance to die without water (8x slower)
+                                set(x, y, DEAD_PLANT);
+                            }
+                        }
+                    } else if (current === LEAVES) {
+                        // Regrow leaves from wood if water is nearby
+                        if (Math.random() < 0.005) {
+                            if (isWaterNearby(x, y, 7)) {
+                                for (let dx = -1; dx <= 1; dx++) {
+                                    for (let dy = -1; dy <= 1; dy++) {
+                                        if (dx === 0 && dy === 0) continue;
+                                        if (get(x + dx, y + dy) === WOOD) {
+                                            // Find an empty spot to grow a new leaf
+                                            const growX = x - dx;
+                                            const growY = y - dy;
+                                            if (get(growX, growY) === EMPTY) {
+                                                set(growX, growY, LEAVES);
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (Math.random() < 0.0025) { // Chance to die without water (8x slower)
+                                set(x, y, DEAD_PLANT);
+                            }
+                        }
+                    } else if (current === DEAD_PLANT) {
+                        if (isWaterNearby(x, y, 7) && Math.random() < 0.01) {
+                            set(x, y, GRASS);
+                        }
+                    } else if (current === FIRE) {
+                        // Spread fire
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const neighbor = get(x + dx, y + dy);
+                                if ((neighbor === GRASS || neighbor === WOOD || neighbor === LEAVES || neighbor === OIL || neighbor === DEAD_PLANT || neighbor === GUNPOWDER) && Math.random() < 0.4) {
+                                    set(x + dx, y + dy, FIRE);
+                                }
+                                if (neighbor === WATER) {
+                                    set(x, y, EMPTY); // Fire is extinguished by water
+                                    set(x + dx, y + dy, STEAM);
+                                }
+                            }
+                        }
+                        // Burn out
+                        if (Math.random() < 0.05) {
+                            set(x, y, EMPTY);
+                        }
+                    } else if (current === ANIMAL) {
+                        // Check for immediate danger
+                        let isDead = false;
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const neighbor = get(x + dx, y + dy);
+                                if (neighbor === FIRE || neighbor === LAVA) {
+                                    set(x, y, FIRE); // Animal burns
+                                    isDead = true;
+                                    break;
+                                }
+                                if (neighbor === VIRUS) {
+                                    set(x, y, VIRUS);
+                                    isDead = true;
+                                    break;
+                                }
+                            }
+                            if (isDead) break;
+                        }
+                        if (isDead) continue;
+
+                        // Lifespan: small chance to die
+                        if (Math.random() < 0.001) {
+                            set(x, y, DIRT);
+                            continue;
+                        }
+
+                        let bestDir = { x: 0, y: 0 };
+                        let foundFood = false;
+                        let foundDanger = false;
+
+                        // AI: Check surroundings for food or danger
+                        for (let dy = -3; dy <= 3; dy++) {
+                            for (let dx = -3; dx <= 3; dx++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const neighbor = get(x + dx, y + dy);
+                                if (!foundDanger && neighbor === LEAVES) {
+                                    bestDir = { x: dx, y: dy };
+                                    foundFood = true;
+                                }
+                                if (neighbor === FIRE || neighbor === LAVA || neighbor === ACID || neighbor === VIRUS) {
+                                    bestDir = { x: -dx, y: -dy }; // Flee
+                                    foundDanger = true;
+                                    break;
+                                }
+                            }
+                            if (foundDanger) break;
+                        }
+                        
+                        // Reproduction: small chance to reproduce if near another animal and not in danger
+                        if (!foundDanger && Math.random() < 0.002) {
+                             let reproduced = false;
+                             for (let dy = -1; dy <= 1; dy++) {
+                                for (let dx = -1; dx <= 1; dx++) {
+                                    if (dx === 0 && dy === 0) continue;
+                                    if (get(x + dx, y + dy) === ANIMAL) {
+                                        // Find empty spot to reproduce
+                                        const nx = x + (Math.floor(Math.random() * 5) - 2);
+                                        const ny = y + (Math.floor(Math.random() * 5) - 2);
+                                        if (get(nx, ny) === EMPTY) {
+                                            set(nx, ny, ANIMAL);
+                                            processed.add(getIndex(nx, ny));
+                                        }
+                                        reproduced = true;
+                                        break;
+                                    }
+                                }
+                                if (reproduced) break;
+                            }
+                        }
+
+                        // Move towards goal or randomly
+                        if (foundFood || foundDanger) {
+                            const moveX = x + Math.sign(bestDir.x);
+                            const moveY = y + Math.sign(bestDir.y);
+                            const target = get(moveX, moveY);
+                            if (target === EMPTY || target === WATER) {
+                                swap(x, y, moveX, moveY);
+                                processed.add(getIndex(moveX, moveY));
+                                continue;
+                            } else if (target === LEAVES && !foundDanger) {
+                                set(moveX, moveY, EMPTY); // Eat
+                                processed.add(index);
+                                continue;
+                            }
+                        }
+
+                        // Original Movement if no goal
+                        if (get(x, y + 1) === EMPTY || get(x, y + 1) === WATER) {
+                            swap(x, y, x, y + 1);
+                            processed.add(getIndex(x, y + 1));
+                        } else {
+                            const dir = Math.random() < 0.5 ? -1 : 1;
+                            if (get(x + dir, y) === EMPTY || get(x + dir, y) === WATER) {
+                                swap(x, y, x + dir, y);
+                                processed.add(getIndex(x + dir, y));
+                            }
+                        }
+                    } else if (current === ACID) {
+                        // Dissolve things below
+                        const below = get(x, y + 1);
+                        if (below !== EMPTY && below !== ACID) {
+                            if (below !== STONE || Math.random() < 0.1) { // Slower to dissolve stone
+                               set(x, y + 1, EMPTY);
+                            }
+                            if (below === VIRUS) {
+                                set(x, y + 1, EMPTY);
+                            }
+                            set(x, y, EMPTY); // Acid is consumed
+                            continue;
+                        }
+
+                        if (get(x, y + 1) === EMPTY) {
+                            swap(x, y, x, y + 1);
+                        } else {
+                            const dir = Math.random() < 0.5 ? -1 : 1;
+                            if (get(x + dir, y) === EMPTY) {
+                                swap(x, y, x + dir, y);
+                            } else if (get(x - dir, y) === EMPTY) {
+                                swap(x, y, x - dir, y);
+                            }
+                        }
+                    } else if (current === OIL) {
+                         if (get(x, y + 1) === EMPTY) {
+                            swap(x, y, x, y + 1);
+                        } else {
+                            const dir = Math.random() < 0.5 ? -1 : 1;
+                            if (get(x + dir, y) === EMPTY) {
+                                swap(x, y, x + dir, y);
+                            } else if (get(x - dir, y) === EMPTY) {
+                                swap(x, y, x - dir, y);
+                            } else if (get(x + dir, y) === WATER) {
+                                swap(x, y, x + dir, y);
+                            } else if (get(x - dir, y) === WATER) {
+                                swap(x, y, x - dir, y);
+                            }
+                        }
+                    } else if (current === CLONER) {
+                        // Cloner randomly copies a neighbor particle to another empty neighbor spot.
+                        if (Math.random() < 0.1) {
+                            const sourceX = x + (Math.floor(Math.random() * 3) - 1);
+                            const sourceY = y + (Math.floor(Math.random() * 3) - 1);
+                            const sourceElement = get(sourceX, sourceY);
+
+                            if (sourceElement !== EMPTY && sourceElement !== CLONER) {
+                                const targetX = x + (Math.floor(Math.random() * 3) - 1);
+                                const targetY = y + (Math.floor(Math.random() * 3) - 1);
+                                if (get(targetX, targetY) === EMPTY) {
+                                    set(targetX, targetY, sourceElement);
+                                }
+                            }
+                        }
+                    } else if (current === LAVA) {
+                        // Burn flammable neighbors
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const neighbor = get(x + dx, y + dy);
+                                if (neighbor === GRASS || neighbor === WOOD || neighbor === LEAVES || neighbor === OIL || neighbor === ANIMAL || neighbor === DEAD_PLANT || neighbor === GUNPOWDER) {
+                                    if (Math.random() < 0.3) {
+                                        set(x + dx, y + dy, FIRE);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Interact with water
+                        let turnedToStone = false;
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                if (get(x + dx, y + dy) === WATER) {
+                                    set(x, y, STONE);
+                                    set(x + dx, y + dy, STEAM);
+                                    turnedToStone = true;
+                                    break;
+                                }
+                            }
+                            if(turnedToStone) break;
+                        }
+                        if(turnedToStone) continue;
+
+                        // Slow flow
+                        if (Math.random() < 0.2) {
+                            if (get(x, y + 1) === EMPTY) {
+                                swap(x, y, x, y + 1);
+                            } else {
+                                const dir = Math.random() < 0.5 ? -1 : 1;
+                                if (get(x + dir, y) === EMPTY) {
+                                    swap(x, y, x + dir, y);
+                                } else if (get(x - dir, y) === EMPTY) {
+                                    swap(x, y, x - dir, y);
+                                }
+                            }
+                        }
+                    } else if (current === STEAM) {
+                        // Rise and spread like a gas
+                        const dir = Math.random() < 0.5 ? -1 : 1;
+
+                        // Check above and diagonal-up
+                        if ((get(x, y - 1) === EMPTY || get(x, y - 1) === CLOUD) && Math.random() > 0.3) {
+                            swap(x, y, x, y - 1);
+                            processed.add(getIndex(x, y - 1));
+                            continue;
+                        }
+                        if (get(x + dir, y - 1) === EMPTY || get(x + dir, y - 1) === CLOUD) {
+                            swap(x, y, x + dir, y - 1);
+                            processed.add(getIndex(x + dir, y - 1));
+                            continue;
+                        }
+                        // Check sideways
+                        if (get(x + dir, y) === EMPTY) {
+                            swap(x, y, x + dir, y);
+                            processed.add(getIndex(x + dir, y));
+                            continue;
+                        }
+
+                        // Condense or dissipate if blocked
+                        if (Math.random() < 0.01) {
+                            set(x, y, WATER);
+                        } else if (Math.random() < 0.005) {
+                            set(x, y, EMPTY);
+                        }
+                    } else if (current === ICE) {
+                        // Melt if near heat
+                        if (isElementNearby(x, y, 2, [FIRE, LAVA])) {
+                            set(x, y, WATER);
+                        }
+                    } else if (current === GUNPOWDER) {
+                        // Sinks like sand
+                        if (get(x, y + 1) === EMPTY || get(x, y + 1) === WATER) {
+                            swap(x, y, x, y + 1);
+                        }
+                    } else if (current === VIRUS) {
+                        // Spread to neighbors
+                        if (Math.random() < 0.2) {
+                            const dx = Math.floor(Math.random() * 3) - 1;
+                            const dy = Math.floor(Math.random() * 3) - 1;
+                            if (dx === 0 && dy === 0) continue;
+
+                            const neighbor = get(x + dx, y + dy);
+                            const infectable = [DIRT, GRASS, WATER, WOOD, LEAVES, ANIMAL, OIL, DEAD_PLANT];
+                            if (infectable.includes(neighbor)) {
+                                set(x + dx, y + dy, VIRUS);
+                            }
+                        }
+                        // Die from heat/acid
+                        if (isElementNearby(x, y, 1, [FIRE, LAVA, ACID])) {
+                            set(x, y, EMPTY);
+                        }
+                    } else if (current === CURE) {
+                        // Spreads like a virus, curing the virus and spreading into empty space.
+                        if (Math.random() < 0.2) {
+                            const dx = Math.floor(Math.random() * 3) - 1;
+                            const dy = Math.floor(Math.random() * 3) - 1;
+                            if (dx === 0 && dy === 0) continue;
+
+                            const neighbor = get(x + dx, y + dy);
+                            if (neighbor === VIRUS) {
+                                set(x + dx, y + dy, EMPTY); // Cures virus
+                            } else if (neighbor === EMPTY) {
+                                set(x + dx, y + dy, CURE); // Spreads into empty space
+                            }
+                        }
+
+                        // Limited lifespan
+                        if (Math.random() < 0.01) {
+                            set(x, y, EMPTY);
+                        }
+                    } else if (current === CLOUD) {
+                        // Slow horizontal movement
+                        if (Math.random() < 0.05) {
+                            const dir = Math.random() < 0.5 ? -1 : 1;
+                            if (get(x + dir, y) === EMPTY) {
+                                swap(x, y, x + dir, y);
+                                processed.add(getIndex(x + dir, y));
+                                continue;
+                            }
+                        }
+                        // Dissipate
+                        if (Math.random() < 0.0001) {
+                            set(x, y, EMPTY);
+                        }
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const solidElementsForAO = [DIRT, STONE, WOOD, GRASS, DEAD_PLANT];
+            const variedElements = [DIRT, STONE, GRASS, LEAVES, DEAD_PLANT];
+
+            for (let y = 0; y < viewHeight; y++) {
+                for (let x = 0; x < viewWidth; x++) {
+                    const worldX = Math.floor(camX + x);
+                    const worldY = Math.floor(camY + y);
+                    
+                    const current = get(worldX, worldY);
+                    if (current === EMPTY) continue;
+
+                    let color = colors[current];
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1.0;
+
+                    // --- Visual Effects ---
+
+                    // Glow for hot elements
+                    if (current === FIRE || current === LAVA) {
+                        ctx.shadowColor = current === FIRE ? '#ff8000' : '#ff4500';
+                        ctx.shadowBlur = (current === FIRE ? 20 : 12) * (scale / 8);
+                    }
+
+                    // Transparency for liquids and gases
+                    if (current === WATER) {
+                        ctx.globalAlpha = 0.7;
+                    } else if (current === STEAM || current === CLOUD) {
+                        ctx.globalAlpha = 0.6;
+                    }
+
+                    // Color variation for natural elements
+                    if (variedElements.includes(current)) {
+                        const hash = (worldX * 41) ^ (worldY * 17);
+                        const variation = (hash % 11) - 5; // -5% to +5%
+                        color = darkenColor(color, -variation);
+                    }
+
+                    // Ambient Occlusion for solid elements
+                    if (solidElementsForAO.includes(current)) {
+                        let occlusion = 0;
+                        // Check 3 neighbors that would cast a shadow: top, left, top-left
+                        if (isSolid(get(worldX, worldY - 1))) occlusion++;
+                        if (isSolid(get(worldX - 1, worldY))) occlusion++;
+                        if (isSolid(get(worldX - 1, worldY - 1))) occlusion++;
+                        
+                        if (occlusion > 0) {
+                            color = darkenColor(color, occlusion * 5);
+                        }
+                    }
+
+                    // --- Drawing ---
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x * scale, y * scale, Math.ceil(scale), Math.ceil(scale));
+                }
+            }
+            // Reset context state
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1.0;
+        }
+
+        function gameLoop() {
+            if (!isPaused) {
+                update();
+            }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Controls
+        const elementButtons = document.querySelectorAll('#controls button[data-element]');
+        elementButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                elementButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const element = button.getAttribute('data-element');
+                switch (element) {
+                    case 'dirt': currentElement = DIRT; break;
+                    case 'water': currentElement = WATER; break;
+                    case 'grass': currentElement = GRASS; break;
+                    case 'wood': currentElement = WOOD; break;
+                    case 'leaves': currentElement = LEAVES; break;
+                    case 'animal': currentElement = ANIMAL; break;
+                    case 'fire': currentElement = FIRE; break;
+                    case 'acid': currentElement = ACID; break;
+                    case 'oil': currentElement = OIL; break;
+                    case 'cloner': currentElement = CLONER; break;
+                    case 'lava': currentElement = LAVA; break;
+                    case 'steam': currentElement = STEAM; break;
+                    case 'gunpowder': currentElement = GUNPOWDER; break;
+                    case 'ice': currentElement = ICE; break;
+                    case 'virus': currentElement = VIRUS; break;
+                    case 'cure': currentElement = CURE; break;
+                    case 'eraser': currentElement = EMPTY; break;
+                    case 'stone': currentElement = STONE; break;
+                }
+            });
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            grid.fill(EMPTY);
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            generateLandscape();
+        });
+
+        const rainSelect = document.getElementById('rain-select');
+        rainSelect.addEventListener('change', (e) => {
+            switch (e.target.value) {
+                case 'none': rainElement = EMPTY; break;
+                case 'water': rainElement = WATER; break;
+                case 'dirt': rainElement = DIRT; break;
+                case 'acid': rainElement = ACID; break;
+                case 'oil': rainElement = OIL; break;
+                case 'lava': rainElement = LAVA; break;
+                case 'gunpowder': rainElement = GUNPOWDER; break;
+                default: rainElement = EMPTY;
+            }
+        });
+
+        const pauseButton = document.getElementById('pause-toggle');
+        pauseButton.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseButton.textContent = isPaused ? 'Play' : 'Pause';
+            pauseButton.classList.toggle('active', isPaused);
+        });
+
+        const brushSizeSlider = document.getElementById('brush-size');
+        const brushSizeValue = document.getElementById('brush-size-value');
+        brushSizeSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            brushSizeValue.textContent = brushSize;
+        });
+
+        const bgColorPicker = document.getElementById('bg-color');
+        bgColorPicker.addEventListener('input', (e) => {
+            colors[EMPTY] = e.target.value;
+            canvas.style.backgroundColor = e.target.value;
+        });
+
+        // Mouse drawing
+        function drawAt(e, brushSizeOverride) {
+            const currentBrushSize = brushSizeOverride || brushSize;
+            const rect = canvas.getBoundingClientRect();
+            const canvasX = (e.clientX - rect.left) / scale;
+            const canvasY = (e.clientY - rect.top) / scale;
+
+            const worldX = Math.floor(camX + canvasX);
+            const worldY = Math.floor(camY + canvasY);
+
+            if (currentElement === ANIMAL) {
+                if (get(worldX, worldY) === EMPTY) {
+                    set(worldX, worldY, ANIMAL);
+                }
+                return;
+            }
+
+            for (let i = -currentBrushSize; i <= currentBrushSize; i++) {
+                for (let j = -currentBrushSize; j <= currentBrushSize; j++) {
+                    if (Math.sqrt(i * i + j * j) <= currentBrushSize) {
+                        const currentPixel = get(worldX + i, worldY + j);
+                        if (currentPixel !== STONE || currentElement === EMPTY) {
+                            set(worldX + i, worldY + j, currentElement);
+                        }
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            drawAt(e, currentElement === ANIMAL ? 1 : brushSize);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isMouseDown) {
+                drawAt(e, currentElement === ANIMAL ? 1 : brushSize);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isMouseDown = false;
+        });
+
+        function handleZoom(e) {
+            e.preventDefault();
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const mouseWorldXBefore = camX + mouseX / scale;
+            const mouseWorldYBefore = camY + mouseY / scale;
+
+            const zoomIntensity = 0.1;
+            const wheel = e.deltaY < 0 ? 1 : -1;
+            const newScale = scale * (1 + wheel * zoomIntensity);
+            scale = Math.max(1, Math.min(32, newScale));
+
+            viewWidth = Math.floor(canvas.width / scale);
+            viewHeight = Math.floor(canvas.height / scale);
+
+            camX = mouseWorldXBefore - mouseX / scale;
+            camY = mouseWorldYBefore - mouseY / scale;
+
+            // Clamp camera position
+            camX = Math.max(0, Math.min(width - viewWidth, camX));
+            camY = Math.max(0, Math.min(height - viewHeight, camY));
+        }
+
+        window.addEventListener('wheel', handleZoom, { passive: false });
+
+        window.addEventListener('keydown', (e) => {
+            const camSpeed = 10;
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                    camY = Math.max(0, camY - camSpeed);
+                    break;
+                case 's':
+                    camY = Math.min(height - viewHeight, camY + camSpeed);
+                    break;
+                case 'a':
+                    camX = Math.max(0, camX - camSpeed);
+                    break;
+                case 'd':
+                    camX = Math.min(width - viewWidth, camX + camSpeed);
+                    break;
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initial setup
+        resizeCanvas();
+        document.querySelector('button[data-element="dirt"]').classList.add('active');
+        gameLoop();
+    </script>
+</body>
+</html>
