@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Heat Map</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #111;
+        }
+        
+        canvas {
+            display: block;
+            cursor: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="heatmap"></canvas>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Canvas setup
+            const canvas = document.getElementById('heatmap');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas to full window size
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Resize canvas when window is resized
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                // Reset grid when resizing to avoid artifacts
+                initializeGrid();
+            });
+            
+            // Heat map configuration
+            const config = {
+                resolution: 10,       // Size of each cell in pixels
+                intensity: 0.3,       // How much heat is added per frame
+                decay: 0.998,         // How quickly heat decays (increased from 0.995 for much slower fading)
+                blur: 0.6,            // Blur amount for the glow effect
+                colorStops: [
+                    { stop: 0.0, color: 'rgba(0, 0, 50, 0)' },    // Cool/transparent
+                    { stop: 0.2, color: 'rgba(0, 50, 180, 0.5)' }, // Deep blue
+                    { stop: 0.4, color: 'rgba(0, 180, 255, 0.7)' }, // Cyan
+                    { stop: 0.6, color: 'rgba(0, 255, 120, 0.8)' }, // Green
+                    { stop: 0.8, color: 'rgba(255, 255, 0, 0.9)' }, // Yellow
+                    { stop: 1.0, color: 'rgba(255, 50, 0, 1.0)' }   // Red
+                ]
+            };
+            
+            // Calculate grid dimensions
+            const cols = Math.ceil(canvas.width / config.resolution);
+            const rows = Math.ceil(canvas.height / config.resolution);
+            
+            // Create heat grid
+            let heatGrid;
+            
+            function initializeGrid() {
+                heatGrid = new Array(cols).fill(0).map(() => new Array(rows).fill(0));
+            }
+            
+            // Initialize grid
+            initializeGrid();
+            
+            // Track mouse position
+            let mouseX = 0;
+            let mouseY = 0;
+            let mouseActive = false;
+            
+            canvas.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                mouseActive = true;
+                
+                // Add heat at mouse position
+                const gridX = Math.floor(mouseX / config.resolution);
+                const gridY = Math.floor(mouseY / config.resolution);
+                
+                // Add heat in a much larger radius around the cursor
+                for (let i = -5; i <= 5; i++) {  // Increased from -3/+3 to -5/+5
+                    for (let j = -5; j <= 5; j++) {  // Increased from -3/+3 to -5/+5
+                        const x = gridX + i;
+                        const y = gridY + j;
+                        
+                        // Check if within bounds
+                        if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                            // Add more heat at center, less at edges
+                            const distance = Math.sqrt(i*i + j*j);
+                            const falloff = Math.max(0, 1 - distance/6);  // Changed from 4 to 6 for wider effect
+                            heatGrid[x][y] += config.intensity * falloff;
+                            
+                            // Cap the maximum heat value at a higher level
+                            if (heatGrid[x][y] > 1.5) heatGrid[x][y] = 1.5;  // Increased cap from 1.2 to 1.5
+                        }
+                    }
+                }
+            });
+            
+            canvas.addEventListener('mouseout', () => {
+                mouseActive = false;
+            });
+            
+            // Main animation loop
+            function animate() {
+                // Decay heat values more slowly
+                for (let x = 0; x < cols; x++) {
+                    for (let y = 0; y < rows; y++) {
+                        heatGrid[x][y] *= config.decay;
+                    }
+                }
+                
+                // Blur the heat map to create a smoother effect
+                let blurredGrid = new Array(cols).fill(0).map(() => new Array(rows).fill(0));
+                for (let x = 0; x < cols; x++) {
+                    for (let y = 0; y < rows; y++) {
+                        let sum = 0;
+                        let count = 0;
+                        
+                        // Sample neighboring cells
+                        for (let i = -1; i <= 1; i++) {
+                            for (let j = -1; j <= 1; j++) {
+                                const nx = x + i;
+                                const ny = y + j;
+                                
+                                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                                    sum += heatGrid[nx][ny];
+                                    count++;
+                                }
+                            }
+                        }
+                        
+                        // Calculate average with original value
+                        blurredGrid[x][y] = heatGrid[x][y] * (1 - config.blur) + (sum / count) * config.blur;
+                    }
+                }
+                
+                // Update grid with blurred values
+                heatGrid = blurredGrid;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw heat map
+                for (let x = 0; x < cols; x++) {
+                    for (let y = 0; y < rows; y++) {
+                        const heat = heatGrid[x][y];
+                        
+                        // Only draw cells with heat
+                        if (heat > 0.01) {
+                            // Get color based on heat value
+                            ctx.fillStyle = getHeatColor(heat);
+                            
+                            // Draw rectangle
+                            ctx.fillRect(
+                                x * config.resolution,
+                                y * config.resolution,
+                                config.resolution,
+                                config.resolution
+                            );
+                        }
+                    }
+                }
+                
+                // Draw mouse position with a glow effect
+                if (mouseActive) {
+                    const glow = ctx.createRadialGradient(
+                        mouseX, mouseY, 0,
+                        mouseX, mouseY, 40
+                    );
+                    glow.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                    glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.fillStyle = glow;
+                    ctx.beginPath();
+                    ctx.arc(mouseX, mouseY, 40, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Continue animation loop
+                requestAnimationFrame(animate);
+            }
+            
+            // Helper function to get color based on heat value
+            function getHeatColor(heat) {
+                const { colorStops } = config;
+                
+                // Find the two color stops that our heat value falls between
+                for (let i = 1; i < colorStops.length; i++) {
+                    if (heat <= colorStops[i].stop) {
+                        const prev = colorStops[i-1];
+                        const current = colorStops[i];
+                        
+                        // Calculate how far between these stops we are (0-1)
+                        const ratio = (heat - prev.stop) / (current.stop - prev.stop);
+                        
+                        // Parse the colors to interpolate between
+                        return interpolateColor(prev.color, current.color, ratio);
+                    }
+                }
+                
+                // If we're at maximum heat
+                return colorStops[colorStops.length - 1].color;
+            }
+            
+            // Helper function to interpolate between two colors
+            function interpolateColor(color1, color2, ratio) {
+                // Extract RGBA components
+                function extractRGBA(color) {
+                    const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/);
+                    if (match) {
+                        return {
+                            r: parseInt(match[1]),
+                            g: parseInt(match[2]),
+                            b: parseInt(match[3]),
+                            a: match[4] !== undefined ? parseFloat(match[4]) : 1
+                        };
+                    }
+                    return { r: 0, g: 0, b: 0, a: 0 };
+                }
+                
+                const c1 = extractRGBA(color1);
+                const c2 = extractRGBA(color2);
+                
+                // Interpolate each component
+                const r = Math.round(c1.r + (c2.r - c1.r) * ratio);
+                const g = Math.round(c1.g + (c2.g - c1.g) * ratio);
+                const b = Math.round(c1.b + (c2.b - c1.b) * ratio);
+                const a = c1.a + (c2.a - c1.a) * ratio;
+                
+                return `rgba(${r}, ${g}, ${b}, ${a})`;
+            }
+            
+            // Start animation
+            animate();
+        });
+    </script>
+</body>
+</html>
