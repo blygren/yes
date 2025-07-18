@@ -112,7 +112,7 @@
 
 [PixelWorld](https://blygren.github.io/yes/PixelWorld.html)
 
-[PixelWorld](https://blygren.github.io/yes/heatmap.html)
+[Heatmap](https://blygren.github.io/yes/heatmap.html)
 
 
 
