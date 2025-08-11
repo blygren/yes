@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ball Spawner</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #settings-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+
+        #settings-toggle-btn {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #settings-panel {
+            background: rgba(40, 40, 40, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            width: 250px;
+            max-width: 80vw;
+            border: 1px solid #555;
+        }
+
+        #settings-panel.hidden {
+            display: none;
+        }
+
+        #settings-panel h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .setting {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting label {
+            margin-bottom: 5px;
+        }
+
+        .setting input[type="range"] {
+            width: 100%;
+        }
+
+        .setting input[type="checkbox"] {
+            align-self: flex-start;
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="settings-container">
+        <button id="settings-toggle-btn">⚙️</button>
+        <div id="settings-panel" class="hidden">
+            <h3>Settings</h3>
+            <div class="setting">
+                <label for="toggle-collisions">Wall Collisions</label>
+                <input type="checkbox" id="toggle-collisions" checked>
+            </div>
+            <div class="setting">
+                <label for="toggle-rainbow">Rainbow Mode</label>
+                <input type="checkbox" id="toggle-rainbow" checked>
+            </div>
+            <div class="setting">
+                <label for="gravity-slider">Gravity: <span id="gravity-value">0.1</span></label>
+                <input type="range" id="gravity-slider" min="0" max="0.5" step="0.01" value="0.1">
+            </div>
+            <div class="setting">
+                <label for="speed-slider">Initial Speed: <span id="speed-value">1.0</span></label>
+                <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1.0">
+            </div>
+        </div>
+    </div>
+    <canvas id="simulationCanvas"></canvas>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('simulationCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Settings Elements
+            const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+            const settingsPanel = document.getElementById('settings-panel');
+            const toggleCollisions = document.getElementById('toggle-collisions');
+            const toggleRainbow = document.getElementById('toggle-rainbow');
+            const gravitySlider = document.getElementById('gravity-slider');
+            const gravityValueSpan = document.getElementById('gravity-value');
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValueSpan = document.getElementById('speed-value');
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let balls = [];
+            let isSpawning = false;
+            let hue = 0;
+            let gravity = 0.1;
+            const friction = 0.98;
+            let spawnPosition = { x: 0, y: 0 };
+
+            // Settings State
+            let settings = {
+                collisions: true,
+                rainbow: true,
+                gravity: 0.1,
+                speed: 1.0
+            };
+
+            class Ball {
+                constructor(x, y, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.radius = Math.random() * 15 + 5;
+                    this.color = color;
+                    this.vx = (Math.random() - 0.5) * 8 * settings.speed;
+                    this.vy = (Math.random() - 0.5) * 4 * settings.speed;
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.closePath();
+                }
+
+                update() {
+                    if (settings.collisions) {
+                        if (this.y + this.radius + this.vy > canvas.height) {
+                            this.vy = -this.vy * friction;
+                        } else {
+                            this.vy += settings.gravity;
+                        }
+                        if (this.x + this.radius + this.vx > canvas.width || this.x - this.radius <= 0) {
+                            this.vx = -this.vx;
+                        }
+                    } else {
+                        this.vy += settings.gravity;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+                }
+            }
+
+            function updateSpawnPosition(e) {
+                if (e.touches) {
+                    spawnPosition.x = e.touches[0].clientX;
+                    spawnPosition.y = e.touches[0].clientY;
+                } else {
+                    spawnPosition.x = e.clientX;
+                    spawnPosition.y = e.clientY;
+                }
+            }
+
+            function handleStart(e) {
+                e.preventDefault();
+                isSpawning = true;
+                updateSpawnPosition(e);
+            }
+
+            function handleEnd() {
+                isSpawning = false;
+            }
+
+            function handleMove(e) {
+                if (isSpawning) {
+                    e.preventDefault();
+                    updateSpawnPosition(e);
+                }
+            }
+
+            canvas.addEventListener('mousedown', handleStart);
+            canvas.addEventListener('mouseup', handleEnd);
+            canvas.addEventListener('mouseleave', handleEnd);
+            canvas.addEventListener('mousemove', handleMove);
+
+            canvas.addEventListener('touchstart', handleStart, { passive: false });
+            canvas.addEventListener('touchend', handleEnd);
+            canvas.addEventListener('touchmove', handleMove, { passive: false });
+
+            // Settings Event Listeners
+            settingsToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click from bubbling to window
+                settingsPanel.classList.toggle('hidden');
+            });
+
+            // Prevent clicks inside panel from closing it
+            settingsPanel.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            toggleCollisions.addEventListener('change', (e) => {
+                settings.collisions = e.target.checked;
+            });
+
+            toggleRainbow.addEventListener('change', (e) => {
+                settings.rainbow = e.target.checked;
+            });
+
+            gravitySlider.addEventListener('input', (e) => {
+                settings.gravity = parseFloat(e.target.value);
+                gravityValueSpan.textContent = settings.gravity.toFixed(2);
+            });
+
+            speedSlider.addEventListener('input', (e) => {
+                settings.speed = parseFloat(e.target.value);
+                speedValueSpan.textContent = settings.speed.toFixed(1);
+            });
+
+            // Close settings panel when clicking outside
+            window.addEventListener('click', () => {
+                if (!settingsPanel.classList.contains('hidden')) {
+                    settingsPanel.classList.add('hidden');
+                }
+            });
+
+
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                if (isSpawning) {
+                    if (navigator.vibrate) {
+                        navigator.vibrate(10);
+                    }
+                    for (let i = 0; i < 2; i++) {
+                        const color = settings.rainbow ? `hsl(${hue}, 100%, 60%)` : '#FFFFFF';
+                        balls.push(new Ball(spawnPosition.x, spawnPosition.y, color));
+                    }
+                    hue = (hue + 2) % 360;
+                }
+
+                for (let i = balls.length - 1; i >= 0; i--) {
+                    balls[i].update();
+                    balls[i].draw();
+                }
+                
+                // Limit total balls to prevent performance degradation
+                if (balls.length > 600) {
+                    balls.splice(0, balls.length - 600);
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                balls = []; // Clear balls on resize to avoid weird physics
+            });
+
+            animate();
+        });
+    </script>
+</body>
+</html>
