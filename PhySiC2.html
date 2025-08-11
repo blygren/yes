@@ -453,6 +453,19 @@
             background-color: #5c7edc;
         }
 
+        .delete-template-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+        }
+        .delete-template-btn:hover {
+            color: #fff;
+        }
+
         .shape-item:hover {
             background-color: #4a69bd;
         }
@@ -504,6 +517,16 @@
         #delete-mode-btn.active {
             background-color: #e74c3c;
             border-color: #c0392b;
+        }
+
+        #explode-mode-btn.active {
+            background-color: #f39c12;
+            border-color: #e67e22;
+        }
+
+        #attract-mode-btn.active {
+            background-color: #9b59b6;
+            border-color: #8e44ad;
         }
 
         /* Media Queries for Mobile Friendliness */
@@ -568,6 +591,12 @@
             </div>
             <div class="setting-group">
                 <button id="open-library-btn" class="control-btn">🎨 Templates</button>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4 style="margin-top: 0; margin-bottom: 10px; text-align: left; border: none; padding: 0; color: #fff;">Save Current Colors</h4>
+                <input type="text" id="new-template-name" placeholder="Template Name" style="width: calc(100% - 12px); margin-bottom: 5px; padding: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 4px;">
+                <button id="save-template-btn" class="control-btn">Save Template</button>
             </div>
         </div>
     </div>
@@ -636,6 +665,13 @@
                 <input type="range" id="density-slider" min="0.0001" max="0.01" value="0.001" step="0.0001">
             </div>
             <div class="setting">
+                <label for="object-collision-toggle">Object Collisions</label>
+                <label class="switch">
+                    <input type="checkbox" id="object-collision-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
                 <label for="static-toggle">Make Static</label>
                 <label class="switch">
                     <input type="checkbox" id="static-toggle">
@@ -665,6 +701,34 @@
                 <input type="range" id="lifespan-slider" min="1" max="20" value="5">
             </div>
             <button id="clear-balls-btn" class="control-btn">Clear Balls</button>
+            <hr>
+            <div class="setting-group">
+                <h4>World Settings</h4>
+                <div class="setting-group">
+                    <label for="wall-bounciness-slider">Wall Bounciness</label>
+                    <input type="range" id="wall-bounciness-slider" min="0" max="1.5" value="1" step="0.05">
+                </div>
+                <div class="setting-group">
+                    <label for="max-objects-slider">Max Objects</label>
+                    <input type="range" id="max-objects-slider" min="50" max="1000" value="500" step="10">
+                </div>
+                <div class="setting-group">
+                    <label for="attraction-strength-slider">Attraction Strength</label>
+                    <input type="range" id="attraction-strength-slider" min="0.1" max="10" value="1" step="0.1">
+                </div>
+                <div class="setting-group">
+                    <label for="attraction-radius-slider">Attraction Radius</label>
+                    <input type="range" id="attraction-radius-slider" min="50" max="500" value="200" step="10">
+                </div>
+                <div class="setting-group">
+                    <label for="explosion-strength-slider">Explosion Strength</label>
+                    <input type="range" id="explosion-strength-slider" min="0.01" max="0.2" value="0.05" step="0.005">
+                </div>
+                <div class="setting-group">
+                    <label for="explosion-radius-slider">Explosion Radius</label>
+                    <input type="range" id="explosion-radius-slider" min="50" max="500" value="150" step="10">
+                </div>
+            </div>
             <hr>
             <div class="setting-group">
                 <h4>UI Settings</h4>
@@ -734,7 +798,9 @@
     <div id="bottom-toolbar">
         <button id="spawn-mode-btn" class="toolbar-btn active">Spawn</button>
         <button id="drag-mode-btn" class="toolbar-btn">Drag</button>
+        <button id="attract-mode-btn" class="toolbar-btn">Attract</button>
         <button id="delete-mode-btn" class="toolbar-btn">Delete</button>
+        <button id="explode-mode-btn" class="toolbar-btn">Explode</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
@@ -793,6 +859,13 @@
         let objectDensity = 0.001;
         let spawnInterval;
         let spawnSpeed = 20; // Balls per second
+        let customTemplates = {};
+        let objectCollisionsEnabled = true;
+        let maxObjects = 500;
+        let attractionStrength = 1;
+        let attractionRadius = 200;
+        let explosionStrength = 0.05;
+        let explosionRadius = 150;
 
         // Background settings
         let gridEnabled = true;
@@ -968,8 +1041,58 @@
             }
         }
 
+        function getCustomTemplates() {
+            const stored = localStorage.getItem('customColorTemplates');
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveCustomTemplates() {
+            localStorage.setItem('customColorTemplates', JSON.stringify(customTemplates));
+        }
+
+        function saveCustomTemplate() {
+            const nameInput = document.getElementById('new-template-name');
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert('Please enter a template name.');
+                return;
+            }
+            if (templates[name] || customTemplates[name]) {
+                if (!confirm(`A template named "${name}" already exists. Overwrite it?`)) {
+                    return;
+                }
+            }
+
+            customTemplates[name] = [...ballColors];
+            saveCustomTemplates();
+            populateTemplatesLibrary();
+            nameInput.value = '';
+            alert(`Template "${name}" saved!`);
+        }
+
+        function deleteCustomTemplate(name) {
+            if (customTemplates[name]) {
+                delete customTemplates[name];
+                saveCustomTemplates();
+                populateTemplatesLibrary();
+            }
+        }
+
         function spawnBall(x, y) {
             if (ballColors.length === 0) return; // Don't spawn if no colors are available
+
+            const allBodies = Composite.allBodies(world);
+            const dynamicBodies = allBodies.filter(body => !body.isStatic);
+            if (dynamicBodies.length >= maxObjects) {
+                const oldestBody = dynamicBodies.find(body => !boundaries.includes(body));
+                if (oldestBody) {
+                     if (oldestBody.lifespanTimeout) {
+                        clearTimeout(oldestBody.lifespanTimeout);
+                    }
+                    Composite.remove(world, oldestBody);
+                }
+            }
+
             const randomColor = ballColors[Math.floor(Math.random() * ballColors.length)];
             const size = randomSizesEnabled ? Matter.Common.random(minBallRadius, maxBallRadius) : ballRadius;
             
@@ -981,6 +1104,9 @@
                 isStatic: isStaticEnabled,
                 angle: randomRotationEnabled ? Math.random() * 2 * Math.PI : 0,
                 angularVelocity: initialRotationSpeed,
+                collisionFilter: {
+                    group: objectCollisionsEnabled ? 0 : -1
+                },
                 render: {
                     fillStyle: randomColor
                 }
@@ -1021,6 +1147,21 @@
 
             // Prevent spawning balls when clicking on UI elements
             if (e.target.closest('#settings-panel') || e.target.closest('#bottom-toolbar') || e.target.closest('#library-panel')) {
+                return;
+            }
+
+            if (currentMode === 'explode') {
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body.isStatic) return;
+                    const distanceVector = Matter.Vector.sub({ x: clientX, y: clientY }, body.position);
+                    const distance = Matter.Vector.magnitude(distanceVector);
+                    if (distance < explosionRadius) {
+                        const forceMagnitude = explosionStrength * (1 - distance / explosionRadius);
+                        const force = Matter.Vector.mult(Matter.Vector.normalise(distanceVector), -forceMagnitude);
+                        Body.applyForce(body, body.position, force);
+                    }
+                });
                 return;
             }
 
@@ -1094,15 +1235,26 @@
 
         function populateTemplatesLibrary() {
             templatesContainer.innerHTML = '';
-            for (const name in templates) {
-                const template = templates[name];
+            
+            const allTemplates = { ...customTemplates, ...templates };
+
+            for (const name in allTemplates) {
+                const isCustom = customTemplates.hasOwnProperty(name);
+                const template = allTemplates[name];
                 const item = document.createElement('div');
                 item.className = 'template-item';
 
                 let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
 
+                const headerHTML = isCustom ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">${name}</h4>
+                        <button class="delete-template-btn" data-name="${name}">&times;</button>
+                    </div>
+                ` : `<h4 style="margin-bottom: 10px;">${name}</h4>`;
+
                 item.innerHTML = `
-                    <h4>${name}</h4>
+                    ${headerHTML}
                     <div class="color-swatches">${swatchesHTML}</div>
                     <button class="apply-template-btn">Apply</button>
                 `;
@@ -1112,6 +1264,16 @@
                     renderColorPickers();
                     templatesLibrary.classList.add('hidden');
                 });
+
+                if (isCustom) {
+                    item.querySelector('.delete-template-btn').addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent applying template when deleting
+                        const templateName = e.target.getAttribute('data-name');
+                        if (confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
+                            deleteCustomTemplate(templateName);
+                        }
+                    });
+                }
 
                 templatesContainer.appendChild(item);
             }
@@ -1165,6 +1327,7 @@
 
         // Initialize color pickers and controls
         document.addEventListener('DOMContentLoaded', () => {
+            customTemplates = getCustomTemplates();
             updateBackground(); // Set initial background
             renderColorPickers();
             populateTemplatesLibrary();
@@ -1173,34 +1336,50 @@
             const spawnBtn = document.getElementById('spawn-mode-btn');
             const dragBtn = document.getElementById('drag-mode-btn');
             const deleteBtn = document.getElementById('delete-mode-btn');
+            const explodeBtn = document.getElementById('explode-mode-btn');
+            const attractBtn = document.getElementById('attract-mode-btn');
+
+            function setActiveButton(activeBtn) {
+                [spawnBtn, dragBtn, deleteBtn, explodeBtn, attractBtn].forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                activeBtn.classList.add('active');
+            }
 
             spawnBtn.addEventListener('click', () => {
                 currentMode = 'spawn';
                 mouseConstraint.collisionFilter.mask = 0; // Disable dragging
-                spawnBtn.classList.add('active');
-                dragBtn.classList.remove('active');
-                deleteBtn.classList.remove('active');
+                setActiveButton(spawnBtn);
             });
 
             dragBtn.addEventListener('click', () => {
                 currentMode = 'drag';
                 mouseConstraint.collisionFilter.mask = -1; // Enable dragging
-                dragBtn.classList.add('active');
-                spawnBtn.classList.remove('active');
-                deleteBtn.classList.remove('active');
+                setActiveButton(dragBtn);
+            });
+
+            attractBtn.addEventListener('click', () => {
+                currentMode = 'attract';
+                mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+                setActiveButton(attractBtn);
             });
 
             deleteBtn.addEventListener('click', () => {
                 currentMode = 'delete';
                 mouseConstraint.collisionFilter.mask = 0; // Disable dragging
-                deleteBtn.classList.add('active');
-                spawnBtn.classList.remove('active');
-                dragBtn.classList.remove('active');
+                setActiveButton(deleteBtn);
+            });
+
+            explodeBtn.addEventListener('click', () => {
+                currentMode = 'explode';
+                mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+                setActiveButton(explodeBtn);
             });
 
             document.getElementById('add-color-btn').addEventListener('click', addColor);
             document.getElementById('remove-color-btn').addEventListener('click', removeColor);
             document.getElementById('clear-balls-btn').addEventListener('click', clearBalls);
+            document.getElementById('save-template-btn').addEventListener('click', saveCustomTemplate);
 
             const pauseBtn = document.getElementById('pause-btn');
             pauseBtn.addEventListener('click', () => {
@@ -1290,6 +1469,10 @@
                 objectDensity = parseFloat(e.target.value);
             });
 
+            document.getElementById('object-collision-toggle').addEventListener('change', (e) => {
+                objectCollisionsEnabled = e.target.checked;
+            });
+
             document.getElementById('air-friction-slider').addEventListener('input', (e) => {
                 engine.airFriction = parseFloat(e.target.value);
             });
@@ -1315,6 +1498,51 @@
             document.getElementById('lifespan-slider').addEventListener('input', (e) => {
                 objectLifespan = parseInt(e.target.value, 10) * 1000;
             });
+
+            // World Settings
+            document.getElementById('wall-bounciness-slider').addEventListener('input', (e) => {
+                const bounciness = parseFloat(e.target.value);
+                boundaries.forEach(wall => wall.restitution = bounciness);
+            });
+
+            document.getElementById('max-objects-slider').addEventListener('input', (e) => {
+                maxObjects = parseInt(e.target.value, 10);
+            });
+
+            document.getElementById('attraction-strength-slider').addEventListener('input', (e) => {
+                attractionStrength = parseFloat(e.target.value);
+            });
+
+            document.getElementById('attraction-radius-slider').addEventListener('input', (e) => {
+                attractionRadius = parseInt(e.target.value, 10);
+            });
+
+            document.getElementById('explosion-strength-slider').addEventListener('input', (e) => {
+                explosionStrength = parseFloat(e.target.value);
+            });
+
+            document.getElementById('explosion-radius-slider').addEventListener('input', (e) => {
+                explosionRadius = parseInt(e.target.value, 10);
+            });
+
+            Events.on(engine, 'beforeUpdate', () => {
+                if (currentMode === 'attract' && mouse.position.x) {
+                    const bodies = Composite.allBodies(world);
+                    const basePullForce = 0.0005;
+                    const pullForce = basePullForce * attractionStrength;
+                    bodies.forEach(body => {
+                        if (body.isStatic) return;
+                        const distanceVector = Matter.Vector.sub(mouse.position, body.position);
+                        const distance = Matter.Vector.magnitude(distanceVector);
+                        if (distance < attractionRadius) {
+                            const forceMagnitude = pullForce * (1 - distance / attractionRadius) * body.mass;
+                            const force = Matter.Vector.mult(Matter.Vector.normalise(distanceVector), forceMagnitude);
+                            Body.applyForce(body, body.position, force);
+                        }
+                    });
+                }
+            });
+
 
             // UI Settings
             document.getElementById('toolbar-toggle').addEventListener('change', (e) => {
