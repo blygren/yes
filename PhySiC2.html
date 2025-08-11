@@ -703,6 +703,17 @@
             <button id="clear-balls-btn" class="control-btn">Clear Balls</button>
             <hr>
             <div class="setting-group">
+                <h4>State Management</h4>
+                <div class="setting-group">
+                    <button id="save-state-btn" class="control-btn">Save State</button>
+                </div>
+                <div class="setting-group">
+                    <button id="load-state-btn" class="control-btn">Load State</button>
+                    <input type="file" id="load-state-input" style="display: none;" accept=".json">
+                </div>
+            </div>
+            <hr>
+            <div class="setting-group">
                 <h4>World Settings</h4>
                 <div class="setting-group">
                     <label for="wall-bounciness-slider">Wall Bounciness</label>
@@ -1078,6 +1089,170 @@
             }
         }
 
+        function saveState() {
+            const state = {
+                settings: {
+                    ballRadius,
+                    randomSizesEnabled,
+                    ballColors: [...ballColors],
+                    ballBounciness,
+                    objectFriction,
+                    objectStaticFriction,
+                    randomRotationEnabled,
+                    isStaticEnabled,
+                    initialRotationSpeed,
+                    lifespanEnabled,
+                    objectLifespan,
+                    selectedShape,
+                    objectDensity,
+                    spawnSpeed,
+                    objectCollisionsEnabled,
+                    maxObjects,
+                    attractionStrength,
+                    attractionRadius,
+                    explosionStrength,
+                    explosionRadius,
+                    gridEnabled,
+                    gridColor,
+                    backgroundColor,
+                    engine: {
+                        gravity: { ...engine.world.gravity },
+                        airFriction: engine.airFriction,
+                        timing: { timeScale: engine.timing.timeScale }
+                    },
+                    world: {
+                        wallBounciness: boundaries[0].restitution
+                    }
+                },
+                objects: []
+            };
+
+            const allBodies = Composite.allBodies(world);
+            state.objects = allBodies
+                .filter(body => !boundaries.includes(body))
+                .map(body => {
+                    return {
+                        label: body.label,
+                        position: { ...body.position },
+                        velocity: { ...body.velocity },
+                        angle: body.angle,
+                        angularVelocity: body.angularVelocity,
+                        isStatic: body.isStatic,
+                        restitution: body.restitution,
+                        friction: body.friction,
+                        frictionStatic: body.frictionStatic,
+                        density: body.density,
+                        render: {
+                            fillStyle: body.render.fillStyle
+                        },
+                        collisionFilter: { ...body.collisionFilter },
+                        vertices: body.vertices.map(v => ({ x: v.x, y: v.y }))
+                    };
+                });
+
+            const stateString = JSON.stringify(state, null, 2);
+            const blob = new Blob([stateString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `physics-sim-state-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadState(state) {
+            clearBalls();
+
+            // Restore settings
+            const s = state.settings;
+            ballRadius = s.ballRadius;
+            randomSizesEnabled = s.randomSizesEnabled;
+            ballColors = [...s.ballColors];
+            ballBounciness = s.ballBounciness;
+            objectFriction = s.objectFriction;
+            objectStaticFriction = s.objectStaticFriction;
+            randomRotationEnabled = s.randomRotationEnabled;
+            isStaticEnabled = s.isStaticEnabled;
+            initialRotationSpeed = s.initialRotationSpeed;
+            lifespanEnabled = s.lifespanEnabled;
+            objectLifespan = s.objectLifespan;
+            selectedShape = s.selectedShape;
+            objectDensity = s.objectDensity;
+            spawnSpeed = s.spawnSpeed;
+            objectCollisionsEnabled = s.objectCollisionsEnabled;
+            maxObjects = s.maxObjects;
+            attractionStrength = s.attractionStrength;
+            attractionRadius = s.attractionRadius;
+            explosionStrength = s.explosionStrength;
+            explosionRadius = s.explosionRadius;
+            gridEnabled = s.gridEnabled;
+            gridColor = s.gridColor;
+            backgroundColor = s.backgroundColor;
+
+            engine.world.gravity = { ...s.engine.gravity };
+            engine.airFriction = s.engine.airFriction;
+            engine.timing.timeScale = s.engine.timing.timeScale;
+            boundaries.forEach(wall => wall.restitution = s.world.wallBounciness);
+
+            // Restore objects
+            const newBodies = state.objects.map(obj => {
+                const body = Bodies.fromVertices(obj.position.x, obj.position.y, [obj.vertices], {
+                    label: obj.label,
+                    isStatic: obj.isStatic,
+                    restitution: obj.restitution,
+                    friction: obj.friction,
+                    frictionStatic: obj.frictionStatic,
+                    density: obj.density,
+                    render: { ...obj.render },
+                    collisionFilter: { ...obj.collisionFilter }
+                });
+                Body.setVelocity(body, obj.velocity);
+                Body.setAngularVelocity(body, obj.angularVelocity);
+                Body.setAngle(body, obj.angle); // Set angle after creation
+                return body;
+            });
+            Composite.add(world, newBodies);
+
+            // Update UI
+            updateUIFromState();
+        }
+
+        function updateUIFromState() {
+            document.getElementById('size-slider').value = ballRadius;
+            document.getElementById('random-size-toggle').checked = randomSizesEnabled;
+            document.getElementById('random-size-toggle').dispatchEvent(new Event('change'));
+            renderColorPickers();
+            document.getElementById('bounciness-slider').value = ballBounciness;
+            document.getElementById('friction-slider').value = objectFriction;
+            document.getElementById('static-friction-slider').value = objectStaticFriction;
+            document.getElementById('rotation-toggle').checked = randomRotationEnabled;
+            document.getElementById('static-toggle').checked = isStaticEnabled;
+            document.getElementById('rotation-speed-slider').value = initialRotationSpeed;
+            document.getElementById('lifespan-toggle').checked = lifespanEnabled;
+            document.getElementById('lifespan-toggle').dispatchEvent(new Event('change'));
+            document.getElementById('lifespan-slider').value = objectLifespan / 1000;
+            document.getElementById('density-slider').value = objectDensity;
+            document.getElementById('spawn-speed-slider').value = spawnSpeed;
+            document.getElementById('object-collision-toggle').checked = objectCollisionsEnabled;
+            document.getElementById('max-objects-slider').value = maxObjects;
+            document.getElementById('attraction-strength-slider').value = attractionStrength;
+            document.getElementById('attraction-radius-slider').value = attractionRadius;
+            document.getElementById('explosion-strength-slider').value = explosionStrength;
+            document.getElementById('explosion-radius-slider').value = explosionRadius;
+            document.getElementById('grid-toggle').checked = gridEnabled;
+            document.getElementById('grid-toggle').dispatchEvent(new Event('change'));
+            document.getElementById('grid-color-picker').value = gridColor;
+            document.getElementById('bg-color-picker').value = backgroundColor;
+            updateBackground();
+            document.getElementById('gravity-y-slider').value = engine.world.gravity.y;
+            document.getElementById('gravity-x-slider').value = engine.world.gravity.x;
+            document.getElementById('air-friction-slider').value = engine.airFriction;
+            document.getElementById('time-scale-slider').value = engine.timing.timeScale;
+            document.getElementById('wall-bounciness-slider').value = boundaries[0].restitution;
+        }
+
         function spawnBall(x, y) {
             if (ballColors.length === 0) return; // Don't spawn if no colors are available
 
@@ -1389,6 +1564,28 @@
             document.getElementById('remove-color-btn').addEventListener('click', removeColor);
             document.getElementById('clear-balls-btn').addEventListener('click', clearBalls);
             document.getElementById('save-template-btn').addEventListener('click', saveCustomTemplate);
+
+            document.getElementById('save-state-btn').addEventListener('click', saveState);
+            const loadStateInput = document.getElementById('load-state-input');
+            document.getElementById('load-state-btn').addEventListener('click', () => {
+                loadStateInput.click();
+            });
+            loadStateInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const state = JSON.parse(event.target.result);
+                        loadState(state);
+                    } catch (error) {
+                        console.error("Error loading or parsing state file:", error);
+                        alert("Failed to load state. The file might be corrupted or in the wrong format.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; // Reset input so same file can be loaded again
+            });
 
             const pauseBtn = document.getElementById('pause-btn');
             pauseBtn.addEventListener('click', () => {
