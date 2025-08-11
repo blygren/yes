@@ -711,6 +711,9 @@
                     <button id="load-state-btn" class="control-btn">Load State</button>
                     <input type="file" id="load-state-input" style="display: none;" accept=".json">
                 </div>
+                <div class="setting-group">
+                    <button id="reset-settings-btn" class="control-btn" style="background-color: #c0392b;">Reset All Settings</button>
+                </div>
             </div>
             <hr>
             <div class="setting-group">
@@ -1389,6 +1392,16 @@
                     spawnBall(clientX, clientY);
                     lastSpawnTime = now;
                 }
+            } else if (currentMode === 'delete') {
+                const bodies = Composite.allBodies(world);
+                const foundBodies = Matter.Query.point(bodies, { x: clientX, y: clientY });
+                const bodyToDelete = foundBodies.find(body => !boundaries.includes(body));
+                if (bodyToDelete) {
+                    if (bodyToDelete.lifespanTimeout) {
+                        clearTimeout(bodyToDelete.lifespanTimeout);
+                    }
+                    Composite.remove(world, bodyToDelete);
+                }
             }
             // For 'attract' mode, we don't need to do anything here because
             // the mouse constraint automatically updates mouse.position,
@@ -1509,6 +1522,48 @@
         mouseConstraint.collisionFilter.mask = 0;
 
 
+        function resetAllSettings() {
+            // Reset all settings to their default values
+            ballRadius = 20;
+            randomSizesEnabled = false;
+            ballColors = ['#C44569', '#D6A2E8', '#786FA6', '#596275', '#2C3A47'];
+            ballBounciness = 0.7;
+            objectFriction = 0.1;
+            objectStaticFriction = 0.5;
+            randomRotationEnabled = false;
+            isStaticEnabled = false;
+            initialRotationSpeed = 0;
+            lifespanEnabled = false;
+            objectLifespan = 5000;
+            selectedShape = { type: 'circle' };
+            objectDensity = 0.001;
+            spawnSpeed = 20;
+            objectCollisionsEnabled = true;
+            maxObjects = 500;
+            attractionStrength = 1;
+            attractionRadius = 200;
+            explosionStrength = 0.05;
+            explosionRadius = 150;
+            gridEnabled = true;
+            gridColor = '#0000FF';
+            backgroundColor = '#1a1a1a';
+
+            engine.world.gravity.y = 1;
+            engine.world.gravity.x = 0;
+            engine.airFriction = 0.01;
+            engine.timing.timeScale = 1;
+            boundaries.forEach(wall => wall.restitution = 1);
+
+            // Reset UI that isn't covered by updateUIFromState
+            document.getElementById('toolbar-toggle').checked = true;
+            document.getElementById('bottom-toolbar').classList.remove('hidden');
+            document.getElementById('accelerometer-toggle').checked = false;
+            document.getElementById('accelerometer-toggle').dispatchEvent(new Event('change'));
+
+            updateUIFromState();
+            alert('All settings have been reset to their default values.');
+        }
+
         // Initialize color pickers and controls
         document.addEventListener('DOMContentLoaded', () => {
             customTemplates = getCustomTemplates();
@@ -1585,6 +1640,12 @@
                 };
                 reader.readAsText(file);
                 e.target.value = ''; // Reset input so same file can be loaded again
+            });
+
+            document.getElementById('reset-settings-btn').addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset all settings to their defaults? This cannot be undone.')) {
+                    resetAllSettings();
+                }
             });
 
             const pauseBtn = document.getElementById('pause-btn');
