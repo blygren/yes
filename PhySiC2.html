@@ -1181,6 +1181,9 @@
             isMouseDown = true;
             if (currentMode === 'spawn') {
                 spawnBall(clientX, clientY); // Spawn one ball on initial click
+            } else if (currentMode === 'attract') {
+                // This just activates the attraction in the beforeUpdate loop
+                // by setting isMouseDown to true.
             }
             
             // Start interval spawning
@@ -1200,15 +1203,21 @@
 
         let lastSpawnTime = 0;
         function handleInteractionMove(e) {
-            if (isMouseDown && currentMode === 'spawn') {
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            if (!isMouseDown) return;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            if (currentMode === 'spawn') {
                 const now = Date.now();
                 if (now - lastSpawnTime > 1000 / spawnSpeed) {
                     spawnBall(clientX, clientY);
                     lastSpawnTime = now;
                 }
             }
+            // For 'attract' mode, we don't need to do anything here because
+            // the mouse constraint automatically updates mouse.position,
+            // which is used by the 'beforeUpdate' event.
         }
 
 
@@ -1526,7 +1535,7 @@
             });
 
             Events.on(engine, 'beforeUpdate', () => {
-                if (currentMode === 'attract' && mouse.position.x) {
+                if (currentMode === 'attract' && isMouseDown && mouse.position.x) {
                     const bodies = Composite.allBodies(world);
                     const basePullForce = 0.0005;
                     const pullForce = basePullForce * attractionStrength;
