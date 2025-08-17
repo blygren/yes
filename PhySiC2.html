@@ -1014,7 +1014,12 @@
         const friendsOfPhysicTemplates = {
             "platynium": ["#00FFFF", "#40E0D0", "#48D1CC", "#20B2AA", "#00CED1"],
             "treeMaine": ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF"],
-            "the attack master": ["#000000", "#1C1C1C", "#282828", "#363636", "#424242"]
+            "the attack master": ["#000000", "#1C1C1C", "#282828", "#363636", "#424242"],
+            "burple": ["#8A2BE2", "#9400D3", "#9932CC", "#4B0082", "#6A5ACD"],
+            "wobbly bob": ["#FFFF00", "#000000"],
+            "Hampter": ["#D2B48C", "#F5DEB3", "#FFFFFF", "#FFC0CB", "#A0522D"],
+            "HarroldBobin": ["#ADFF2F", "#FFFF00", "#32CD32", "#FFD700", "#228B22"],
+            "jerry": ["#FF69B4", "#A52A2A", "#32CD32", "#FFA500", "#00FFFF"]
         };
 
         function hexToRgba(hex, alpha) {
@@ -1633,6 +1638,7 @@
             attractBtn.addEventListener('click', () => {
                 currentMode = 'attract';
                 mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+               
                 setActiveButton(attractBtn);
             });
 
@@ -1643,7 +1649,7 @@
             });
 
             explodeBtn.addEventListener('click', () => {
-                currentMode = 'explode';
+                               currentMode = 'explode';
                 mouseConstraint.collisionFilter.mask = 0; // Disable dragging
                 setActiveButton(explodeBtn);
             });
