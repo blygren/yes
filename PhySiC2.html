@@ -723,10 +723,6 @@
                     <input type="range" id="wall-bounciness-slider" min="0" max="1.5" value="1" step="0.05">
                 </div>
                 <div class="setting-group">
-                    <label for="max-objects-slider">Max Objects</label>
-                    <input type="range" id="max-objects-slider" min="50" max="1000" value="500" step="10">
-                </div>
-                <div class="setting-group">
                     <label for="attraction-strength-slider">Attraction Strength</label>
                     <input type="range" id="attraction-strength-slider" min="0.1" max="10" value="1" step="0.1">
                 </div>
@@ -875,7 +871,6 @@
         let spawnSpeed = 20; // Balls per second
         let customTemplates = {};
         let objectCollisionsEnabled = true;
-        let maxObjects = 500;
         let attractionStrength = 1;
         let attractionRadius = 200;
         let explosionStrength = 0.05;
@@ -1130,7 +1125,6 @@
                     objectDensity,
                     spawnSpeed,
                     objectCollisionsEnabled,
-                    maxObjects,
                     attractionStrength,
                     attractionRadius,
                     explosionStrength,
@@ -1205,7 +1199,6 @@
             objectDensity = s.objectDensity;
             spawnSpeed = s.spawnSpeed;
             objectCollisionsEnabled = s.objectCollisionsEnabled;
-            maxObjects = s.maxObjects;
             attractionStrength = s.attractionStrength;
             attractionRadius = s.attractionRadius;
             explosionStrength = s.explosionStrength;
@@ -1259,7 +1252,6 @@
             document.getElementById('density-slider').value = objectDensity;
             document.getElementById('spawn-speed-slider').value = spawnSpeed;
             document.getElementById('object-collision-toggle').checked = objectCollisionsEnabled;
-            document.getElementById('max-objects-slider').value = maxObjects;
             document.getElementById('attraction-strength-slider').value = attractionStrength;
             document.getElementById('attraction-radius-slider').value = attractionRadius;
             document.getElementById('explosion-strength-slider').value = explosionStrength;
@@ -1278,18 +1270,6 @@
 
         function spawnBall(x, y) {
             if (ballColors.length === 0) return; // Don't spawn if no colors are available
-
-            const allBodies = Composite.allBodies(world);
-            const dynamicBodies = allBodies.filter(body => !body.isStatic);
-            if (dynamicBodies.length >= maxObjects) {
-                const oldestBody = dynamicBodies.find(body => !boundaries.includes(body));
-                if (oldestBody) {
-                     if (oldestBody.lifespanTimeout) {
-                        clearTimeout(oldestBody.lifespanTimeout);
-                    }
-                    Composite.remove(world, oldestBody);
-                }
-            }
 
             const randomColor = ballColors[Math.floor(Math.random() * ballColors.length)];
             const size = randomSizesEnabled ? Matter.Common.random(minBallRadius, maxBallRadius) : ballRadius;
@@ -1344,7 +1324,7 @@
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
             // Prevent spawning balls when clicking on UI elements
-            if (e.target.closest('#settings-panel') || e.target.closest('#bottom-toolbar') || e.target.closest('#library-panel')) {
+            if (e.target.closest('#settings-panel') || e.target.closest('#bottom-toolbar') || e.target.closest('#library-panel') || e.target.closest('#templates-library') || e.target.closest('#shapes-library')) {
                 return;
             }
 
@@ -1363,6 +1343,8 @@
                 return;
             }
 
+            isMouseDown = true;
+
             if (currentMode === 'delete') {
                 const bodies = Composite.allBodies(world);
                 const foundBodies = Matter.Query.point(bodies, { x: clientX, y: clientY });
@@ -1373,11 +1355,7 @@
                     }
                     Composite.remove(world, bodyToDelete);
                 }
-                return;
-            }
-
-            isMouseDown = true;
-            if (currentMode === 'spawn') {
+            } else if (currentMode === 'spawn') {
                 spawnBall(clientX, clientY); // Spawn one ball on initial click
             } else if (currentMode === 'attract') {
                 // This just activates the attraction in the beforeUpdate loop
@@ -1415,13 +1393,15 @@
             } else if (currentMode === 'delete') {
                 const bodies = Composite.allBodies(world);
                 const foundBodies = Matter.Query.point(bodies, { x: clientX, y: clientY });
-                const bodyToDelete = foundBodies.find(body => !boundaries.includes(body));
-                if (bodyToDelete) {
-                    if (bodyToDelete.lifespanTimeout) {
-                        clearTimeout(bodyToDelete.lifespanTimeout);
+                // Delete all found bodies under the cursor, not just the first one
+                foundBodies.forEach(body => {
+                    if (!boundaries.includes(body)) {
+                        if (body.lifespanTimeout) {
+                            clearTimeout(body.lifespanTimeout);
+                        }
+                        Composite.remove(world, body);
                     }
-                    Composite.remove(world, bodyToDelete);
-                }
+                });
             }
             // For 'attract' mode, we don't need to do anything here because
             // the mouse constraint automatically updates mouse.position,
@@ -1559,7 +1539,6 @@
             objectDensity = 0.001;
             spawnSpeed = 20;
             objectCollisionsEnabled = true;
-            maxObjects = 500;
             attractionStrength = 1;
             attractionRadius = 200;
             explosionStrength = 0.05;
@@ -1790,10 +1769,6 @@
             document.getElementById('wall-bounciness-slider').addEventListener('input', (e) => {
                 const bounciness = parseFloat(e.target.value);
                 boundaries.forEach(wall => wall.restitution = bounciness);
-            });
-
-            document.getElementById('max-objects-slider').addEventListener('input', (e) => {
-                maxObjects = parseInt(e.target.value, 10);
             });
 
             document.getElementById('attraction-strength-slider').addEventListener('input', (e) => {
