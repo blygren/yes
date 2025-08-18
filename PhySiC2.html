@@ -734,6 +734,13 @@
             <hr>
             <div class="setting-group">
                 <h4>World Settings</h4>
+                <div class="setting">
+                    <label for="invisible-welds-toggle">Invisible Welds</label>
+                    <label class="switch">
+                        <input type="checkbox" id="invisible-welds-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <div class="setting-group">
                     <label for="wall-bounciness-slider">Wall Bounciness</label>
                     <input type="range" id="wall-bounciness-slider" min="0" max="1.5" value="1" step="0.05">
@@ -894,6 +901,8 @@
         let explosionStrength = 0.05;
         let explosionRadius = 150;
         let shockwaves = [];
+        let isPaused = false; // Add pause state tracking
+        let invisibleWeldsEnabled = false;
 
         // Background settings
         let gridEnabled = true;
@@ -1406,7 +1415,7 @@
                             length: Matter.Vector.magnitude(Matter.Vector.sub(weldingFirstBody.position, clickedBody.position)),
                             stiffness: 0.8,
                             render: {
-                                visible: true,
+                                visible: !invisibleWeldsEnabled,
                                 strokeStyle: '#27ae60',
                                 lineWidth: 2
                             }
@@ -1594,41 +1603,41 @@
 
             spawnBtn.addEventListener('click', () => {
                 currentMode = 'spawn';
-                mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
                 clearWeldingSelection();
                 setActiveButton(spawnBtn);
             });
 
             dragBtn.addEventListener('click', () => {
                 currentMode = 'drag';
-                mouseConstraint.collisionFilter.mask = -1; // Enable dragging
+                mouseConstraint.collisionFilter.mask = -1; // Always enable dragging for drag mode
                 clearWeldingSelection();
                 setActiveButton(dragBtn);
             });
 
             attractBtn.addEventListener('click', () => {
                 currentMode = 'attract';
-                mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
                 clearWeldingSelection();
                 setActiveButton(attractBtn);
             });
 
             weldBtn.addEventListener('click', () => {
                 currentMode = 'weld';
-                mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
                 setActiveButton(weldBtn);
             });
 
             deleteBtn.addEventListener('click', () => {
                 currentMode = 'delete';
-                mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
                 clearWeldingSelection();
                 setActiveButton(deleteBtn);
             });
 
             explodeBtn.addEventListener('click', () => {
                 currentMode = 'explode';
-                mouseConstraint.collisionFilter.mask = 0; // Disable dragging
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
                 clearWeldingSelection();
                 setActiveButton(explodeBtn);
             });
@@ -1668,7 +1677,21 @@
 
             const pauseBtn = document.getElementById('pause-btn');
             pauseBtn.addEventListener('click', () => {
-                                                             runner.enabled = !runner.enabled;
+                runner.enabled = !runner.enabled;
+                isPaused = !runner.enabled; // Update pause state
+                
+                // When paused, always enable dragging regardless of current mode
+                if (isPaused) {
+                    mouseConstraint.collisionFilter.mask = -1; // Enable dragging
+                } else {
+                    // When unpaused, restore mode-appropriate dragging behavior
+                    if (currentMode === 'drag') {
+                        mouseConstraint.collisionFilter.mask = -1;
+                    } else {
+                        mouseConstraint.collisionFilter.mask = 0;
+                    }
+                }
+                
                 pauseBtn.textContent = runner.enabled ? 'Pause Simulation' : 'Resume Simulation';
             });
 
@@ -1808,6 +1831,10 @@
 
             document.getElementById('explosion-radius-slider').addEventListener('input', (e) => {
                 explosionRadius = parseInt(e.target.value, 10);
+            });
+
+            document.getElementById('invisible-welds-toggle').addEventListener('change', (e) => {
+                invisibleWeldsEnabled = e.target.checked;
             });
 
             Events.on(render, 'afterRender', (event) => {
