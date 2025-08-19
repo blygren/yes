@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Camera</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f0f0; color: #333; text-align: center; padding: 1em; }
+        h1 { color: #111; }
+        video { background-color: black; width: 100%; max-width: 800px; border-radius: 8px; margin-top: 1em; }
+        #local-video { display: none; }
+        #status { font-size: 1.2em; margin: 1em 0; }
+        #qr-container { background-color: white; padding: 20px; display: inline-block; border-radius: 8px; margin-top: 1em; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 1em; cursor: pointer; margin-top: 1em; }
+        button:hover { background-color: #0056b3; }
+        #camera-ui { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Web Camera</h1>
+    <div id="status">Initializing...</div>
+
+    <!-- Viewer UI (PC) -->
+    <div id="viewer-ui">
+        <h2>PC (Viewer)</h2>
+        <p>Scan this QR code with your phone to connect.</p>
+        <div id="qr-container"></div>
+    </div>
+
+    <!-- Camera UI (Phone) -->
+    <div id="camera-ui">
+        <h2>Phone (Camera)</h2>
+        <button id="scan-btn">Scan QR Code</button>
+        <p>Your camera view:</p>
+        <video id="local-video" autoplay muted playsinline></video>
+    </div>
+
+    <!-- Remote video display -->
+    <video id="remote-video" autoplay playsinline></video>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const viewerUi = document.getElementById('viewer-ui');
+        const cameraUi = document.getElementById('camera-ui');
+        const scanBtn = document.getElementById('scan-btn');
+        const qrContainer = document.getElementById('qr-container');
+        const localVideo = document.getElementById('local-video');
+        const remoteVideo = document.getElementById('remote-video');
+
+        let peer = null;
+        let currentCall = null;
+
+        function initialize() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const remotePeerId = urlParams.get('id');
+
+            if (remotePeerId) {
+                // This is the Camera device
+                setupCamera(remotePeerId);
+            } else {
+                // This is the Viewer device
+                setupViewer();
+            }
+        }
+
+        function setupViewer() {
+            viewerUi.style.display = 'block';
+            remoteVideo.style.display = 'none';
+            statusEl.textContent = 'Waiting for connection...';
+
+            peer = new Peer();
+            peer.on('open', id => {
+                const connectUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
+                new QRCode(qrContainer, {
+                    text: connectUrl,
+                    width: 256,
+                    height: 256,
+                });
+            });
+
+            peer.on('call', call => {
+                currentCall = call;
+                statusEl.textContent = 'Connected!';
+                viewerUi.style.display = 'none';
+                remoteVideo.style.display = 'block';
+                
+                call.on('stream', remoteStream => {
+                    remoteVideo.srcObject = remoteStream;
+                });
+
+                call.on('close', () => {
+                    statusEl.textContent = 'Connection closed. Refresh to start over.';
+                    remoteVideo.style.display = 'none';
+                });
+            });
+
+            peer.on('error', handleError);
+        }
+
+        async function setupCamera(remotePeerId) {
+            viewerUi.style.display = 'none';
+            cameraUi.style.display = 'block';
+            statusEl.textContent = 'Ready to connect as camera.';
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+                localVideo.srcObject = stream;
+                localVideo.style.display = 'block';
+
+                peer = new Peer();
+                peer.on('open', () => {
+                    statusEl.textContent = `Connecting to ${remotePeerId}...`;
+                    currentCall = peer.call(remotePeerId, stream);
+                    
+                    currentCall.on('close', () => {
+                        statusEl.textContent = 'Connection closed.';
+                        localVideo.style.display = 'none';
+                    });
+                });
+                
+                peer.on('error', handleError);
+
+            } catch (err) {
+                handleError(err);
+            }
+        }
+
+        scanBtn.addEventListener('click', async () => {
+            if ('NDEFReader' in window) {
+                try {
+                    const ndef = new NDEFReader();
+                    await ndef.scan();
+                    statusEl.textContent = "Scanning for QR Code...";
+
+                    ndef.addEventListener("reading", ({ message }) => {
+                        const decoder = new TextDecoder();
+                        const url = decoder.decode(message.records[0].data);
+                        window.location.href = url;
+                    });
+                } catch (error) {
+                    handleError(error);
+                    statusEl.textContent = 'Scan failed. Please ensure your browser supports WebNFC and you tap the QR code.';
+                }
+            } else {
+                statusEl.textContent = 'WebNFC (for QR scanning) is not supported on this browser. Please use Chrome on Android.';
+            }
+        });
+
+        function handleError(err) {
+            console.error(err);
+            statusEl.textContent = `Error: ${err.message}. Check console for details.`;
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
