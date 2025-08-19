@@ -3,186 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Camera</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📷</text></svg>">
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <title>WebRTC P2P Video Call</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f0f0; color: #333; text-align: center; padding: 1em; margin: 0; }
-        h1 { color: #111; }
-        video { background-color: black; width: 100%; max-width: 800px; border-radius: 8px; margin-top: 1em; }
-        #local-video { display: none; }
-        #status { font-size: 1.2em; margin: 1em 0; min-height: 1.5em; }
-        #qr-container { background-color: white; padding: 20px; display: inline-block; border-radius: 8px; margin-top: 1em; }
-        button { background-color: #007bff; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 1.2em; cursor: pointer; margin: 0.5em; }
-        button:hover { background-color: #0056b3; }
-        #initial-choice, #viewer-ui, #camera-ui { display: none; }
-        #reader { width: 90%; max-width: 500px; margin: 1em auto; border: 2px solid #ccc; border-radius: 8px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f4f4f4; color: #333; }
+        h1, h2 { color: #111; }
+        .container { display: flex; justify-content: space-between; flex-wrap: wrap; }
+        .video-wrapper { width: 100%; max-width: 360px; margin-bottom: 20px; }
+        video { width: 100%; border-radius: 8px; background-color: #000; }
+        .controls { background-color: #fff; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        textarea { width: 100%; height: 100px; margin-top: 5px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc; padding: 8px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px; margin-top: 5px; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #0056b3; }
+        hr { border: 0; height: 1px; background-color: #ddd; margin: 20px 0; }
+        p { margin-top: 0; }
     </style>
 </head>
 <body>
-    <h1>Web Camera</h1>
-    <div id="status">Initializing...</div>
 
-    <!-- Initial Role Selection -->
-    <div id="initial-choice">
-        <button id="become-viewer-btn">Become Viewer (PC)</button>
-        <button id="become-camera-btn">Become Camera (Phone)</button>
+    <h1>WebRTC P2P Video Call</h1>
+    <p>A simple peer-to-peer video call with no server. You'll need to exchange connection details manually with your friend (e.g., via a chat app).</p>
+
+    <div class="container">
+        <div class="video-wrapper">
+            <h2>You</h2>
+            <video id="localVideo" autoplay muted playsinline></video>
+        </div>
+        <div class="video-wrapper">
+            <h2>Friend</h2>
+            <video id="remoteVideo" autoplay playsinline></video>
+        </div>
     </div>
 
-    <!-- Viewer UI (PC) -->
-    <div id="viewer-ui">
-        <h2>PC (Viewer)</h2>
-        <p>Scan this QR code with your phone to connect.</p>
-        <div id="qr-container"></div>
-    </div>
+    <div class="controls">
+        <button id="startButton">1. Start Camera</button>
+        <hr>
+        
+        <h2>For Caller</h2>
+        <p>Click to generate an offer and send it to your friend.</p>
+        <button id="createOfferButton" disabled>2. Create Offer</button>
+        <textarea id="offerSdp" readonly placeholder="Offer will appear here..."></textarea>
+        <p>Paste the answer from your friend below and add it.</p>
+        <textarea id="answerSdp" placeholder="Paste answer here..."></textarea>
+        <button id="addAnswerButton" disabled>4. Add Answer</button>
 
-    <!-- Camera UI (Phone) -->
-    <div id="camera-ui">
-        <h2>Phone (Camera)</h2>
-        <div id="reader"></div>
-        <p>Your camera view (will appear after connecting):</p>
-        <video id="local-video" autoplay muted playsinline></video>
-    </div>
+        <hr>
 
-    <!-- Remote video display -->
-    <video id="remote-video" autoplay playsinline></video>
+        <h2>For Receiver</h2>
+        <p>Paste the offer from your friend below.</p>
+        <textarea id="offerToReceive" placeholder="Paste offer here..."></textarea>
+        <button id="createAnswerButton" disabled>3. Create Answer</button>
+        <p>Send the generated answer back to the caller.</p>
+        <textarea id="answerSdpResponse" readonly placeholder="Answer will appear here..."></textarea>
+    </div>
 
     <script>
-        const statusEl = document.getElementById('status');
-        const initialChoiceUi = document.getElementById('initial-choice');
-        const viewerUi = document.getElementById('viewer-ui');
-        const cameraUi = document.getElementById('camera-ui');
-        const qrContainer = document.getElementById('qr-container');
-        const localVideo = document.getElementById('local-video');
-        const remoteVideo = document.getElementById('remote-video');
-        const becomeViewerBtn = document.getElementById('become-viewer-btn');
-        const becomeCameraBtn = document.getElementById('become-camera-btn');
+        const startButton = document.getElementById('startButton');
+        const createOfferButton = document.getElementById('createOfferButton');
+        const createAnswerButton = document.getElementById('createAnswerButton');
+        const addAnswerButton = document.getElementById('addAnswerButton');
+        
+        const offerSdp = document.getElementById('offerSdp');
+        const answerSdp = document.getElementById('answerSdp');
+        const offerToReceive = document.getElementById('offerToReceive');
+        const answerSdpResponse = document.getElementById('answerSdpResponse');
 
-        let peer = null;
-        let currentCall = null;
-        let html5QrCode = null;
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
 
-        const peerConfig = {
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun.services.mozilla.com' },
-                ]
-            }
+        let localStream;
+        let peerConnection;
+        const config = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         };
 
-        function initialize() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const remotePeerId = urlParams.get('id');
-
-            if (remotePeerId) {
-                // URL has an ID, so this must be the camera.
-                startCamera(remotePeerId);
-            } else {
-                // No ID in URL, show choice.
-                initialChoiceUi.style.display = 'block';
-                statusEl.textContent = 'Choose your role.';
-            }
-        }
-
-        becomeViewerBtn.addEventListener('click', () => {
-            initialChoiceUi.style.display = 'none';
-            viewerUi.style.display = 'block';
-            remoteVideo.style.display = 'none';
-            statusEl.textContent = 'Waiting for connection...';
-
-            peer = new Peer(peerConfig);
-            peer.on('open', id => {
-                const connectUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
-                new QRCode(qrContainer, {
-                    text: connectUrl,
-                    width: 256,
-                    height: 256,
-                });
-                statusEl.textContent = 'Viewer ready. Scan QR code with phone.';
-            });
-
-            peer.on('call', call => {
-                currentCall = call;
-                statusEl.textContent = 'Connected!';
-                viewerUi.style.display = 'none';
-                remoteVideo.style.display = 'block';
-                
-                call.on('stream', remoteStream => {
-                    remoteVideo.srcObject = remoteStream;
-                });
-
-                call.on('close', () => {
-                    statusEl.textContent = 'Connection closed. Refresh to start over.';
-                    remoteVideo.style.display = 'none';
-                    viewerUi.style.display = 'block';
-                });
-            });
-
-            peer.on('error', handleError);
-        });
-
-        becomeCameraBtn.addEventListener('click', () => {
-            initialChoiceUi.style.display = 'none';
-            cameraUi.style.display = 'block';
-            statusEl.textContent = 'Use camera to scan QR code from viewer screen.';
-            html5QrCode = new Html5Qrcode("reader");
-            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-                html5QrCode.stop().then(() => {
-                    window.location.href = decodedText;
-                }).catch(err => console.error("Failed to stop scanner", err));
-            };
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-                .catch(err => handleError(new Error("Could not start QR scanner.")));
-        });
-
-        async function startCamera(remotePeerId) {
-            initialChoiceUi.style.display = 'none';
-            viewerUi.style.display = 'none';
-            cameraUi.style.display = 'block';
-            document.getElementById('reader').style.display = 'none'; // Hide scanner
-            
+        async function start() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
-                localVideo.srcObject = stream;
-                localVideo.style.display = 'block';
-
-                peer = new Peer(peerConfig);
-                peer.on('open', () => {
-                    statusEl.textContent = `Connecting to viewer...`;
-                    currentCall = peer.call(remotePeerId, stream);
-                    
-                    if (!currentCall) {
-                        handleError(new Error("Could not establish call. Please ensure viewer is ready."));
-                        return;
-                    }
-
-                    currentCall.on('close', () => {
-                        statusEl.textContent = 'Connection closed.';
-                        localVideo.style.display = 'none';
-                    });
-                });
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
                 
-                peer.on('error', handleError);
-
-            } catch (err) {
-                handleError(err);
+                startButton.disabled = true;
+                createOfferButton.disabled = false;
+                createAnswerButton.disabled = false;
+            } catch (error) {
+                console.error('Error accessing media devices.', error);
             }
         }
 
-        function handleError(err) {
-            console.error(err);
-            statusEl.textContent = `Error: ${err.message}. Please refresh and try again.`;
-            if (html5QrCode) {
-                html5QrCode.stop().catch(e => {});
-            }
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(config);
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    // This event fires multiple times, but we'll just wait for the final description
+                } else {
+                    // All ICE candidates have been gathered
+                    const sdp = JSON.stringify(peerConnection.localDescription);
+                    if (peerConnection.localDescription.type === 'offer') {
+                        offerSdp.value = sdp;
+                    } else {
+                        answerSdpResponse.value = sdp;
+                    }
+                }
+            };
+            peerConnection.ontrack = event => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
         }
 
-        initialize();
+        async function createOffer() {
+            createPeerConnection();
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            createOfferButton.disabled = true;
+            addAnswerButton.disabled = false;
+        }
+
+        async function createAnswer() {
+            if (!offerToReceive.value) {
+                alert('Please paste the offer from the caller first.');
+                return;
+            }
+            createPeerConnection();
+            const offer = JSON.parse(offerToReceive.value);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            createAnswerButton.disabled = true;
+        }
+
+        async function addAnswer() {
+            if (!answerSdp.value) {
+                alert('Please paste the answer from the receiver first.');
+                return;
+            }
+            const answer = JSON.parse(answerSdp.value);
+            if (!peerConnection.currentRemoteDescription) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            }
+            addAnswerButton.disabled = true;
+        }
+
+        startButton.onclick = start;
+        createOfferButton.onclick = createOffer;
+        createAnswerButton.onclick = createAnswer;
+        addAnswerButton.onclick = addAnswer;
     </script>
+
 </body>
 </html>
