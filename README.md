@@ -114,11 +114,9 @@
 
 [Heatmap](https://blygren.github.io/yes/heatmap.html)
 
-[PhySic](https://blygren.github.io/yes/PhySiC.html)
-
 [PhySic2](https://blygren.github.io/yes/PhySiC2.html)
 
 [rgbballs](https://blygren.github.io/yes/RGBballs.html)
 
-[rgbballs](https://blygren.github.io/yes/webrtc_call.html)
+[Camera](https://blygren.github.io/yes/webrtc_call.html)
 
