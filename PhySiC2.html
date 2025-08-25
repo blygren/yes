@@ -678,7 +678,7 @@
             </div>
             <div class="setting-group">
                 <label for="density-slider">Density (Weight)</label>
-                <input type="range" id="density-slider" min="0.0001" max="0.01" value="0.001" step="0.0001">
+                <input type="range" id="density-slider" min="0.0001" max="0.015" value="0.001" step="0.0001">
             </div>
             <div class="setting">
                 <label for="object-collision-toggle">Object Collisions</label>
@@ -698,6 +698,13 @@
                 <label for="rotation-toggle">Random Rotation</label>
                 <label class="switch">
                     <input type="checkbox" id="rotation-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="faces-toggle">Show Faces</label>
+                <label class="switch">
+                    <input type="checkbox" id="faces-toggle">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -889,6 +896,7 @@
         let isStaticEnabled = false;
         let initialRotationSpeed = 0;
         let lifespanEnabled = false;
+        let facesEnabled = false;
         let objectLifespan = 5000; // in ms
         let selectedShape = { type: 'circle' };
         let objectDensity = 0.001;
@@ -1160,6 +1168,7 @@
                     isStaticEnabled,
                     initialRotationSpeed,
                     lifespanEnabled,
+                    facesEnabled,
                     objectLifespan,
                     selectedShape,
                     objectDensity,
@@ -1202,6 +1211,18 @@
                         render: {
                             fillStyle: body.render.fillStyle
                         },
+                        hasFace: body.hasFace,
+                        blinkTimer: body.blinkTimer,
+                        isBlinking: body.isBlinking,
+                        blinkDuration: body.blinkDuration,
+                        damage: body.damage,
+                        isDead: body.isDead,
+                        isBeingDragged: body.isBeingDragged,
+                        emotionTimer: body.emotionTimer,
+                        lookAtTarget: body.lookAtTarget ? body.lookAtTarget.id : null,
+                        lookTimer: body.lookTimer,
+                        isLooking: body.isLooking,
+                        lookDuration: body.lookDuration,
                         collisionFilter: { ...body.collisionFilter },
                         vertices: body.vertices.map(v => ({ x: v.x, y: v.y }))
                     };
@@ -1234,6 +1255,7 @@
             isStaticEnabled = s.isStaticEnabled;
             initialRotationSpeed = s.initialRotationSpeed;
             lifespanEnabled = s.lifespanEnabled;
+            facesEnabled = s.facesEnabled;
             objectLifespan = s.objectLifespan;
             selectedShape = s.selectedShape;
             objectDensity = s.objectDensity;
@@ -1264,6 +1286,20 @@
                     render: { ...obj.render },
                     collisionFilter: { ...obj.collisionFilter }
                 });
+                if (obj.hasFace) {
+                    body.hasFace = true;
+                    body.blinkTimer = obj.blinkTimer || Math.random() * 300 + 60;
+                    body.isBlinking = obj.isBlinking || false;
+                    body.blinkDuration = obj.blinkDuration || 0;
+                    body.damage = obj.damage || 0;
+                    body.isDead = obj.isDead || false;
+                    body.isBeingDragged = obj.isBeingDragged || false;
+                    body.emotionTimer = obj.emotionTimer || 0;
+                    body.lookAtTarget = null; // Reset look target on load
+                    body.lookTimer = obj.lookTimer || Math.random() * 300 + 120;
+                    body.isLooking = obj.isLooking || false;
+                    body.lookDuration = obj.lookDuration || 0;
+                }
                 Body.setVelocity(body, obj.velocity);
                 Body.setAngularVelocity(body, obj.angularVelocity);
                 Body.setAngle(body, obj.angle); // Set angle after creation
@@ -1287,6 +1323,7 @@
             document.getElementById('static-toggle').checked = isStaticEnabled;
             document.getElementById('rotation-speed-slider').value = initialRotationSpeed;
             document.getElementById('lifespan-toggle').checked = lifespanEnabled;
+            document.getElementById('faces-toggle').checked = facesEnabled;
             document.getElementById('lifespan-toggle').dispatchEvent(new Event('change'));
             document.getElementById('lifespan-slider').value = objectLifespan / 1000;
             document.getElementById('density-slider').value = objectDensity;
@@ -1350,6 +1387,21 @@
                 default:
                     ball = Bodies.circle(x, y, size, options);
                     break;
+            }
+
+            if (facesEnabled) {
+                ball.hasFace = true;
+                ball.blinkTimer = Math.random() * 600 + 480; // Random initial blink timer (8-20 seconds)
+                ball.isBlinking = false;
+                ball.blinkDuration = 0;
+                ball.damage = 0; // Track accumulated damage
+                ball.isDead = false; // Death state
+                ball.isBeingDragged = false; // Dragging state
+                ball.emotionTimer = 0; // Timer for temporary emotions
+                ball.lookAtTarget = null; // Body to look at
+                ball.lookTimer = Math.random() * 300 + 120; // Random look timer (2-7 seconds)
+                ball.isLooking = false; // Currently looking at something
+                ball.lookDuration = 0; // How long been looking
             }
 
             if (lifespanEnabled && !isStaticEnabled) {
@@ -1542,6 +1594,7 @@
             isStaticEnabled = false;
             initialRotationSpeed = 0;
             lifespanEnabled = false;
+            facesEnabled = false;
             objectLifespan = 5000;
             selectedShape = { type: 'circle' };
             objectDensity = 0.001;
@@ -1797,6 +1850,10 @@
                 randomRotationEnabled = e.target.checked;
             });
 
+            document.getElementById('faces-toggle').addEventListener('change', (e) => {
+                facesEnabled = e.target.checked;
+            });
+
             document.getElementById('rotation-speed-slider').addEventListener('input', (e) => {
                 initialRotationSpeed = parseFloat(e.target.value);
             });
@@ -1839,6 +1896,203 @@
 
             Events.on(render, 'afterRender', (event) => {
                 const context = render.context;
+
+                // Draw faces on bodies
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body.hasFace) {
+                        // Update blinking logic (only if alive)
+                        if (!body.isDead) {
+                            if (body.isBlinking) {
+                                body.blinkDuration++;
+                                if (body.blinkDuration >= 8) { // Blink lasts 8 frames
+                                    body.isBlinking = false;
+                                    body.blinkDuration = 0;
+                                    body.blinkTimer = Math.random() * 600 + 480; // Next blink in 8-20 seconds
+                                }
+                            } else {
+                                body.blinkTimer--;
+                                if (body.blinkTimer <= 0) {
+                                    body.isBlinking = true;
+                                    body.blinkDuration = 0;
+                                }
+                            }
+                        }
+
+                        // Update emotion timer
+                        if (body.emotionTimer > 0) {
+                            body.emotionTimer--;
+                        }
+
+                        // Update looking behavior (only if alive and not being dragged)
+                        if (!body.isDead && !body.isBeingDragged) {
+                            if (body.isLooking) {
+                                body.lookDuration++;
+                                // Stop looking after 5-7 seconds
+                                if (body.lookDuration >= Math.random() * 120 + 300) {
+                                    body.isLooking = false;
+                                    body.lookAtTarget = null;
+                                    body.lookDuration = 0;
+                                    body.lookTimer = Math.random() * 300 + 120; // Next look in 2-7 seconds
+                                }
+                            } else {
+                                body.lookTimer--;
+                                if (body.lookTimer <= 0) {
+                                    // Find a nearby face to look at (more often now)
+                                    if (Math.random() < 0.6) { // 60% chance when timer expires
+                                        const nearbyBodies = bodies.filter(otherBody => 
+                                            otherBody !== body && 
+                                            otherBody.hasFace && 
+                                            !otherBody.isDead &&
+                                            Matter.Vector.magnitude(Matter.Vector.sub(body.position, otherBody.position)) < 150
+                                        );
+                                        if (nearbyBodies.length > 0) {
+                                            body.lookAtTarget = nearbyBodies[Math.floor(Math.random() * nearbyBodies.length)];
+                                            body.isLooking = true;
+                                            body.lookDuration = 0;
+                                        }
+                                    }
+                                    if (!body.isLooking) {
+                                        body.lookTimer = Math.random() * 300 + 120; // Reset timer if not looking
+                                    }
+                                }
+                            }
+                        }
+
+                        const pos = body.position;
+                        const angle = body.angle;
+                        
+                        // Find an approximate radius for non-circular shapes (consistent regardless of rotation)
+                        let radius = body.circleRadius;
+                        if (!radius) {
+                            // Calculate a consistent radius based on the body's bounds at 0 rotation
+                            const bounds = body.bounds;
+                            const width = bounds.max.x - bounds.min.x;
+                            const height = bounds.max.y - bounds.min.y;
+                            radius = Math.min(width, height) / 2 * 0.6; // Use smaller dimension for consistency
+                        }
+
+                        context.save();
+                        context.translate(pos.x, pos.y);
+                        context.rotate(angle);
+
+                        // Eyes
+                        const eyeRadius = radius * 0.15;
+                        const eyeOffsetX = radius * 0.35;
+                        const eyeOffsetY = -radius * 0.2;
+                        
+                        if (body.isDead) {
+                            // Draw X eyes for dead bodies
+                            context.strokeStyle = 'black';
+                            context.lineWidth = radius * 0.08;
+                            // Left eye X
+                            context.beginPath();
+                            context.moveTo(-eyeOffsetX - eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(-eyeOffsetX + eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.moveTo(-eyeOffsetX + eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(-eyeOffsetX - eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.stroke();
+                            // Right eye X
+                            context.beginPath();
+                            context.moveTo(eyeOffsetX - eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(eyeOffsetX + eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.moveTo(eyeOffsetX + eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(eyeOffsetX - eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.stroke();
+                        } else if (body.isBeingDragged && body.emotionTimer > 0) {
+                            // Draw scared/surprised eyes (large circles)
+                            context.fillStyle = 'white';
+                            const scaredEyeRadius = eyeRadius * 1.5;
+                            context.beginPath();
+                            context.arc(-eyeOffsetX, eyeOffsetY, scaredEyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX, eyeOffsetY, scaredEyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+
+                            // Large pupils
+                            context.fillStyle = 'black';
+                            context.beginPath();
+                            context.arc(-eyeOffsetX, eyeOffsetY, scaredEyeRadius * 0.6, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX, eyeOffsetY, scaredEyeRadius * 0.6, 0, 2 * Math.PI);
+                            context.fill();
+                        } else if (body.isBlinking) {
+                            // Draw closed eyes (horizontal lines)
+                            context.strokeStyle = 'black';
+                            context.lineWidth = radius * 0.08;
+                            context.beginPath();
+                            context.moveTo(-eyeOffsetX - eyeRadius * 0.8, eyeOffsetY);
+                            context.lineTo(-eyeOffsetX + eyeRadius * 0.8, eyeOffsetY);
+                            context.stroke();
+                            context.beginPath();
+                            context.moveTo(eyeOffsetX - eyeRadius * 0.8, eyeOffsetY);
+                            context.lineTo(eyeOffsetX + eyeRadius * 0.8, eyeOffsetY);
+                            context.stroke();
+                        } else {
+                            // Draw normal open eyes
+                            context.fillStyle = 'white';
+                            context.beginPath();
+                            context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+
+                            // Pupils
+                            context.fillStyle = 'black';
+                            
+                            // Pupils - adjust position if looking at target
+                            let pupilOffsetX = 0;
+                            let pupilOffsetY = 0;
+                            
+                            if (body.isLooking && body.lookAtTarget) {
+                                // Calculate direction to look target
+                                const lookDirection = Matter.Vector.sub(body.lookAtTarget.position, body.position);
+                                const lookAngle = Math.atan2(lookDirection.y, lookDirection.x) - angle;
+                                
+                                // Move pupils toward look direction (limited movement)
+                                pupilOffsetX = Math.cos(lookAngle) * eyeRadius * 0.3;
+                                pupilOffsetY = Math.sin(lookAngle) * eyeRadius * 0.3;
+                            }
+                            
+                            context.beginPath();
+                            context.arc(-eyeOffsetX + pupilOffsetX, eyeOffsetY + pupilOffsetY, eyeRadius * 0.5, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX + pupilOffsetX, eyeOffsetY + pupilOffsetY, eyeRadius * 0.5, 0, 2 * Math.PI);
+                            context.fill();
+                        }
+
+                        // Mouth
+                        const mouthOffsetY = radius * 0.3;
+                        const mouthWidth = radius * 0.6;
+                        context.lineWidth = radius * 0.1;
+                        context.strokeStyle = 'black';
+                        
+                        if (body.isDead) {
+                            // Draw flat line mouth for dead bodies
+                            context.beginPath();
+                            context.moveTo(-mouthWidth * 0.5, mouthOffsetY);
+                            context.lineTo(mouthWidth * 0.5, mouthOffsetY);
+                            context.stroke();
+                        } else if (body.isBeingDragged && body.emotionTimer > 0) {
+                            // Draw scared mouth (small O shape)
+                            context.beginPath();
+                            context.arc(0, mouthOffsetY, mouthWidth * 0.3, 0, 2 * Math.PI);
+                            context.stroke();
+                        } else {
+                            // Draw normal smile
+                            context.beginPath();
+                            context.arc(0, mouthOffsetY, mouthWidth, 0.2 * Math.PI, 0.8 * Math.PI);
+                            context.stroke();
+                        }
+
+                        context.restore();
+                    }
+                });
+
                 shockwaves.forEach((shockwave, index) => {
                     // Update shockwave
                     shockwave.life++;
@@ -1859,7 +2113,51 @@
                 });
             });
 
+            // Collision damage system
+            Events.on(engine, 'collisionStart', (event) => {
+                const pairs = event.pairs;
+                pairs.forEach(pair => {
+                    const { bodyA, bodyB } = pair;
+                    
+                    // Only process bodies with faces that aren't already dead
+                    [bodyA, bodyB].forEach(body => {
+                        if (body.hasFace && !body.isDead && !boundaries.includes(body)) {
+                            // Calculate impact force based on velocity
+                            const speed = Matter.Vector.magnitude(body.velocity);
+                            const damage = Math.max(0, speed - 4.8); // Damage threshold increased from 3 to 4.8 (60% higher velocity tolerance)
+                            
+                            if (damage > 0) {
+                                body.damage += damage * 0.5; // Scale damage
+                                
+                                // Check if body should die
+                                if (body.damage > 13) { // Death threshold
+                                    body.isDead = true;
+                                    body.isBlinking = false;
+                                    // Make dead bodies less bouncy
+                                    body.restitution *= 0.3;
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+
             Events.on(engine, 'beforeUpdate', () => {
+                // Check for bodies being dragged
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body.hasFace && !body.isDead) {
+                        // Check if body is being dragged by mouse constraint
+                        const wasBeingDragged = body.isBeingDragged;
+                        body.isBeingDragged = (mouseConstraint.body === body);
+                        
+                        // If just started being dragged, set emotion timer
+                        if (body.isBeingDragged && !wasBeingDragged) {
+                            body.emotionTimer = 60; // Show scared face for 1 second (60 frames)
+                        }
+                    }
+                });
+
                 if (currentMode === 'attract' && isMouseDown && mouse.position.x) {
                     const bodies = Composite.allBodies(world);
                     const basePullForce = 0.0005;
