@@ -1,0 +1,2530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Ball Simulation</title>
+    <style>
+        /* filepath: c:\Users\billy\Downloads\wasewaew - Copy\style.css */
+        body {
+            margin: 0;
+            overflow: hidden; /* Hide scrollbars */
+            /* Background properties are now controlled by script.js */
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #library-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(40, 40, 40, 0.9);
+            color: white;
+            padding: 0;
+            border-radius: 10px;
+            font-family: sans-serif;
+            width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            overflow: hidden;
+            z-index: 99;
+        }
+
+        #library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 15px;
+            background: rgba(50, 50, 50, 0.9);
+            cursor: pointer;
+        }
+
+        #library-panel h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        #toggle-library-panel-btn {
+            background: none;
+            border: 1px solid #777;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            line-height: 18px;
+            padding: 0;
+            font-size: 18px;
+        }
+
+        #library-body {
+            padding: 15px;
+            transition: all 0.3s ease;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        #library-panel.minimized #library-body {
+            padding: 0 15px;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        #settings-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(40, 40, 40, 0.9);
+            color: white;
+            padding: 0;
+            border-radius: 10px;
+            font-family: sans-serif;
+            width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        #settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 15px;
+            background: rgba(50, 50, 50, 0.9);
+            cursor: pointer;
+        }
+
+        #settings-panel h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        #toggle-settings-btn {
+            background: none;
+            border: 1px solid #777;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            line-height: 18px;
+            padding: 0;
+            font-size: 18px;
+        }
+
+        #settings-body {
+            padding: 15px;
+            transition: all 0.3s ease;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        #settings-body h4 {
+            margin: 15px 0 10px 0;
+            text-align: center;
+            font-size: 14px;
+            font-weight: normal;
+            color: #ccc;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+
+        #settings-panel.minimized #settings-body {
+            padding: 0 15px;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        #color-settings-container {
+            margin-bottom: 10px;
+        }
+
+        .setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .setting-group {
+            margin-bottom: 10px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .setting label {
+            font-size: 14px;
+        }
+
+        .setting input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 25px;
+            background-color: transparent;
+            border: 1px solid #555;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .setting input[type="color"]::-webkit-color-swatch {
+            border-radius: 3px;
+            border: none;
+        }
+
+        .setting input[type="color"]::-moz-color-swatch {
+            border-radius: 3px;
+            border: none;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        select {
+            width: 100%;
+            padding: 5px;
+            background: #555;
+            color: white;
+            border: 1px solid #777;
+            border-radius: 4px;
+            font-family: sans-serif;
+        }
+
+        .control-btn {
+            width: 100%;
+            /* margin-top: 10px; */ /* Removed to be handled by setting-group */
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .control-btn:hover {
+            background-color: #777;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #555;
+            margin: 15px 0;
+        }
+
+        .setting-controls {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #555;
+            padding-top: 10px;
+        }
+
+        .setting-controls button {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 48%;
+        }
+
+        .setting-controls button:hover {
+            background-color: #777;
+        }
+
+        #open-library-btn {
+            background-color: #4a69bd;
+        }
+
+        #open-library-btn:hover {
+            background-color: #5c7edc;
+        }
+
+        #open-shapes-library-btn {
+            width: 100%;
+            /* margin-top: 10px; */ /* Removed */
+            background-color: #57a773;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #open-shapes-library-btn:hover {
+            background-color: #63bf84;
+        }
+
+        /* Toggle Switch styles */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 22px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4a69bd;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(18px);
+        }
+
+        /* Templates Library styles */
+        #templates-library {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #templates-library.hidden {
+            display: none;
+        }
+
+        #shapes-library {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 101; /* Above templates library if both open */
+        }
+
+        #shapes-library.hidden {
+            display: none;
+        }
+
+        #templates-panel, #shapes-panel {
+            background: #282828;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            font-family: sans-serif;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #templates-panel {
+            max-width: 900px; /* Increased width */
+        }
+
+        #shapes-panel {
+            max-width: 600px;
+        }
+
+        .templates-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #555;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .templates-header h3 {
+            margin: 0;
+        }
+
+        #close-library-btn, #close-shapes-library-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        #templates-container {
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            padding-right: 10px; /* Space for scrollbar */
+        }
+
+        #shapes-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .template-item {
+            background: #333;
+            border-radius: 5px;
+            padding: 10px;
+            /* margin-bottom is now handled by grid gap */
+        }
+
+        .shape-item {
+            background: #333;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .template-item h4,
+        .shape-item h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+
+        .color-swatches {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .apply-template-btn {
+            background-color: #4a69bd;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            float: right;
+        }
+
+        .apply-template-btn:hover {
+            background-color: #5c7edc;
+        }
+
+        .delete-template-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+        }
+        .delete-template-btn:hover {
+            color: #fff;
+        }
+
+        .shape-item:hover {
+            background-color: #4a69bd;
+        }
+
+        .shape-item svg {
+            width: 50px;
+            height: 50px;
+            fill: #fff;
+            margin-bottom: 10px;
+        }
+
+        #bottom-toolbar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40, 40, 40, 0.9);
+            padding: 8px;
+            border-radius: 10px;
+            display: flex;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        #bottom-toolbar.hidden {
+            display: none;
+        }
+
+        .toolbar-btn {
+            background-color: #555;
+            color: white;
+            border: 1px solid #777;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background-color: #666;
+        }
+
+        .toolbar-btn.active {
+            background-color: #4a69bd;
+            border-color: #5c7edc;
+        }
+
+        #delete-mode-btn.active {
+            background-color: #e74c3c;
+            border-color: #c0392b;
+        }
+
+        #explode-mode-btn.active {
+            background-color: #f39c12;
+            border-color: #e67e22;
+        }
+
+        #attract-mode-btn.active {
+            background-color: #9b59b6;
+            border-color: #8e44ad;
+        }
+
+        #weld-mode-btn.active {
+            background-color: #27ae60;
+            border-color: #2ecc71;
+        }
+
+        .selected-for-weld {
+            box-shadow: 0 0 20px #27ae60 !important;
+        }
+
+        /* Media Queries for Mobile Friendliness */
+        @media (max-width: 768px) {
+            #settings-panel, #library-panel {
+                width: 250px; /* A bit wider for mobile */
+            }
+
+            #bottom-toolbar {
+                padding: 5px;
+                gap: 5px;
+            }
+
+            .toolbar-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            #templates-panel, #shapes-panel {
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            #templates-container {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+
+            #shapes-container {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            #settings-panel, #library-panel {
+                top: 10px;
+                max-height: 85vh;
+            }
+            #settings-panel {
+                right: 10px;
+                width: calc(100vw - 20px);
+            }
+            #library-panel {
+                left: 10px;
+                width: calc(100vw - 20px);
+            }
+
+            #bottom-toolbar {
+                bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="library-panel">
+        <div id="library-header">
+            <h3>Library</h3>
+            <button id="toggle-library-panel-btn">-</button>
+        </div>
+        <div id="library-body">
+            <div class="setting-group">
+                <button id="open-shapes-library-btn" class="control-btn">🔷 Shapes</button>
+            </div>
+            <div class="setting-group">
+                <button id="open-library-btn" class="control-btn">🎨 Templates</button>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4 style="margin-top: 0; margin-bottom: 10px; text-align: left; border: none; padding: 0; color: #fff;">Save Current Colors</h4>
+                <input type="text" id="new-template-name" placeholder="Template Name" style="width: calc(100% - 12px); margin-bottom: 5px; padding: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 4px;">
+                <button id="save-template-btn" class="control-btn">Save Template</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-panel">
+        <div id="settings-header">
+            <h3>Settings</h3>
+            <button id="toggle-settings-btn">-</button>
+        </div>
+        <div id="settings-body">
+            <div class="setting-group">
+                <button id="pause-btn" class="control-btn">Pause Simulation</button>
+            </div>
+            <div class="setting">
+                <label for="random-size-toggle">Random Sizes</label>
+                <label class="switch">
+                    <input type="checkbox" id="random-size-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="random-color-toggle">Random Colors</label>
+                <label class="switch">
+                    <input type="checkbox" id="random-color-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group" id="size-slider-container">
+                <label for="size-slider">Size</label>
+                <input type="range" id="size-slider" min="5" max="50" value="20">
+            </div>
+            <div class="setting-group">
+                <label for="spawn-speed-slider">Spawn Speed</label>
+                <input type="range" id="spawn-speed-slider" min="1" max="100" value="20">
+            </div>
+            <div class="setting-group">
+                <label for="time-scale-slider">Time Scale</label>
+                <input type="range" id="time-scale-slider" min="0.1" max="2" value="1" step="0.1">
+            </div>
+            <div class="setting-group">
+                <label for="gravity-y-slider">Gravity Y</label>
+                <input type="range" id="gravity-y-slider" min="-1" max="2" value="1" step="0.1">
+            </div>
+            <div class="setting-group">
+                <label for="gravity-x-slider">Gravity X</label>
+                <input type="range" id="gravity-x-slider" min="-1" max="1" value="0" step="0.1">
+            </div>
+            <div class="setting">
+                <label for="accelerometer-toggle">Use Accelerometer</label>
+                <label class="switch">
+                    <input type="checkbox" id="accelerometer-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group">
+                <label for="bounciness-slider">Bounciness</label>
+                <input type="range" id="bounciness-slider" min="0" max="1.2" value="0.7" step="0.05">
+            </div>
+            <div class="setting-group">
+                <label for="friction-slider">Friction</label>
+                <input type="range" id="friction-slider" min="0" max="1" value="0.1" step="0.05">
+            </div>
+            <div class="setting-group">
+                <label for="static-friction-slider">Static Friction</label>
+                <input type="range" id="static-friction-slider" min="0" max="1" value="0.5" step="0.05">
+            </div>
+            <div class="setting-group">
+                <label for="air-friction-slider">Air Friction</label>
+                <input type="range" id="air-friction-slider" min="0" max="0.25" value="0.01" step="0.005">
+            </div>
+            <div class="setting-group">
+                <label for="density-slider">Density (Weight)</label>
+                <input type="range" id="density-slider" min="0.0001" max="0.015" value="0.001" step="0.0001">
+            </div>
+            <div class="setting">
+                <label for="object-collision-toggle">Object Collisions</label>
+                <label class="switch">
+                    <input type="checkbox" id="object-collision-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="static-toggle">Make Static</label>
+                <label class="switch">
+                    <input type="checkbox" id="static-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="rotation-toggle">Random Rotation</label>
+                <label class="switch">
+                    <input type="checkbox" id="rotation-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="faces-toggle">Show Faces</label>
+                <label class="switch">
+                    <input type="checkbox" id="faces-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="names-toggle">Show Names</label>
+                <label class="switch">
+                    <input type="checkbox" id="names-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group">
+                <label for="rotation-speed-slider">Rotation Speed</label>
+                <input type="range" id="rotation-speed-slider" min="-0.5" max="0.5" value="0" step="0.01">
+            </div>
+            <div class="setting">
+                <label for="lifespan-toggle">Enable Lifespan</label>
+                <label class="switch">
+                    <input type="checkbox" id="lifespan-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group" id="lifespan-slider-container" style="display: none;">
+                <label for="lifespan-slider">Lifespan (s)</label>
+                <input type="range" id="lifespan-slider" min="1" max="20" value="5">
+            </div>
+            <button id="clear-balls-btn" class="control-btn">Clear Balls</button>
+            <hr>
+            <div class="setting-group">
+                <h4>State Management</h4>
+                <div class="setting-group">
+                    <button id="save-state-btn" class="control-btn">Save State</button>
+                </div>
+                <div class="setting-group">
+                    <button id="load-state-btn" class="control-btn">Load State</button>
+                    <input type="file" id="load-state-input" style="display: none;" accept=".json">
+                </div>
+                <div class="setting-group">
+                    <button id="reset-settings-btn" class="control-btn" style="background-color: #c0392b;">Reset All Settings</button>
+                </div>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4>World Settings</h4>
+                <div class="setting">
+                    <label for="invisible-welds-toggle">Invisible Welds</label>
+                    <label class="switch">
+                        <input type="checkbox" id="invisible-welds-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label for="wall-bounciness-slider">Wall Bounciness</label>
+                    <input type="range" id="wall-bounciness-slider" min="0" max="1.5" value="1" step="0.05">
+                </div>
+                <div class="setting-group">
+                    <label for="attraction-strength-slider">Attraction Strength</label>
+                    <input type="range" id="attraction-strength-slider" min="0.1" max="10" value="5" step="0.1">
+                </div>
+                <div class="setting-group">
+                    <label for="attraction-radius-slider">Attraction Radius</label>
+                    <input type="range" id="attraction-radius-slider" min="50" max="500" value="200" step="10">
+                </div>
+                <div class="setting-group">
+                    <label for="explosion-strength-slider">Explosion Strength</label>
+                    <input type="range" id="explosion-strength-slider" min="0.01" max="0.2" value="0.05" step="0.005">
+                </div>
+                <div class="setting-group">
+                    <label for="explosion-radius-slider">Explosion Radius</label>
+                    <input type="range" id="explosion-radius-slider" min="50" max="500" value="150" step="10">
+                </div>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4>UI Settings</h4>
+                <div class="setting">
+                    <label for="toolbar-toggle">Show Toolbar</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toolbar-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4>Background</h4>
+                <div class="setting">
+                    <label for="grid-toggle">Show Grid</label>
+                    <label class="switch">
+                        <input type="checkbox" id="grid-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting" id="grid-color-container">
+                    <label for="grid-color-picker">Grid Color</label>
+                    <input type="color" id="grid-color-picker" value="#0000FF">
+                </div>
+                <div class="setting">
+                    <label for="bg-color-picker">BG Color</label>
+                    <input type="color" id="bg-color-picker" value="#1a1a1a">
+                </div>
+            </div>
+            <hr>
+            <h4>Object Colors</h4>
+            <div id="color-settings-container">
+                <!-- Color pickers will be dynamically added here -->
+            </div>
+            <div class="setting-controls">
+                <button id="add-color-btn">Add</button>
+                <button id="remove-color-btn">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="shapes-library" class="hidden">
+        <div id="shapes-panel">
+            <div class="templates-header">
+                <h3>Shapes Library</h3>
+                <button id="close-shapes-library-btn">&times;</button>
+            </div>
+            <div id="shapes-container">
+                <!-- Shapes will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="templates-library" class="hidden">
+        <div id="templates-panel">
+            <div class="templates-header">
+                <h3>Color Templates</h3>
+                <button id="close-library-btn">&times;</button>
+            </div>
+            <div id="templates-container">
+                <!-- Templates will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="bottom-toolbar">
+        <button id="spawn-mode-btn" class="toolbar-btn active">Spawn</button>
+        <button id="drag-mode-btn" class="toolbar-btn">Drag</button>
+        <button id="attract-mode-btn" class="toolbar-btn">Attract</button>
+        <button id="weld-mode-btn" class="toolbar-btn">Weld</button>
+        <button id="delete-mode-btn" class="toolbar-btn">Delete</button>
+        <button id="explode-mode-btn" class="toolbar-btn">Explode</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script>
+        // filepath: c:\Users\billy\Downloads\wasewaew - Copy\script.js
+        // Module aliases
+        const { Engine, Render, Runner, World, Bodies, Composite, Events, Body, Mouse, MouseConstraint } = Matter;
+
+        // Create an engine
+        const engine = Engine.create();
+        const world = engine.world;
+
+        // Create a renderer
+        const render = Render.create({
+            element: document.body,
+            engine: engine,
+            options: {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                wireframes: false, // Set to false for solid colors
+                background: 'transparent'
+            }
+        });
+
+        Render.run(render);
+
+        // Create runner
+        const runner = Runner.create();
+        Runner.run(runner, engine);
+
+        // Add boundaries
+        const ground = Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 25, window.innerWidth, 50, { isStatic: true });
+        const leftWall = Bodies.rectangle(-25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
+        const rightWall = Bodies.rectangle(window.innerWidth + 25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
+        const ceiling = Bodies.rectangle(window.innerWidth / 2, -25, window.innerWidth, 50, { isStatic: true });
+        const boundaries = [ground, leftWall, rightWall, ceiling];
+
+        Composite.add(world, boundaries);
+
+        // Ball spawning logic
+        let isMouseDown = false;
+        let ballRadius = 20;
+        let randomSizesEnabled = false;
+        let randomColorsEnabled = false;
+        const minBallRadius = 10;
+        const maxBallRadius = 30;
+        let ballColors = ['#C44569', '#D6A2E8', '#786FA6', '#596275', '#2C3A47'];
+        let ballBounciness = 0.7;
+        let objectFriction = 0.1;
+        let objectStaticFriction = 0.5;
+        let randomRotationEnabled = false;
+        let isStaticEnabled = false;
+        let initialRotationSpeed = 0;
+        let lifespanEnabled = false;
+        let facesEnabled = false;
+        let objectLifespan = 5000; // in ms
+        let selectedShape = { type: 'circle' };
+        let objectDensity = 0.001;
+        let spawnInterval;
+        let spawnSpeed = 20; // Balls per second
+        let customTemplates = {};
+        let objectCollisionsEnabled = true;
+        let attractionStrength = 5;
+        let attractionRadius = 200;
+        let explosionStrength = 0.05;
+        let explosionRadius = 150;
+        let shockwaves = [];
+        let isPaused = false; // Add pause state tracking
+        let invisibleWeldsEnabled = false;
+        let namesEnabled = false;
+
+        // Define the namePool array here, before it's used
+        const namePool = [
+            "Travis", "John", "Bob", "Timmy", "Jake", "Paul", 
+            "Porky", "TreeMan", "Cam", "Tavern", "Seth", "Noah", 
+            "Lucas", "Harry", "Archer", "Billy", "Jacob", "Mike",
+            "Smishy", "Balz", "Long", "Max", "Leroy", "Musk", "Lebron",  
+            "John", "Doe", "Foil", "Jumper", "Bouncy", "Squish", "Cube", "Blue",
+            "Fish", "David", "GoG", "Noob", "LOL", "$$$", "Kill ME!", "Tank",  
+            "melon", "Meat", "Baldy", "Math", "Pickle", "Lagin", "Bag", "Soap", 
+            "Sigma", "Rizz", "Munkey", "Ragy", "Baller", "67", "memer", "John",
+            "iop","Apple","Mc","Hungy","Sushi","bomb","GG","Sweat","Ohio",
+
+        ];
+
+        // Background settings
+        let gridEnabled = true;
+        let gridColor = '#0000FF';
+        let backgroundColor = '#1a1a1a';
+
+        const colorSettingsContainer = document.getElementById('color-settings-container');
+        const templatesLibrary = document.getElementById('templates-library');
+        const templatesContainer = document.getElementById('templates-container');
+        const shapesLibrary = document.getElementById('shapes-library');
+        const shapesContainer = document.getElementById('shapes-container');
+
+        const shapes = {
+            "Circle": { type: 'circle', svg: '<circle cx="25" cy="25" r="24" stroke="white" stroke-width="1" fill="none"/>' },
+            "Square": { type: 'box', svg: '<rect x="1" y="1" width="48" height="48" stroke="white" stroke-width="1" fill="none"/>' },
+            "Triangle": { type: 'polygon', sides: 3, svg: '<polygon points="25,1 49,49 1,49" stroke="white" stroke-width="1" fill="none"/>' },
+            "Pentagon": { type: 'polygon', sides: 5, svg: '<polygon points="25,1 49,18 40,49 10,49 1,18" stroke="white" stroke-width="1" fill="none"/>' },
+            "Hexagon": { type: 'polygon', sides: 6, svg: '<polygon points="25,1 49,13 49,37 25,49 1,37 1,13" stroke="white" stroke-width="1" fill="none"/>' },
+            "Octagon": { type: 'polygon', sides: 8, svg: '<polygon points="15,1 35,1 49,15 49,35 35,49 15,49 1,35 1,15" stroke="white" stroke-width="1" fill="none"/>' },
+            "Trapezoid": { type: 'trapezoid', slope: 0.5, svg: '<polygon points="10,1 40,1 49,49 1,49" stroke="white" stroke-width="1" fill="none"/>' },
+            "Rectangle": { type: 'rectangle', svg: '<rect x="1" y="10" width="48" height="30" stroke="white" stroke-width="1" fill="none"/>' }
+        };
+
+        const templates = {
+            "Rainbow": ["#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#9400d3"],
+            "Forest": ["#2f3e46", "#354f52", "#52796f", "#84a98c", "#cad2c5"],
+            "Sunset": ["#f7b267", "#f79d65", "#f4845f", "#f27059", "#f25c54"],
+            "Ocean": ["#003049", "#d62828", "#f77f00", "#fcbf49", "#eae2b7"],
+            "Pastel": ["#a8e6cf", "#dcedc1", "#ffd3b6", "#ffaaa5", "#ff8b94"],
+            "Cyberpunk": ["#0ff", "#f0f", "#0f0", "#fff", "#000"],
+            "Vintage": ["#d4a373", "#faedcd", "#fefae0", "#e9edc9", "#ccd5ae"],
+            "Candy": ["#ffc0cb", "#ffb6c1", "#add8e6", "#90ee90", "#f0e68c"],
+            "Monochrome": ["#000000", "#404040", "#808080", "#c0c0c0", "#ffffff"],
+            "Earthy": ["#a47c48", "#6b5b4c", "#3e3e32", "#c1a57b", "#8a817c"],
+            "Neon Glow": ["#39ff14", "#ff14bd", "#14f1ff", "#faff00", "#ff5500"],
+            "80s Pop": ["#f94144", "#f3722c", "#f8961e", "#f9c74f", "#90be6d"],
+            "Royal": ["#4a148c", "#7b1fa2", "#9c27b0", "#ba68c8", "#e1bee7"],
+            "Autumn": ["#a44a3f", "#d36135", "#f4a261", "#e76f51", "#2a9d8f"],
+            "Winter": ["#f0f8ff", "#e6e6fa", "#b0c4de", "#778899", "#4682b4"],
+            "Spring": ["#ffb3ba", "#ffdfba", "#ffffba", "#baffc9", "#bae1ff"],
+            "Summer": ["#ff6b6b", "#ffd166", "#06d6a0", "#118ab2", "#073b4c"],
+            "Desert": ["#c2b280", "#e4d5b7", "#f5e6c8", "#d1b894", "#a89984"],
+            "Arctic": ["#ffffff", "#f0ffff", "#afeeee", "#7ac5cd", "#5f9ea0"],
+            "Volcanic": ["#000000", "#ff4500", "#ff0000", "#8b0000", "#ff8c00"],
+            "Tropical": ["#00a896", "#02c39a", "#f0f3bd", "#f8961e", "#f94144"],
+            "Galaxy": ["#0d1b2a", "#1b263b", "#415a77", "#778da9", "#e0e1dd"],
+            "Matrix": ["#000000", "#003b00", "#008f11", "#00ff41", "#00ff00"],
+            "Cotton Candy": ["#ffacc7", "#ffb6c1", "#ffcad4", "#fde4cf", "#f0efeb"],
+            "Gothic": ["#000000", "#4b0082", "#800000", "#2f4f4f", "#696969"],
+            "Coral Reef": ["#ff7f50", "#ff6347", "#40e0d0", "#20b2aa", "#00ced1"],
+            "Lavender Fields": ["#e6e6fa", "#d8bfd8", "#dda0dd", "#9370db", "#6a5acd"],
+            "Cherry Blossom": ["#ffb7c5", "#ffc0cb", "#f08080", "#ffffff", "#d3d3d3"],
+            "Sahara": ["#f4a460", "#deb887", "#d2b48c", "#bc8f8f", "#cd853f"],
+            "Nordic": ["#dbe2ef", "#3f72af", "#112d4e", "#f9f7f7", "#8d99ae"],
+            "Emerald City": ["#008000", "#2e8b57", "#3cb371", "#ffd700", "#f0e68c"],
+            "Fire and Ice": ["#ff4500", "#ff6347", "#1e90ff", "#b0c4de", "#ffffff"],
+            "Steampunk": ["#8b4513", "#cd7f32", "#b87333", "#a0522d", "#d2691e"],
+            "Synthwave": ["#ff69b4", "#ff1493", "#9400d3", "#00ffff", "#1e90ff"],
+            "Muted Tones": ["#a9a9a9", "#b0c4de", "#d3d3d3", "#e6e6fa", "#f5f5f5"],
+            "Jungle": ["#006400", "#228b22", "#556b2f", "#8b4513", "#ff4500"],
+            "Cosmic Dust": ["#2e0854", "#483d8b", "#8a2be2", "#9932cc", "#c71585"],
+            "Peacock": ["#008080", "#00ced1", "#48d1cc", "#20b2aa", "#5f9ea0"],
+            "Strawberry Lemonade": ["#ff6b81", "#ff4757", "#fff200", "#feca57", "#ff9f43"],
+            "Mint Chocolate": ["#3cb371", "#98fb98", "#6b4226", "#8a5a44", "#d2b48c"],
+            "City at Night": ["#0c0a3e", "#2a2a72", "#4a4e69", "#f2e9e4", "#ffc600"],
+            "Retro Diner": ["#e84a5f", "#ff847c", "#feceab", "#99b898", "#2a363b"],
+            "Golden Hour": ["#ffc107", "#ff9800", "#ff5722", "#e91e63", "#9c27b0"],
+            "Deep Sea": ["#001219", "#005f73", "#0a9396", "#94d2bd", "#e9d8a6"],
+            "Paper & Ink": ["#f8f9fa", "#e9ecef", "#dee2e6", "#495057", "#212529"],
+            "Hacker": ["#000000", "#00ff00", "#008000", "#2f2f2f", "#555555"],
+            "Sorbet": ["#ff9a8b", "#ff6a88", "#ff99ac", "#f9d423", "#f8d6b3"],
+            "Blueprint": ["#005f73", "#0a9396", "#94d2bd", "#e9d8a6", "#ffffff"],
+            "Clay": ["#a47c48", "#6b5b4c", "#c1a57b", "#8a817c", "#e0e1dd"],
+            "Lollipop": ["#ff4e50", "#fc913a", "#f9d423", "#ede574", "#e1f5c4"],
+            "Moss": ["#4a5759", "#588157", "#6b9080", "#a3b18a", "#dad7cd"],
+            "Rose Gold": ["#b76e79", "#fde2e4", "#fad2e1", "#c5dedd", "#dbe7e4"],
+            "Tidal": ["#03045e", "#023e8a", "#0077b6", "#0096c7", "#00b4d8"],
+            "Terracotta": ["#e07a5f", "#3d405b", "#81b29a", "#f2cc8f", "#f4f1de"],
+            "Velvet": ["#6d0c3c", "#a31652", "#d92068", "#ff287d", "#ff8ab4"],
+            "Sakura Season": ["#ffc2d1", "#ffb3c6", "#ff8fab", "#fb6f92", "#ffffff"],
+            "Industrial": ["#36454f", "#808080", "#c0c0c0", "#f5f5f5", "#ffc107"],
+            "Beach Day": ["#00a6ed", "#f5c03e", "#ffffff", "#88c540", "#ff6b35"],
+            "Vampire": ["#8b0000", "#4b0082", "#000000", "#c0c0c0", "#ff0000"],
+            "Fairy Tale": ["#ffefd5", "#ffdab9", "#dda0dd", "#87cefa", "#98fb98"],
+            "Coffee Shop": ["#6f4e37", "#a0522d", "#d2b48c", "#f5f5dc", "#36454f"],
+            "Ice Cream": ["#ffb6c1", "#fffacd", "#90ee90", "#add8e6", "#d3d3d3"],
+            "Rainy Day": ["#4682b4", "#708090", "#778899", "#b0c4de", "#f0f8ff"],
+            "Meadow": ["#6b8e23", "#9acd32", "#ffd700", "#ff69b4", "#87ceeb"],
+            "Deep Space": ["#000033", "#191970", "#4682b4", "#ffffff", "#f0e68c"],
+            "Slate": ["#2d3a3a", "#536872", "#708090", "#c0c0c0", "#f0f8ff"],
+            "Matcha": ["#d4e09b", "#a3b18a", "#588157", "#3a5a40", "#344e41"],
+            "Crimson": ["#dc143c", "#b22222", "#8b0000", "#660000", "#000000"],
+            "Amethyst": ["#4a148c", "#6a1b9a", "#8e24aa", "#ab47bc", "#ce93d8"],
+            "Honey": ["#ffc300", "#ffd60a", "#ffba08", "#faa307", "#f48c06"],
+            "Grapevine": ["#6a0dad", "#8a2be2", "#9932cc", "#ba55d3", "#dda0dd"],
+            "Sunrise": ["#ffcb05", "#f57c00", "#e65100", "#bf360c", "#ff5722"],
+            "Twilight": ["#262254", "#4a4e69", "#9a8c98", "#c9ada7", "#f2e9e4"],
+            "Pumpkin Spice": ["#d35400", "#e67e22", "#f39c12", "#f1c40f", "#fff8e1"],
+            "Ocean Depths": ["#000080", "#0000cd", "#1e90ff", "#4169e1", "#87ceeb"],
+            "Ruby Red": ["#dc143c", "#b22222", "#8b0000", "#cd5c5c", "#f08080"],
+            "Sapphire Blue": ["#0f52ba", "#007fff", "#4169e1", "#6495ed", "#87cefa"],
+            "Jade": ["#00a86b", "#2e8b57", "#3cb371", "#8fbc8f", "#98fb98"],
+            "Gold Rush": ["#ffd700", "#daa520", "#b8860b", "#f0e68c", "#eee8aa"],
+            "Silver Lining": ["#c0c0c0", "#d3d3d3", "#e6e6e6", "#f5f5f5", "#ffffff"],
+            "Bronze Age": ["#cd7f32", "#d2691e", "#a0522d", "#8b4513", "#a0522d"],
+            "Poison Ivy": ["#2e8b57", "#3cb371", "#006400", "#556b2f", "#6b8e23"],
+            "Electric Eel": ["#00ffff", "#1e90ff", "#00bfff", "#87cefa", "#afeeee"],
+            "Dragon Fire": ["#ff4500", "#ff6347", "#ff7f50", "#ff8c00", "#ffd700"],
+            "Enchanted Forest": ["#228b22", "#006400", "#556b2f", "#8b4513", "#9acd32"],
+            "Glacier": ["#f0f8ff", "#e0ffff", "#afeeee", "#b0e0e6", "#add8e6"],
+            "Canyon": ["#a0522d", "#cd853f", "#d2691e", "#8b4513", "#bc8f8f"],
+            "Orchid": ["#da70d6", "#dda0dd", "#ee82ee", "#ff00ff", "#ba55d3"],
+            "Tuscany": ["#fcd12a", "#f5a623", "#d0021b", "#4a90e2", "#50e3c2"],
+            "Nightshade": ["#2c0e37", "#4f1b5b", "#73287f", "#9636a4", "#b943c8"],
+            "Toxic Waste": ["#7fff00", "#dfff00", "#adff2f", "#00ff00", "#32cd32"],
+            "Bubblegum": ["#ffc1cc", "#ffb6c1", "#add8e6", "#87cefa", "#f08080"],
+            "Volcano": ["#ff4500", "#ff6347", "#dc143c", "#8b0000", "#000000"],
+            "Deep Forest": ["#006400", "#228b22", "#556b2f", "#8b4513", "#a0522d"],
+            "Cotton Candy Sky": ["#ffb3de", "#ff85a2", "#b9a2de", "#a2b9de", "#deceff"],
+            "Autumn Leaves": ["#d2691e", "#cd5c5c", "#ffa500", "#ffd700", "#f0e68c"],
+            "Frozen Tundra": ["#f0f8ff", "#e0ffff", "#afeeee", "#b0e0e6", "#ffffff"],
+            "Desert Sunset": ["#ff4e00", "#8a00c2", "#c200a3", "#ff7b00", "#4d0068"],
+            "Coral Reef Bright": ["#ff7f50", "#ff6347", "#40e0d0", "#20b2aa", "#ffb6c1"],
+            "Midnight City": ["#0c0a3e", "#2a2a72", "#4a4e69", "#ffd60a", "#f2e9e4"],
+            "Strawberry Fields": ["#ff4d6d", "#ff8fa3", "#ffb3c1", "#90be6d", "#caffbf"],
+            "Lavender Haze": ["#e6e6fa", "#d8bfd8", "#dda0dd", "#9370db", "#8a2be2"],
+            "Golden Sands": ["#ffd700", "#f0e68c", "#eee8aa", "#deb887", "#cd853f"],
+            "Peppermint": ["#e63946", "#f1faee", "#a8dadc", "#457b9d", "#1d3557"],
+            "Ocean Breeze": ["#bde0fe", "#a2d2ff", "#89c2d9", "#4a8fe7", "#0077b6"],
+            "Cherry Pie": ["#9b2226", "#ae2012", "#bb3e03", "#ca6702", "#e9c46a"],
+            "Misty Mountains": ["#6c757d", "#adb5bd", "#dee2e6", "#f8f9fa", "#495057"],
+            "Rainbow Sherbet": ["#fca311", "#e5e5e5", "#90be6d", "#ff006e", "#fb5607"],
+            "Cosmic Latte": ["#fffcf2", "#ccc5b9", "#a5a58d", "#6b705c", "#403d39"],
+            "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"]
+        };
+
+        const friendsOfPhysicTemplates = {
+            "platynium": ["#00FFFF", "#40E0D0", "#48D1CC", "#20B2AA", "#00CED1"],
+            "treeMaine": ["#FFD700", "#FFFFFF", "#4169E1", "#C8A2C8", "#B19CD9"],
+            "the attack master": ["#000000", "#1C1C1C", "#282828", "#363636", "#424242"],
+            "burple": ["#8A2BE2", "#9400D3", "#9932CC", "#4B0082", "#6A5ACD"],
+            "wobbly bob": ["#FFFF00", "#000000"],
+            "Hampter": ["#D2B48C", "#F5DEB3", "#FFFFFF", "#FFC0CB", "#A0522D"],
+            "HarroldBobin": ["#ADFF2F", "#FFFF00", "#32CD32", "#FFD700", "#228B22"],
+            "jerry": ["#FF69B4", "#A52A2A", "#32CD32", "#FFA500", "#00FFFF"],
+            "Fruity": ["#FFA500", "#FFD700", "#FF8C00", "#FFFF00", "#FFC04D"],
+            "winter": ["#A5F2F3", "#FFFFFF", "#C0C0C0", "#4682B4", "#D8BFD8"]
+        };
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function updateBackground() {
+            document.body.style.backgroundColor = backgroundColor;
+            if (gridEnabled) {
+                const gridRgba = hexToRgba(gridColor, 0.5);
+                document.body.style.backgroundImage = `
+                    linear-gradient(${gridRgba} 1px, transparent 1px),
+                    linear-gradient(90deg, ${gridRgba} 1px, transparent 1px)
+                `;
+                document.body.style.backgroundSize = '40px 40px';
+            } else {
+                document.body.style.backgroundImage = 'none';
+            }
+        }
+
+        function renderColorPickers() {
+            colorSettingsContainer.innerHTML = ''; // Clear existing pickers
+            ballColors.forEach((color, index) => {
+                const settingDiv = document.createElement('div');
+                settingDiv.className = 'setting';
+
+                const label = document.createElement('label');
+                label.htmlFor = `color${index + 1}`;
+                label.textContent = `Color ${index + 1}`;
+
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.id = `color${index + 1}`;
+                input.value = color;
+                input.addEventListener('input', () => {
+                    ballColors[index] = input.value;
+                });
+
+                settingDiv.appendChild(label);
+                settingDiv.appendChild(input);
+                colorSettingsContainer.appendChild(settingDiv);
+            });
+        }
+
+        function addColor() {
+            // Add a new random color
+            const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+            ballColors.push(randomColor);
+            renderColorPickers();
+        }
+
+        function removeColor() {
+            if (ballColors.length > 1) { // Keep at least one color
+                ballColors.pop();
+                renderColorPickers();
+            }
+        }
+
+        function getCustomTemplates() {
+            const stored = localStorage.getItem('customColorTemplates');
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveCustomTemplates() {
+            localStorage.setItem('customColorTemplates', JSON.stringify(customTemplates));
+        }
+
+        function saveCustomTemplate() {
+            const nameInput = document.getElementById('new-template-name');
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert('Please enter a template name.');
+                return;
+            }
+            if (templates[name] || customTemplates[name]) {
+                if (!confirm(`A template named "${name}" already exists. Overwrite it?`)) {
+                    return;
+                }
+            }
+
+            customTemplates[name] = [...ballColors];
+            saveCustomTemplates();
+            populateTemplatesLibrary();
+            nameInput.value = '';
+            alert(`Template "${name}" saved!`);
+        }
+
+        function deleteCustomTemplate(name) {
+            if (customTemplates[name]) {
+                delete customTemplates[name];
+                saveCustomTemplates();
+                populateTemplatesLibrary();
+            }
+        }
+
+        function saveState() {
+            const state = {
+                settings: {
+                    ballRadius,
+                    randomSizesEnabled,
+                    ballColors: [...ballColors],
+                    ballBounciness,
+                    objectFriction,
+                    objectStaticFriction,
+                    randomRotationEnabled,
+                    isStaticEnabled,
+                    initialRotationSpeed,
+                    lifespanEnabled,
+                    facesEnabled,
+                    objectLifespan,
+                    selectedShape,
+                    objectDensity,
+                    spawnSpeed,
+                    objectCollisionsEnabled,
+                    attractionStrength,
+                    attractionRadius,
+                    explosionStrength,
+                    explosionRadius,
+                    gridEnabled,
+                    gridColor,
+                    backgroundColor,
+                    namesEnabled,
+                    engine: {
+                        gravity: { ...engine.world.gravity },
+                        airFriction: engine.airFriction,
+                        timing: { timeScale: engine.timing.timeScale }
+                    },
+                    world: {
+                        wallBounciness: boundaries[0].restitution
+                    }
+                },
+                objects: [],
+                constraints: [] // New array to store weld constraints
+            };
+
+            const allBodies = Composite.allBodies(world);
+            state.objects = allBodies
+                .filter(body => !boundaries.includes(body))
+                .map(body => {
+                    return {
+                        label: body.label,
+                        position: { ...body.position },
+                        velocity: { ...body.velocity },
+                        angle: body.angle,
+                        angularVelocity: body.angularVelocity,
+                        isStatic: body.isStatic,
+                        restitution: body.restitution,
+                        friction: body.friction,
+                        frictionStatic: body.frictionStatic,
+                        density: body.density,
+                        render: {
+                            fillStyle: body.render.fillStyle
+                        },
+                        hasFace: body.hasFace,
+                        blinkTimer: body.blinkTimer,
+                        isBlinking: body.isBlinking,
+                        blinkDuration: body.blinkDuration,
+                        damage: body.damage,
+                        isDead: body.isDead,
+                        isBeingDragged: body.isBeingDragged,
+                        emotionTimer: body.emotionTimer,
+                        lookAtTarget: body.lookAtTarget ? body.lookAtTarget.id : null,
+                        lookTimer: body.lookTimer,
+                        isLooking: body.isLooking,
+                        lookDuration: body.lookDuration,
+                        collisionFilter: { ...body.collisionFilter },
+                        vertices: body.vertices.map(v => ({ x: v.x, y: v.y })),
+                        id: body.id, // Save the body ID for constraint references
+                        customName: body.customName
+                    };
+                });
+                
+            // Save all weld constraints
+            state.constraints = weldingConstraints.map(constraint => {
+                return {
+                    bodyAId: constraint.bodyA.id,
+                    bodyBId: constraint.bodyB.id,
+                    length: constraint.length,
+                    stiffness: constraint.stiffness,
+                    render: {
+                        visible: constraint.render.visible,
+                        strokeStyle: constraint.render.strokeStyle,
+                        lineWidth: constraint.render.lineWidth
+                    }
+                };
+            });
+
+            const stateString = JSON.stringify(state, null, 2);
+            const blob = new Blob([stateString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `physics-sim-state-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadState(state) {
+            clearBalls();
+
+            // Restore settings
+            const s = state.settings;
+            ballRadius = s.ballRadius;
+            randomSizesEnabled = s.randomSizesEnabled;
+            ballColors = [...s.ballColors];
+            ballBounciness = s.ballBounciness;
+            objectFriction = s.objectFriction;
+            objectStaticFriction = s.objectStaticFriction;
+            randomRotationEnabled = s.randomRotationEnabled;
+            isStaticEnabled = s.isStaticEnabled;
+            initialRotationSpeed = s.initialRotationSpeed;
+            lifespanEnabled = s.lifespanEnabled;
+            facesEnabled = s.facesEnabled;
+            objectLifespan = s.objectLifespan;
+            selectedShape = s.selectedShape;
+            objectDensity = s.objectDensity;
+            spawnSpeed = s.spawnSpeed;
+            objectCollisionsEnabled = s.objectCollisionsEnabled;
+            attractionStrength = s.attractionStrength;
+            attractionRadius = s.attractionRadius;
+            explosionStrength = s.explosionStrength;
+            explosionRadius = s.explosionRadius;
+            gridEnabled = s.gridEnabled;
+            gridColor = s.gridColor;
+            backgroundColor = s.backgroundColor;
+            namesEnabled = s.namesEnabled || false;
+
+            engine.world.gravity = { ...s.engine.gravity };
+            engine.airFriction = s.engine.airFriction;
+            engine.timing.timeScale = s.engine.timing.timeScale;
+            boundaries.forEach(wall => wall.restitution = s.world.wallBounciness);
+
+            // Restore objects with their IDs
+            const bodiesMap = {}; // Map to store bodies by their original ID
+            const newBodies = state.objects.map(obj => {
+                const body = Bodies.fromVertices(obj.position.x, obj.position.y, [obj.vertices], {
+                    label: obj.label,
+                    isStatic: obj.isStatic,
+                    restitution: obj.restitution,
+                    friction: obj.friction,
+                    frictionStatic: obj.frictionStatic,
+                    density: obj.density,
+                    render: { ...obj.render },
+                    collisionFilter: { ...obj.collisionFilter }
+                });
+                
+                // Store original ID mapping
+                bodiesMap[obj.id] = body;
+                
+                if (obj.hasFace) {
+                    body.hasFace = true;
+                    body.blinkTimer = obj.blinkTimer || Math.random() * 300 + 60;
+                    body.isBlinking = obj.isBlinking || false;
+                    body.blinkDuration = obj.blinkDuration || 0;
+                    body.damage = obj.damage || 0;
+                    body.isDead = obj.isDead || false;
+                    body.isBeingDragged = obj.isBeingDragged || false;
+                    body.emotionTimer = obj.emotionTimer || 0;
+                    body.lookAtTarget = null; // Reset look target on load
+                    body.lookTimer = obj.lookTimer || Math.random() * 300 + 120;
+                    body.isLooking = obj.isLooking || false;
+                    body.lookDuration = obj.lookDuration || 0;
+                }
+                Body.setVelocity(body, obj.velocity);
+                Body.setAngularVelocity(body, obj.angularVelocity);
+                Body.setAngle(body, obj.angle); // Set angle after creation
+                body.customName = obj.customName;
+                return body;
+            });
+            
+            Composite.add(world, newBodies);
+            
+            // Restore constraints/welds if they exist
+            weldingConstraints = [];
+            if (state.constraints && state.constraints.length > 0) {
+                state.constraints.forEach(constraintData => {
+                    const bodyA = bodiesMap[constraintData.bodyAId];
+                    const bodyB = bodiesMap[constraintData.bodyBId];
+                    
+                    // Only create constraint if both bodies exist
+                    if (bodyA && bodyB) {
+                        const constraint = Matter.Constraint.create({
+                            bodyA: bodyA,
+                            bodyB: bodyB,
+                            length: constraintData.length,
+                            stiffness: constraintData.stiffness || 0.8,
+                            render: {
+                                visible: constraintData.render.visible !== undefined ? 
+                                    constraintData.render.visible : !invisibleWeldsEnabled,
+                                strokeStyle: constraintData.render.strokeStyle || '#27ae60',
+                                lineWidth: constraintData.render.lineWidth || 2
+                            }
+                        });
+                        
+                        Composite.add(world, constraint);
+                        weldingConstraints.push(constraint);
+                    }
+                });
+            }
+
+            // Update UI
+            updateUIFromState();
+        }
+
+        function updateUIFromState() {
+            document.getElementById('size-slider').value = ballRadius;
+            document.getElementById('random-size-toggle').checked = randomSizesEnabled;
+            document.getElementById('random-size-toggle').dispatchEvent(new Event('change'));
+            renderColorPickers();
+            document.getElementById('bounciness-slider').value = ballBounciness;
+            document.getElementById('friction-slider').value = objectFriction;
+            document.getElementById('static-friction-slider').value = objectStaticFriction;
+            document.getElementById('rotation-toggle').checked = randomRotationEnabled;
+            document.getElementById('static-toggle').checked = isStaticEnabled;
+            document.getElementById('rotation-speed-slider').value = initialRotationSpeed;
+            document.getElementById('lifespan-toggle').checked = lifespanEnabled;
+            document.getElementById('faces-toggle').checked = facesEnabled;
+            document.getElementById('lifespan-toggle').dispatchEvent(new Event('change'));
+            document.getElementById('lifespan-slider').value = objectLifespan / 1000;
+            document.getElementById('density-slider').value = objectDensity;
+            document.getElementById('spawn-speed-slider').value = spawnSpeed;
+            document.getElementById('object-collision-toggle').checked = objectCollisionsEnabled;
+            document.getElementById('attraction-strength-slider').value = attractionStrength;
+            document.getElementById('attraction-radius-slider').value = attractionRadius;
+            document.getElementById('explosion-strength-slider').value = explosionStrength;
+            document.getElementById('explosion-radius-slider').value = explosionRadius;
+            document.getElementById('grid-toggle').checked = gridEnabled;
+            document.getElementById('grid-toggle').dispatchEvent(new Event('change'));
+            document.getElementById('grid-color-picker').value = gridColor;
+            document.getElementById('bg-color-picker').value = backgroundColor;
+            document.getElementById('names-toggle').checked = namesEnabled;
+            updateBackground();
+            document.getElementById('gravity-y-slider').value = engine.world.gravity.y;
+            document.getElementById('gravity-x-slider').value = engine.world.gravity.x;
+            document.getElementById('air-friction-slider').value = engine.airFriction;
+            document.getElementById('time-scale-slider').value = engine.timing.timeScale;
+            document.getElementById('wall-bounciness-slider').value = boundaries[0].restitution;
+        }
+
+        function spawnBall(x, y) {
+            if (ballColors.length === 0) return; // Don't spawn if no colors are available
+
+            const randomColor = randomColorsEnabled ? 
+                '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0') :
+                ballColors[Math.floor(Math.random() * ballColors.length)];
+            const size = randomSizesEnabled ? Matter.Common.random(minBallRadius, maxBallRadius) : ballRadius;
+            
+            const options = {
+                restitution: ballBounciness,
+                friction: objectFriction,
+                frictionStatic: objectStaticFriction,
+                density: objectDensity,
+                isStatic: isStaticEnabled,
+                angle: randomRotationEnabled ? Math.random() * 2 * Math.PI : 0,
+                angularVelocity: initialRotationSpeed,
+                collisionFilter: {
+                    group: objectCollisionsEnabled ? 0 : -1
+                },
+                render: {
+                    fillStyle: randomColor
+                }
+            };
+
+            let ball;
+            switch (selectedShape.type) {
+                case 'box':
+                    ball = Bodies.rectangle(x, y, size, size, options);
+                    break;
+                case 'rectangle':
+                    ball = Bodies.rectangle(x, y, size * 1.5, size, options);
+                    break;
+                case 'polygon':
+                    ball = Bodies.polygon(x, y, selectedShape.sides, size, options);
+                    break;
+                case 'trapezoid':
+                    ball = Bodies.trapezoid(x, y, size, size * 0.8, selectedShape.slope, options);
+                    break;
+                case 'circle':
+                default:
+                    ball = Bodies.circle(x, y, size, options);
+                    break;
+            }
+
+            if (namesEnabled) {
+                ball.customName = namePool[Math.floor(Math.random() * namePool.length)];
+            }
+
+            if (facesEnabled) {
+                ball.hasFace = true;
+                ball.blinkTimer = Math.random() * 600 + 480; // Random initial blink timer (8-20 seconds)
+                ball.isBlinking = false;
+                ball.blinkDuration = 0;
+                ball.damage = 0; // Track accumulated damage
+                ball.isDead = false; // Death state
+                ball.isBeingDragged = false; // Dragging state
+                ball.emotionTimer = 0; // Timer for temporary emotions
+                ball.lookAtTarget = null; // Body to look at
+                ball.lookTimer = Math.random() * 300 + 120; // Random look timer (2-7 seconds)
+                ball.isLooking = false; // Currently looking at something
+                ball.lookDuration = 0; // How long been looking
+            }
+
+            if (lifespanEnabled && !isStaticEnabled) {
+                ball.lifespanTimeout = setTimeout(() => {
+                    Composite.remove(world, ball);
+                }, objectLifespan);
+            }
+
+            Composite.add(world, ball);
+        }
+
+        let weldingFirstBody = null;
+        let weldingConstraints = [];
+
+        function handleInteractionStart(e) {
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // Prevent spawning balls when clicking on UI elements
+            if (e.target.closest('#settings-panel') || e.target.closest('#bottom-toolbar') || e.target.closest('#library-panel') || e.target.closest('#templates-library') || e.target.closest('#shapes-library')) {
+                return;
+            }
+
+            if (currentMode === 'explode') {
+                shockwaves.push({
+                    x: clientX,
+                    y: clientY,
+                    radius: 0,
+                    maxRadius: explosionRadius,
+                    life: 0,
+                    maxLife: 30 // frames
+                });
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body.isStatic) return;
+                    const distanceVector = Matter.Vector.sub({ x: clientX, y: clientY }, body.position);
+                    const distance = Matter.Vector.magnitude(distanceVector);
+                    if (distance < explosionRadius) {
+                        const forceMagnitude = explosionStrength * (1 - distance / explosionRadius);
+                        const force = Matter.Vector.mult(Matter.Vector.normalise(distanceVector), -forceMagnitude);
+                        Body.applyForce(body, body.position, force);
+                    }
+                });
+                return;
+            }
+
+            if (currentMode === 'weld') {
+                const bodies = Composite.allBodies(world);
+                const foundBodies = Matter.Query.point(bodies, { x: clientX, y: clientY });
+                const clickedBody = foundBodies.find(body => !boundaries.includes(body));
+                
+                if (clickedBody) {
+                    if (!weldingFirstBody) {
+                        // Select first body
+                        weldingFirstBody = clickedBody;
+                        clickedBody.render.strokeStyle = '#27ae60';
+                        clickedBody.render.lineWidth = 3;
+                    } else if (clickedBody !== weldingFirstBody) {
+                        // Create weld between first and second body
+                        const constraint = Matter.Constraint.create({
+                            bodyA: weldingFirstBody,
+                            bodyB: clickedBody,
+                            length: Matter.Vector.magnitude(Matter.Vector.sub(weldingFirstBody.position, clickedBody.position)),
+                            stiffness: 0.8,
+                            render: {
+                                visible: !invisibleWeldsEnabled,
+                                strokeStyle: '#27ae60',
+                                lineWidth: 2
+                            }
+                        });
+                        
+                        Composite.add(world, constraint);
+                        weldingConstraints.push(constraint);
+                        
+                        // Clear selection styling
+                        weldingFirstBody.render.strokeStyle = undefined;
+                        weldingFirstBody.render.lineWidth = undefined;
+                        weldingFirstBody = null;
+                    } else {
+                        // Deselect if clicking the same body
+                        weldingFirstBody.render.strokeStyle = undefined;
+                        weldingFirstBody.render.lineWidth = undefined;
+                        weldingFirstBody = null;
+                    }
+                } else {
+                    // Clicked empty space, deselect
+                    if (weldingFirstBody) {
+                        weldingFirstBody.render.strokeStyle = undefined;
+                        weldingFirstBody.render.lineWidth = undefined;
+                        weldingFirstBody = null;
+                    }
+                }
+                return;
+            }
+
+            isMouseDown = true;
+
+            if (currentMode === 'delete') {
+                const bodies = Composite.allBodies(world);
+                const foundBodies = Matter.Query.point(bodies, { x: clientX, y: clientY });
+                const bodyToDelete = foundBodies.find(body => !boundaries.includes(body));
+                if (bodyToDelete) {
+                    deleteBodyAndConstraints(bodyToDelete);
+                }
+            } else if (currentMode === 'spawn') {
+                spawnBall(clientX, clientY); // Spawn one ball on initial click
+            } else if (currentMode === 'attract') {
+                // This just activates the attraction in the beforeUpdate loop
+                // by setting isMouseDown to true.
+            }
+            
+            // Start interval spawning
+            clearInterval(spawnInterval); // Clear any existing interval
+            spawnInterval = setInterval(() => {
+                if (isMouseDown) {
+                    // This needs the latest mouse position, which we don't have here.
+                    // The mousemove event will handle continuous spawning instead.
+                }
+            }, 1000 / spawnSpeed);
+        }
+
+        function handleInteractionEnd() {
+            isMouseDown = false;
+            clearInterval(spawnInterval);
+        }
+
+        let lastSpawnTime = 0;
+        function handleInteractionMove(e) {
+            if (!isMouseDown) return;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            if (currentMode === 'spawn') {
+                const now = Date.now();
+                if (now - lastSpawnTime > 1000 / spawnSpeed) {
+                    spawnBall(clientX, clientY);
+                    lastSpawnTime = now;
+                }
+            } else if (currentMode === 'delete') {
+                const bodies = Composite.allBodies(world);
+                const foundBodies = Matter.Query.point(bodies, { x: clientX, y: clientY });
+                // Delete all found bodies under the cursor, not just the first one
+                foundBodies.forEach(body => {
+                    if (!boundaries.includes(body)) {
+                        deleteBodyAndConstraints(body);
+                    }
+                });
+            }
+            // For 'attract' mode, we don't need to do anything here because
+            // the mouse constraint automatically updates mouse.position,
+            // which is used by the 'beforeUpdate' event.
+        }
+
+        document.body.addEventListener('mousedown', handleInteractionStart);
+        document.body.addEventListener('mouseup', handleInteractionEnd);
+        document.body.addEventListener('mousemove', handleInteractionMove);
+
+        document.body.addEventListener('touchstart', handleInteractionStart, { passive: false });
+        document.body.addEventListener('touchend', handleInteractionEnd);
+        document.body.addEventListener('touchmove', handleInteractionMove, { passive: false });
+
+        // --- Mouse and Mode Controls ---
+        let currentMode = 'spawn';
+        const mouse = Mouse.create(render.canvas);
+        const mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.2,
+                render: {
+                    visible: false
+                }
+            }
+        });
+        Composite.add(world, mouseConstraint);
+        // Initially disable mouse constraint for spawn mode
+        mouseConstraint.collisionFilter.mask = 0;
+
+
+        function resetAllSettings() {
+            // Reset all settings to their default values
+            ballRadius = 20;
+            randomSizesEnabled = false;
+            randomColorsEnabled = false;
+            ballColors = ['#C44569', '#D6A2E8', '#786FA6', '#596275', '#2C3A47'];
+            ballBounciness = 0.7;
+            objectFriction = 0.1;
+            objectStaticFriction = 0.5;
+            randomRotationEnabled = false;
+            isStaticEnabled = false;
+            initialRotationSpeed = 0;
+            lifespanEnabled = false;
+            facesEnabled = false;
+            objectLifespan = 5000;
+            selectedShape = { type: 'circle' };
+            objectDensity = 0.001;
+            spawnSpeed = 20;
+            objectCollisionsEnabled = true;
+            attractionStrength = 5;
+            attractionRadius = 200;
+            explosionStrength = 0.05;
+            explosionRadius = 150;
+            gridEnabled = true;
+            gridColor = '#0000FF';
+            backgroundColor = '#1a1a1a';
+            namesEnabled = false;
+
+            engine.world.gravity.y = 1;
+            engine.world.gravity.x = 0;
+            engine.airFriction = 0.01;
+            engine.timing.timeScale = 1;
+            boundaries.forEach(wall => wall.restitution = 1);
+
+            // Reset UI that isn't covered by updateUIFromState
+            document.getElementById('toolbar-toggle').checked = true;
+            document.getElementById('bottom-toolbar').classList.remove('hidden');
+            document.getElementById('accelerometer-toggle').checked = false;
+            document.getElementById('accelerometer-toggle').dispatchEvent(new Event('change'));
+
+            updateUIFromState();
+            alert('All settings have been reset to their default values.');
+        }
+
+        // Initialize color pickers and controls
+        document.addEventListener('DOMContentLoaded', () => {
+            customTemplates = getCustomTemplates();
+            updateBackground(); // Set initial background
+            renderColorPickers();
+            populateTemplatesLibrary();
+            populateShapesLibrary();
+
+            const spawnBtn = document.getElementById('spawn-mode-btn');
+           
+            const dragBtn = document.getElementById('drag-mode-btn');
+            const deleteBtn = document.getElementById('delete-mode-btn');
+            const explodeBtn = document.getElementById('explode-mode-btn');
+            const attractBtn = document.getElementById('attract-mode-btn');
+            const weldBtn = document.getElementById('weld-mode-btn');
+
+            function setActiveButton(activeBtn) {
+                [spawnBtn, dragBtn, deleteBtn, explodeBtn, attractBtn, weldBtn].forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                activeBtn.classList.add('active');
+            }
+
+            function clearWeldingSelection() {
+                if (weldingFirstBody) {
+                    weldingFirstBody.render.strokeStyle = undefined;
+                    weldingFirstBody.render.lineWidth = undefined;
+                    weldingFirstBody = null;
+                }
+            }
+
+            spawnBtn.addEventListener('click', () => {
+                currentMode = 'spawn';
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
+                clearWeldingSelection();
+                setActiveButton(spawnBtn);
+            });
+
+            dragBtn.addEventListener('click', () => {
+                currentMode = 'drag';
+                mouseConstraint.collisionFilter.mask = -1; // Always enable dragging for drag mode
+                clearWeldingSelection();
+                setActiveButton(dragBtn);
+            });
+
+            attractBtn.addEventListener('click', () => {
+                currentMode = 'attract';
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
+                clearWeldingSelection();
+                setActiveButton(attractBtn);
+            });
+
+            weldBtn.addEventListener('click', () => {
+                currentMode = 'weld';
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
+                setActiveButton(weldBtn);
+            });
+
+            deleteBtn.addEventListener('click', () => {
+                currentMode = 'delete';
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
+                clearWeldingSelection();
+                setActiveButton(deleteBtn);
+            });
+
+            explodeBtn.addEventListener('click', () => {
+                currentMode = 'explode';
+                mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
+                clearWeldingSelection();
+                setActiveButton(explodeBtn);
+            });
+
+            document.getElementById('add-color-btn').addEventListener('click', addColor);
+            document.getElementById('remove-color-btn').addEventListener('click', removeColor);
+            document.getElementById('clear-balls-btn').addEventListener('click', clearBalls);
+            document.getElementById('save-template-btn').addEventListener('click', saveCustomTemplate);
+
+            document.getElementById('save-state-btn').addEventListener('click', saveState);
+            const loadStateInput = document.getElementById('load-state-input');
+            document.getElementById('load-state-btn').addEventListener('click', () => {
+                loadStateInput.click();
+            });
+            loadStateInput.addEventListener('change', (e) => {
+                               const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const state = JSON.parse(event.target.result);
+                        loadState(state);
+                    } catch (error) {
+                        console.error("Error loading or parsing state file:", error);
+                        alert("Failed to load state. The file might be corrupted or in the wrong format.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; // Reset input so same file can be loaded again
+            });
+
+            document.getElementById('reset-settings-btn').addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset all settings to their defaults? This cannot be undone.')) {
+                    resetAllSettings();
+                }
+            });
+
+            const pauseBtn = document.getElementById('pause-btn');
+            pauseBtn.addEventListener('click', () => {
+                runner.enabled = !runner.enabled;
+                isPaused = !runner.enabled; // Update pause state
+                
+                // When paused, always enable dragging regardless of current mode
+                if (isPaused) {
+                    mouseConstraint.collisionFilter.mask = -1; // Enable dragging
+                } else {
+                    // When unpaused, restore mode-appropriate dragging behavior
+                    if (currentMode === 'drag') {
+                        mouseConstraint.collisionFilter.mask = -1;
+                    } else {
+                        mouseConstraint.collisionFilter.mask = 0;
+                    }
+                }
+                
+                pauseBtn.textContent = runner.enabled ? 'Pause Simulation' : 'Resume Simulation';
+            });
+
+            const sizeSliderContainer = document.getElementById('size-slider-container');
+            document.getElementById('random-size-toggle').addEventListener('change', (e) => {
+                randomSizesEnabled = e.target.checked;
+                sizeSliderContainer.style.display = randomSizesEnabled ? 'none' : 'block';
+            });
+
+            document.getElementById('random-color-toggle').addEventListener('change', (e) => {
+                randomColorsEnabled = e.target.checked;
+            });
+
+            document.getElementById('size-slider').addEventListener('input', (e) => {
+                ballRadius = parseInt(e.target.value, 10);
+            });
+
+            document.getElementById('spawn-speed-slider').addEventListener('input', (e) => {
+                spawnSpeed = parseInt(e.target.value, 10);
+            });
+
+            document.getElementById('time-scale-slider').addEventListener('input', (e) => {
+                engine.timing.timeScale = parseFloat(e.target.value);
+            });
+
+            document.getElementById('gravity-y-slider').addEventListener('input', (e) => {
+                engine.world.gravity.y = parseFloat(e.target.value);
+            });
+
+            document.getElementById('gravity-x-slider').addEventListener('input', (e) => {
+                engine.world.gravity.x = parseFloat(e.target.value);
+            });
+
+            const gravityYSlider = document.getElementById('gravity-y-slider');
+            const gravityXSlider = document.getElementById('gravity-x-slider');
+            let accelerometerEnabled = false;
+
+            function handleOrientation(event) {
+                if (!accelerometerEnabled) return;
+                // Beta = front-to-back tilt, Gamma = left-to-right tilt
+                const { beta, gamma } = event;
+                // Normalize and scale gravity
+                engine.world.gravity.y = beta / 90;
+                engine.world.gravity.x = gamma / 90;
+            }
+
+            document.getElementById('accelerometer-toggle').addEventListener('change', (e) => {
+                accelerometerEnabled = e.target.checked;
+                gravityYSlider.disabled = accelerometerEnabled;
+                gravityXSlider.disabled = accelerometerEnabled;
+
+                if (accelerometerEnabled) {
+                    // Check for permission if it's a newer API
+                    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        DeviceOrientationEvent.requestPermission()
+                            .then(permissionState => {
+                                if (permissionState === 'granted') {
+                                    window.addEventListener('deviceorientation', handleOrientation);
+                                }
+                            })
+                            .catch(console.error);
+                    } else {
+                        // Handle regular case
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                } else {
+                    window.removeEventListener('deviceorientation', handleOrientation);
+                    // Reset to slider values
+                    engine.world.gravity.y = parseFloat(gravityYSlider.value);
+                    engine.world.gravity.x = parseFloat(gravityXSlider.value);
+                }
+            });
+
+            document.getElementById('bounciness-slider').addEventListener('input', (e) => {
+                ballBounciness = parseFloat(e.target.value);
+            });
+
+            document.getElementById('friction-slider').addEventListener('input', (e) => {
+                objectFriction = parseFloat(e.target.value);
+            });
+
+            document.getElementById('static-friction-slider').addEventListener('input', (e) => {
+                objectStaticFriction = parseFloat(e.target.value);
+            });
+
+            document.getElementById('density-slider').addEventListener('input', (e) => {
+                objectDensity = parseFloat(e.target.value);
+            });
+
+            document.getElementById('object-collision-toggle').addEventListener('change', (e) => {
+                objectCollisionsEnabled = e.target.checked;
+            });
+
+            document.getElementById('air-friction-slider').addEventListener('input', (e) => {
+                engine.airFriction = parseFloat(e.target.value);
+            });
+
+            document.getElementById('static-toggle').addEventListener('change', (e) => {
+                isStaticEnabled = e.target.checked;
+            });
+
+            document.getElementById('rotation-toggle').addEventListener('change', (e) => {
+                randomRotationEnabled = e.target.checked;
+            });
+
+            document.getElementById('faces-toggle').addEventListener('change', (e) => {
+                facesEnabled = e.target.checked;
+            });
+
+            document.getElementById('names-toggle').addEventListener('change', (e) => {
+                namesEnabled = e.target.checked;
+            });
+
+            document.getElementById('rotation-speed-slider').addEventListener('input', (e) => {
+                initialRotationSpeed = parseFloat(e.target.value);
+            });
+
+            const lifespanSliderContainer = document.getElementById('lifespan-slider-container');
+            document.getElementById('lifespan-toggle').addEventListener('change', (e) => {
+                lifespanEnabled = e.target.checked;
+                lifespanSliderContainer.style.display = lifespanEnabled ? 'block' : 'none';
+            });
+
+            document.getElementById('lifespan-slider').addEventListener('input', (e) => {
+                objectLifespan = parseInt(e.target.value, 10) * 1000;
+            });
+
+            // World Settings
+            document.getElementById('wall-bounciness-slider').addEventListener('input', (e) => {
+                const bounciness = parseFloat(e.target.value);
+                boundaries.forEach(wall => wall.restitution = bounciness);
+            });
+
+            document.getElementById('attraction-strength-slider').addEventListener('input', (e) => {
+                attractionStrength = parseFloat(e.target.value);
+            });
+
+            document.getElementById('attraction-radius-slider').addEventListener('input', (e) => {
+                attractionRadius = parseInt(e.target.value, 10);
+            });
+
+            document.getElementById('explosion-strength-slider').addEventListener('input', (e) => {
+                explosionStrength = parseFloat(e.target.value);
+            });
+
+            document.getElementById('explosion-radius-slider').addEventListener('input', (e) => {
+                explosionRadius = parseInt(e.target.value, 10);
+            });
+
+            document.getElementById('invisible-welds-toggle').addEventListener('change', (e) => {
+                invisibleWeldsEnabled = e.target.checked;
+            });
+
+            Events.on(render, 'afterRender', (event) => {
+                const context = render.context;
+
+                // Draw faces on bodies
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body.hasFace) {
+                        // Update blinking logic (only if alive)
+                        if (!body.isDead) {
+                            if (body.isBlinking) {
+                                body.blinkDuration++;
+                                if (body.blinkDuration >= 8) { // Blink lasts 8 frames
+                                    body.isBlinking = false;
+                                    body.blinkDuration = 0;
+                                    body.blinkTimer = Math.random() * 600 + 480; // Next blink in 8-20 seconds
+                                }
+                            } else {
+                                body.blinkTimer--;
+                                if (body.blinkTimer <= 0) {
+                                    body.isBlinking = true;
+                                    body.blinkDuration = 0;
+                                }
+                            }
+                        }
+
+                        // Update emotion timer
+                        if (body.emotionTimer > 0) {
+                            body.emotionTimer--;
+                        }
+
+                        // Update looking behavior (only if alive and not being dragged)
+                        if (!body.isDead && !body.isBeingDragged) {
+                            if (body.isLooking) {
+                                body.lookDuration++;
+                                // Stop looking after 5-7 seconds
+                                if (body.lookDuration >= Math.random() * 120 + 300) {
+                                    body.isLooking = false;
+                                    body.lookAtTarget = null;
+                                    body.lookDuration = 0;
+                                    body.lookTimer = Math.random() * 300 + 120; // Next look in 2-7 seconds
+                                }
+                            } else {
+                                body.lookTimer--;
+                                if (body.lookTimer <= 0) {
+                                    // Find a nearby face to look at (more often now)
+                                    if (Math.random() < 0.6) { // 60% chance when timer expires
+                                        const nearbyBodies = bodies.filter(otherBody => 
+                                            otherBody !== body && 
+                                            otherBody.hasFace && 
+                                            !otherBody.isDead &&
+                                            Matter.Vector.magnitude(Matter.Vector.sub(body.position, otherBody.position)) < 150
+                                        );
+                                        if (nearbyBodies.length > 0) {
+                                            body.lookAtTarget = nearbyBodies[Math.floor(Math.random() * nearbyBodies.length)];
+                                            body.isLooking = true;
+                                            body.lookDuration = 0;
+                                        }
+                                    }
+                                    if (!body.isLooking) {
+                                        body.lookTimer = Math.random() * 300 + 120; // Reset timer if not looking
+                                    }
+                                }
+                            }
+                        }
+
+                        const pos = body.position;
+                        const angle = body.angle;
+                        
+                        // Find an approximate radius for non-circular shapes (consistent regardless of rotation)
+                        let radius = body.circleRadius;
+                        if (!radius) {
+                            // Calculate a consistent radius based on the body's bounds at 0 rotation
+                            const bounds = body.bounds;
+                            const width = bounds.max.x - bounds.min.x;
+                            const height = bounds.max.y - bounds.min.y;
+                            radius = Math.min(width, height) / 2 * 0.6; // Use smaller dimension for consistency
+                        }
+
+                        context.save();
+                        context.translate(pos.x, pos.y);
+                        context.rotate(angle);
+
+                        // Eyes
+                        const eyeRadius = radius * 0.15;
+                        const eyeOffsetX = radius * 0.35;
+                        const eyeOffsetY = -radius * 0.2;
+                        
+                        if (body.isDead) {
+                            // Draw X eyes for dead bodies
+                            context.strokeStyle = 'black';
+                            context.lineWidth = radius * 0.08;
+                            // Left eye X
+                            context.beginPath();
+                            context.moveTo(-eyeOffsetX - eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(-eyeOffsetX + eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.moveTo(-eyeOffsetX + eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(-eyeOffsetX - eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.stroke();
+                            // Right eye X
+                            context.beginPath();
+                            context.moveTo(eyeOffsetX - eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(eyeOffsetX + eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.moveTo(eyeOffsetX + eyeRadius * 0.7, eyeOffsetY - eyeRadius * 0.7);
+                            context.lineTo(eyeOffsetX - eyeRadius * 0.7, eyeOffsetY + eyeRadius * 0.7);
+                            context.stroke();
+                        } else if (body.isBeingDragged && body.emotionTimer > 0) {
+                            // Draw scared/surprised eyes (large circles)
+                            context.fillStyle = 'white';
+                            const scaredEyeRadius = eyeRadius * 1.5;
+                            context.beginPath();
+                            context.arc(-eyeOffsetX, eyeOffsetY, scaredEyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX, eyeOffsetY, scaredEyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+
+                            // Large pupils
+                            context.fillStyle = 'black';
+                            context.beginPath();
+                            context.arc(-eyeOffsetX, eyeOffsetY, scaredEyeRadius * 0.6, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX, eyeOffsetY, scaredEyeRadius * 0.6, 0, 2 * Math.PI);
+                            context.fill();
+                        } else if (body.isBlinking) {
+                            // Draw closed eyes (horizontal lines)
+                            context.strokeStyle = 'black';
+                            context.lineWidth = radius * 0.08;
+                            context.beginPath();
+                            context.moveTo(-eyeOffsetX - eyeRadius * 0.8, eyeOffsetY);
+                            context.lineTo(-eyeOffsetX + eyeRadius * 0.8, eyeOffsetY);
+                            context.stroke();
+                            context.beginPath();
+                            context.moveTo(eyeOffsetX - eyeRadius * 0.8, eyeOffsetY);
+                            context.lineTo(eyeOffsetX + eyeRadius * 0.8, eyeOffsetY);
+                            context.stroke();
+                        } else {
+                            // Draw normal open eyes
+                            context.fillStyle = 'white';
+                            context.beginPath();
+                            context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+                            context.fill();
+
+                            // Pupils
+                            context.fillStyle = 'black';
+                            
+                            // Pupils - adjust position if looking at target
+                            let pupilOffsetX = 0;
+                            let pupilOffsetY = 0;
+                            
+                            if (body.isLooking && body.lookAtTarget) {
+                                // Calculate direction to look target
+                                const lookDirection = Matter.Vector.sub(body.lookAtTarget.position, body.position);
+                                const lookAngle = Math.atan2(lookDirection.y, lookDirection.x) - angle;
+                                
+                                // Move pupils toward look direction (limited movement)
+                                pupilOffsetX = Math.cos(lookAngle) * eyeRadius * 0.3;
+                                pupilOffsetY = Math.sin(lookAngle) * eyeRadius * 0.3;
+                            }
+                            
+                            context.beginPath();
+                            context.arc(-eyeOffsetX + pupilOffsetX, eyeOffsetY + pupilOffsetY, eyeRadius * 0.5, 0, 2 * Math.PI);
+                            context.fill();
+                            context.beginPath();
+                            context.arc(eyeOffsetX + pupilOffsetX, eyeOffsetY + pupilOffsetY, eyeRadius * 0.5, 0, 2 * Math.PI);
+                            context.fill();
+                        }
+
+                        // Mouth
+                        const mouthOffsetY = radius * 0.3;
+                        const mouthWidth = radius * 0.6;
+                        context.lineWidth = radius * 0.1;
+                        context.strokeStyle = 'black';
+                        
+                        if (body.isDead) {
+                            // Draw flat line mouth for dead bodies
+                            context.beginPath();
+                            context.moveTo(-mouthWidth * 0.5, mouthOffsetY);
+                            context.lineTo(mouthWidth * 0.5, mouthOffsetY);
+                            context.stroke();
+                        } else if (body.isBeingDragged && body.emotionTimer > 0) {
+                            // Draw scared mouth (small O shape)
+                            context.beginPath();
+                            context.arc(0, mouthOffsetY, mouthWidth * 0.3, 0, 2 * Math.PI);
+                            context.stroke();
+                        } else {
+                            // Draw normal smile
+                            context.beginPath();
+                            context.arc(0, mouthOffsetY, mouthWidth, 0.2 * Math.PI, 0.8 * Math.PI);
+                            context.stroke();
+                        }
+
+                        context.restore();
+                    }
+
+                    if (body.customName) {
+                        const pos = body.position;
+                        let radius = body.circleRadius;
+                        if (!radius) {
+                            const bounds = body.bounds;
+                            const width = bounds.max.x - bounds.min.x;
+                            const height = bounds.max.y - bounds.min.y;
+                            radius = Math.max(width, height) / 2;
+                        }
+                        context.save();
+                        context.translate(pos.x, pos.y);
+                        context.font = '12px sans-serif';
+                        context.fillStyle = 'white';
+                        context.textAlign = 'center';
+                        context.fillText(body.customName, 0, -radius - 5);
+                        context.restore();
+                    }
+                });
+
+                shockwaves.forEach((shockwave, index) => {
+                    // Update shockwave
+                    shockwave.life++;
+                    shockwave.radius = (shockwave.life / shockwave.maxLife) * shockwave.maxRadius;
+
+                    if (shockwave.life >= shockwave.maxLife) {
+                        shockwaves.splice(index, 1);
+                        return;
+                    }
+
+                    // Draw shockwave
+                    const opacity = 1 - (shockwave.life / shockwave.maxLife);
+                    context.beginPath();
+                    context.arc(shockwave.x, shockwave.y, shockwave.radius, 0, 2 * Math.PI);
+                    context.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                    context.lineWidth = 3;
+                    context.stroke();
+                });
+            });
+
+            // Collision damage system
+            Events.on(engine, 'collisionStart', (event) => {
+                const pairs = event.pairs;
+                pairs.forEach(pair => {
+                    const { bodyA, bodyB } = pair;
+                    
+                    // Only process bodies with faces that aren't already dead
+                    [bodyA, bodyB].forEach(body => {
+                        if (body.hasFace && !body.isDead && !boundaries.includes(body)) {
+                            // Calculate impact force based on velocity
+                            const speed = Matter.Vector.magnitude(body.velocity);
+                            const damage = Math.max(0, speed - 4.8); // Damage threshold increased from 3 to 4.8 (60% higher velocity tolerance)
+                            
+                            if (damage > 0) {
+                                body.damage += damage * 0.5; // Scale damage
+                                
+                                // Check if body should die
+                                if (body.damage > 13) { // Death threshold
+                                    body.isDead = true;
+                                    body.isBlinking = false;
+                                    // Make dead bodies less bouncy
+                                    body.restitution *= 0.3;
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+
+            Events.on(engine, 'beforeUpdate', () => {
+                // Check for bodies being dragged
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body.hasFace && !body.isDead) {
+                        // Check if body is being dragged by mouse constraint
+                        const wasBeingDragged = body.isBeingDragged;
+                        body.isBeingDragged = (mouseConstraint.body === body);
+                        
+                        // If just started being dragged, set emotion timer
+                        if (body.isBeingDragged && !wasBeingDragged) {
+                            body.emotionTimer = 60; // Show scared face for 1 second (60 frames)
+                        }
+                    }
+                });
+
+                if (currentMode === 'attract' && isMouseDown && mouse.position.x) {
+                    const bodies = Composite.allBodies(world);
+                    const basePullForce = 0.0005;
+                    const pullForce = basePullForce * attractionStrength;
+                    bodies.forEach(body => {
+                        if (body.isStatic) return;
+                        const distanceVector = Matter.Vector.sub(mouse.position, body.position);
+                        const distance = Matter.Vector.magnitude(distanceVector);
+                        if (distance < attractionRadius) {
+                            const forceMagnitude = pullForce * (1 - distance / attractionRadius) * body.mass;
+                            const force = Matter.Vector.mult(Matter.Vector.normalise(distanceVector), forceMagnitude);
+                            Body.applyForce(body, body.position, force);
+                        }
+                    });
+                }
+            });
+
+
+            // UI Settings
+            document.getElementById('toolbar-toggle').addEventListener('change', (e) => {
+                document.getElementById('bottom-toolbar').classList.toggle('hidden', !e.target.checked);
+            });
+
+            // Background and Grid controls
+            const gridToggle = document.getElementById('grid-toggle');
+            const gridColorContainer = document.getElementById('grid-color-container');
+
+            gridToggle.addEventListener('change', (e) => {
+                gridEnabled = e.target.checked;
+                gridColorContainer.style.display = gridEnabled ? 'flex' : 'none';
+                updateBackground();
+            });
+
+            document.getElementById('grid-color-picker').addEventListener('input', (e) => {
+                gridColor = e.target.value;
+                updateBackground();
+            });
+
+            document.getElementById('bg-color-picker').addEventListener('input', (e) => {
+                backgroundColor = e.target.value;
+                updateBackground();
+            });
+
+
+
+            const settingsPanel = document.getElementById('settings-panel');
+            const toggleBtn = document.getElementById('toggle-settings-btn');
+            document.getElementById('settings-header').addEventListener('click', (e) => {
+                if (e.target.id === 'toggle-settings-btn') return; // Don't toggle if button is clicked
+                settingsPanel.classList.toggle('minimized');
+                toggleBtn.textContent = settingsPanel.classList.contains('minimized') ? '+' : '-';
+            });
+            toggleBtn.addEventListener('click', () => {
+                settingsPanel.classList.toggle('minimized');
+                toggleBtn.textContent = settingsPanel.classList.contains('minimized') ? '+' : '-';
+            });
+
+            // Library Panel controls
+            const libraryPanel = document.getElementById('library-panel');
+            const toggleLibraryBtn = document.getElementById('toggle-library-panel-btn');
+            document.getElementById('library-header').addEventListener('click', (e) => {
+                if (e.target.id === 'toggle-library-panel-btn') return;
+                libraryPanel.classList.toggle('minimized');
+                toggleLibraryBtn.textContent = libraryPanel.classList.contains('minimized') ? '+' : '-';
+            });
+            toggleLibraryBtn.addEventListener('click', () => {
+                libraryPanel.classList.toggle('minimized');
+                toggleLibraryBtn.textContent = libraryPanel.classList.contains('minimized') ? '+' : '-';
+            });
+
+            document.getElementById('open-library-btn').addEventListener('click', () => {
+                templatesLibrary.classList.remove('hidden');
+            });
+
+            document.getElementById('close-library-btn').addEventListener('click', () => {
+                templatesLibrary.classList.add('hidden');
+            });
+
+            // Shapes Library controls
+            document.getElementById('open-shapes-library-btn').addEventListener('click', () => {
+                shapesLibrary.classList.remove('hidden');
+            });
+
+            document.getElementById('close-shapes-library-btn').addEventListener('click', () => {
+                shapesLibrary.classList.add('hidden');
+            });
+
+            shapesLibrary.addEventListener('click', (e) => {
+                if (e.target.id === 'shapes-library') {
+                    shapesLibrary.classList.add('hidden');
+                }
+            });
+
+            // Close library if clicking on the background overlay for templates
+            templatesLibrary.addEventListener('click', (e) => {
+                if (e.target.id === 'templates-library') {
+                    templatesLibrary.classList.add('hidden');
+                }
+            });
+
+            // Close library if clicking on the background overlay for shapes
+            shapesLibrary.addEventListener('click', (e) => {
+                if (e.target.id === 'shapes-library') {
+                    shapesLibrary.classList.add('hidden');
+                }
+            });
+        });
+
+        function deleteBodyAndConstraints(body) {
+            // Clear lifespan timeout if exists
+            if (body.lifespanTimeout) {
+                clearTimeout(body.lifespanTimeout);
+            }
+            
+            // Remove any constraints connected to this body
+            const constraintsToRemove = weldingConstraints.filter(constraint => 
+                constraint.bodyA === body || constraint.bodyB === body
+            );
+            
+            constraintsToRemove.forEach(constraint => {
+                Composite.remove(world, constraint);
+                const index = weldingConstraints.indexOf(constraint);
+                if (index > -1) {
+                    weldingConstraints.splice(index, 1);
+                }
+            });
+            
+            // Clear selection if this body was selected for welding
+            if (weldingFirstBody === body) {
+                weldingFirstBody = null;
+            }
+            
+            // Remove the body
+            Composite.remove(world, body);
+        }
+
+        function clearBalls() {
+            const allBodies = Composite.allBodies(world);
+            const bodiesToRemove = allBodies.filter(body => {
+                if (body.lifespanTimeout) {
+                    clearTimeout(body.lifespanTimeout);
+                }
+                return !boundaries.includes(body);
+            });
+            
+            // Clear all welding constraints
+            weldingConstraints.forEach(constraint => {
+                Composite.remove(world, constraint);
+            });
+            weldingConstraints = [];
+            
+            // Clear welding selection
+            weldingFirstBody = null;
+            
+            Composite.remove(world, bodiesToRemove);
+        }
+
+        function populateTemplatesLibrary() {
+            templatesContainer.innerHTML = '';
+            
+            const allTemplates = { ...customTemplates, ...templates };
+
+            for (const name in allTemplates) {
+                const isCustom = customTemplates.hasOwnProperty(name);
+                const template = allTemplates[name];
+                const item = document.createElement('div');
+                item.className = 'template-item';
+
+                let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
+
+                const headerHTML = isCustom ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">${name}</h4>
+                        <button class="delete-template-btn" data-name="${name}">&times;</button>
+                    </div>
+                ` : `<h4 style="margin-bottom: 10px;">${name}</h4>`;
+
+                item.innerHTML = `
+                    ${headerHTML}
+                    <div class="color-swatches">${swatchesHTML}</div>
+                    <button class="apply-template-btn">Apply</button>
+                `;
+
+                item.querySelector('.apply-template-btn').addEventListener('click', () => {
+                    ballColors = [...template];
+                    renderColorPickers();
+                    templatesLibrary.classList.add('hidden');
+                });
+
+                if (isCustom) {
+                    item.querySelector('.delete-template-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const templateName = e.target.getAttribute('data-name');
+                        if (confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
+                            deleteCustomTemplate(templateName);
+                        }
+                    });
+                }
+
+                templatesContainer.appendChild(item);
+            }
+
+            // Add Friends of PhySiC section
+            const friendsHeader = document.createElement('h3');
+            friendsHeader.textContent = "Friends of PhySiC";
+            friendsHeader.style.cssText = "grid-column: 1 / -1; text-align: center; border-bottom: 1px solid #555; padding-bottom: 10px; margin: 20px 0 10px 0;";
+            templatesContainer.appendChild(friendsHeader);
+
+            for (const name in friendsOfPhysicTemplates) {
+                const template = friendsOfPhysicTemplates[name];
+                const item = document.createElement('div');
+                item.className = 'template-item';
+
+                let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
+
+                item.innerHTML = `
+                    <h4 style="margin-bottom: 10px;">${name}</h4>
+                    <div class="color-swatches">${swatchesHTML}</div>
+                    <button class="apply-template-btn">Apply</button>
+                `;
+
+                item.querySelector('.apply-template-btn').addEventListener('click', () => {
+                    ballColors = [...template];
+                    renderColorPickers();
+                    templatesLibrary.classList.add('hidden');
+                });
+
+                templatesContainer.appendChild(item);
+            }
+        }
+
+        function populateShapesLibrary() {
+            shapesContainer.innerHTML = '';
+            for (const name in shapes) {
+                const shape = shapes[name];
+                const item = document.createElement('div');
+                item.className = 'shape-item';
+                item.innerHTML = `
+                    <svg viewBox="0 0 50 50">${shape.svg}</svg>
+                    <h4>${name}</h4>
+                `;
+                item.addEventListener('click', () => {
+                    selectedShape = shape;
+                    shapesLibrary.classList.add('hidden');
+                });
+                shapesContainer.appendChild(item);
+            }
+        }
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            render.canvas.width = window.innerWidth;
+            render.canvas.height = window.innerHeight;
+
+            // Update boundary positions
+            Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
+            Body.setPosition(leftWall, { x: -25, y: window.innerHeight / 2 });
+            Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
+            Body.setPosition(ceiling, { x: window.innerWidth / 2, y: -25 });
+        });
+    </script>
+</body>
+</html>
