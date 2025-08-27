@@ -5,43 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ball Trajectory Simulation</title>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: stretch;
-            min-height: 100vh;
-            background-color: #f0f0f0;
-            font-family: sans-serif;
+        html, body {
+            height: 100%;
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-
+        body {
+            width: 100vw;
+            height: 100vh;
+            min-height: 100vh;
+            min-width: 100vw;
+            overflow: hidden;
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+        }
         canvas {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw !important;
+            height: 100vh !important;
             border: 1px solid black;
             background-color: #fff;
             cursor: crosshair;
-            display: block;
-            position: absolute;
-            left: 0;
-            top: 0;
             z-index: 1;
+            display: block;
         }
-
         canvas.dragging {
             cursor: grabbing;
         }
-
         h1, p {
             text-align: center;
             margin-left: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+            z-index: 100;
+            position: relative;
+            pointer-events: none;
+            user-select: none;
         }
-
+        h1 {
+            font-size: 1.5em;
+            margin-top: 18px;
+        }
+        p {
+            font-size: 1em;
+            margin-bottom: 18px;
+        }
         /* Side panel styles */
         .side-panel {
             position: fixed;
             top: 0;
             left: 0;
             width: 240px;
+            max-width: 90vw;
             height: 100vh;
             background: #fff;
             border-right: 1px solid #ccc;
@@ -176,25 +194,29 @@
             ballColor = this.value;
         }
 
-        // Responsive canvas (full window)
+        // Responsive canvas (full window, devicePixelRatio aware)
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            // Handle high-DPI screens
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = "100vw";
+            canvas.style.height = "100vh";
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
         }
         window.addEventListener('resize', resizeCanvas);
 
         // Panel toggle logic
         panelToggleBtn.onclick = function() {
             sidePanel.classList.toggle('closed');
-            // Move toggle button to edge of panel
             if (sidePanel.classList.contains('closed')) {
                 panelToggleBtn.innerHTML = "&#9776;";
             } else {
                 panelToggleBtn.innerHTML = "&times;";
             }
-            resizeCanvas();
+            // No need to resize canvas, as it always fills the window
         };
-        // Initial state
         panelToggleBtn.innerHTML = "&#9776;";
         resizeCanvas();
 
@@ -208,18 +230,15 @@
                 this.color = color;
                 this.isActive = true;
             }
-
             update() {
                 if (!this.isActive) return;
-
                 this.vy += gravity;
                 this.vx *= (1 - airResistance);
                 this.vy *= (1 - airResistance);
                 this.x += this.vx;
                 this.y += this.vy;
-
-                if (this.y + this.radius > canvas.height) {
-                    this.y = canvas.height - this.radius;
+                if (this.y + this.radius > canvas.height / (window.devicePixelRatio || 1)) {
+                    this.y = canvas.height / (window.devicePixelRatio || 1) - this.radius;
                     this.vy *= -bounceFactor;
                     this.vx *= 0.95;
                     if (Math.abs(this.vy) < 0.1 && gravity > 0) {
@@ -229,21 +248,18 @@
                         }
                     }
                 }
-
-                if (this.x + this.radius > canvas.width) {
-                    this.x = canvas.width - this.radius;
+                if (this.x + this.radius > canvas.width / (window.devicePixelRatio || 1)) {
+                    this.x = canvas.width / (window.devicePixelRatio || 1) - this.radius;
                     this.vx *= -bounceFactor;
                 } else if (this.x - this.radius < 0) {
                     this.x = this.radius;
                     this.vx *= -bounceFactor;
                 }
-
                 if (this.y - this.radius < 0) {
                     this.y = this.radius;
                     this.vy *= -bounceFactor;
                 }
             }
-
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -257,13 +273,15 @@
             ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 0.5;
             ctx.beginPath();
-            for (let x = gridSpacing; x < canvas.width; x += gridSpacing) {
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const h = canvas.height / (window.devicePixelRatio || 1);
+            for (let x = gridSpacing; x < w; x += gridSpacing) {
                 ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
+                ctx.lineTo(x, h);
             }
-            for (let y = gridSpacing; y < canvas.height; y += gridSpacing) {
+            for (let y = gridSpacing; y < h; y += gridSpacing) {
                 ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
+                ctx.lineTo(w, y);
             }
             ctx.stroke();
             ctx.lineWidth = 1;
@@ -275,26 +293,25 @@
             let simVx = startVx;
             let simVy = startVy;
             const simRadius = predictionPointRadius;
-
             let prevX = simX;
             let prevY = simY;
-
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const h = canvas.height / (window.devicePixelRatio || 1);
             for (let i = 0; i < predictionSteps; i++) {
                 simVy += gravity;
                 simVx *= (1 - airResistance);
                 simVy *= (1 - airResistance);
                 simX += simVx;
                 simY += simVy;
-
                 let bounced = false;
-                if (simY + simRadius > canvas.height) {
-                    simY = canvas.height - simRadius;
+                if (simY + simRadius > h) {
+                    simY = h - simRadius;
                     simVy *= -bounceFactor;
                     simVx *= 0.95;
                     bounced = true;
                 }
-                if (simX + simRadius > canvas.width) {
-                    simX = canvas.width - simRadius;
+                if (simX + simRadius > w) {
+                    simX = w - simRadius;
                     simVx *= -bounceFactor;
                     bounced = true;
                 } else if (simX - simRadius < 0) {
@@ -307,7 +324,6 @@
                     simVy *= -bounceFactor;
                     bounced = true;
                 }
-
                 if (i % 5 === 0) {
                     const progress = i / predictionSteps;
                     const r = Math.floor(255 * progress);
@@ -319,7 +335,6 @@
                     ctx.lineTo(simX, simY);
                     ctx.stroke();
                     ctx.closePath();
-
                     ctx.fillStyle = `rgba(${r}, ${g}, 0, 0.75)`;
                     ctx.beginPath();
                     ctx.arc(simX, simY, simRadius, 0, Math.PI * 2);
@@ -328,7 +343,6 @@
                     prevY = simY;
                 }
             }
-
             ctx.beginPath();
             ctx.moveTo(startDragPos.x, startDragPos.y);
             ctx.lineTo(currentDragPos.x, currentDragPos.y);
@@ -341,9 +355,7 @@
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             drawGrid();
-
             if (isDragging) {
                 const dx = currentDragPos.x - startDragPos.x;
                 const dy = currentDragPos.y - startDragPos.y;
@@ -351,20 +363,19 @@
                 const launchVy = -dy * launchPowerMultiplier;
                 predictTrajectory(startDragPos.x, startDragPos.y, launchVx, launchVy);
             }
-
             if (ball) {
                 ball.update();
                 ball.draw();
             }
-
             requestAnimationFrame(animate);
         }
 
         function getMousePos(event) {
             const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
             return {
-                x: event.clientX - rect.left,
-                y: event.clientY - rect.top
+                x: (event.clientX - rect.left) * (canvas.width / rect.width) / dpr,
+                y: (event.clientY - rect.top) * (canvas.height / rect.height) / dpr
             };
         }
 
@@ -389,12 +400,10 @@
                 isDragging = false;
                 canvas.classList.remove('dragging');
                 const endDragPos = getMousePos(event);
-
                 const dx = endDragPos.x - startDragPos.x;
                 const dy = endDragPos.y - startDragPos.y;
                 const launchVx = -dx * launchPowerMultiplier;
                 const launchVy = -dy * launchPowerMultiplier;
-
                 ball = new Ball(startDragPos.x, startDragPos.y, launchVx, launchVy, 15, ballColor);
             }
         });
@@ -410,6 +419,39 @@
                 ball = new Ball(startDragPos.x, startDragPos.y, launchVx, launchVy, 15, ballColor);
             }
         });
+
+        // Touch support for mobile
+        canvas.addEventListener('touchstart', (event) => {
+            if (!isDragging && event.touches.length === 1) {
+                isDragging = true;
+                canvas.classList.add('dragging');
+                startDragPos = getMousePos(event.touches[0]);
+                currentDragPos = { ...startDragPos };
+                ball = null;
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (event) => {
+            if (isDragging && event.touches.length === 1) {
+                currentDragPos = getMousePos(event.touches[0]);
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (event) => {
+            if (isDragging) {
+                isDragging = false;
+                canvas.classList.remove('dragging');
+                const endDragPos = currentDragPos;
+                const dx = endDragPos.x - startDragPos.x;
+                const dy = endDragPos.y - startDragPos.y;
+                const launchVx = -dx * launchPowerMultiplier;
+                const launchVy = -dy * launchPowerMultiplier;
+                ball = new Ball(startDragPos.x, startDragPos.y, launchVx, launchVy, 15, ballColor);
+                event.preventDefault();
+            }
+        }, { passive: false });
 
         animate();
     </script>
