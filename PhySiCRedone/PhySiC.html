@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Ball Simulation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="library-panel">
+        <div id="library-header">
+            <h3>Library</h3>
+            <button id="toggle-library-panel-btn">-</button>
+        </div>
+        <div id="library-body">
+            <div class="setting-group">
+                <button id="open-shapes-library-btn" class="control-btn">🔷 Shapes</button>
+            </div>
+            <div class="setting-group">
+                <button id="open-library-btn" class="control-btn">🎨 Templates</button>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4 style="margin-top: 0; margin-bottom: 10px; text-align: left; border: none; padding: 0; color: #fff;">Save Current Colors</h4>
+                <input type="text" id="new-template-name" placeholder="Template Name" style="width: calc(100% - 12px); margin-bottom: 5px; padding: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 4px;">
+                <button id="save-template-btn" class="control-btn">Save Template</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-panel">
+        <div id="settings-header">
+            <h3>Settings</h3>
+            <button id="toggle-settings-btn">-</button>
+        </div>
+        <div id="settings-body">
+            <div class="setting-group">
+                <button id="pause-btn" class="control-btn">Pause Simulation</button>
+            </div>
+            <div class="setting">
+                <label for="random-size-toggle">Random Sizes</label>
+                <label class="switch">
+                    <input type="checkbox" id="random-size-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="random-color-toggle">Random Colors</label>
+                <label class="switch">
+                    <input type="checkbox" id="random-color-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group" id="size-slider-container">
+                <label for="size-slider">Size</label>
+                <input type="range" id="size-slider" min="5" max="50" value="20">
+            </div>
+            <div class="setting-group">
+                <label for="spawn-speed-slider">Spawn Speed</label>
+                <input type="range" id="spawn-speed-slider" min="1" max="100" value="20">
+            </div>
+            <div class="setting-group">
+                <label for="time-scale-slider">Time Scale</label>
+                <input type="range" id="time-scale-slider" min="0.1" max="2" value="1" step="0.1">
+            </div>
+            <div class="setting-group">
+                <label for="gravity-y-slider">Gravity Y</label>
+                <input type="range" id="gravity-y-slider" min="-1" max="2" value="1" step="0.1">
+            </div>
+            <div class="setting-group">
+                <label for="gravity-x-slider">Gravity X</label>
+                <input type="range" id="gravity-x-slider" min="-1" max="1" value="0" step="0.1">
+            </div>
+            <div class="setting">
+                <label for="accelerometer-toggle">Use Accelerometer</label>
+                <label class="switch">
+                    <input type="checkbox" id="accelerometer-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group">
+                <label for="bounciness-slider">Bounciness</label>
+                <input type="range" id="bounciness-slider" min="0" max="1.2" value="0.7" step="0.05">
+            </div>
+            <div class="setting-group">
+                <label for="friction-slider">Friction</label>
+                <input type="range" id="friction-slider" min="0" max="1" value="0.1" step="0.05">
+            </div>
+            <div class="setting-group">
+                <label for="static-friction-slider">Static Friction</label>
+                <input type="range" id="static-friction-slider" min="0" max="1" value="0.5" step="0.05">
+            </div>
+            <div class="setting-group">
+                <label for="air-friction-slider">Air Friction</label>
+                <input type="range" id="air-friction-slider" min="0" max="0.25" value="0.01" step="0.005">
+            </div>
+            <div class="setting-group">
+                <label for="density-slider">Density (Weight)</label>
+                <input type="range" id="density-slider" min="0.0001" max="0.015" value="0.001" step="0.0001">
+            </div>
+            <div class="setting">
+                <label for="object-collision-toggle">Object Collisions</label>
+                <label class="switch">
+                    <input type="checkbox" id="object-collision-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="static-toggle">Make Static</label>
+                <label class="switch">
+                    <input type="checkbox" id="static-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="rotation-toggle">Random Rotation</label>
+                <label class="switch">
+                    <input type="checkbox" id="rotation-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="faces-toggle">Show Faces</label>
+                <label class="switch">
+                    <input type="checkbox" id="faces-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="names-toggle">Show Names</label>
+                <label class="switch">
+                    <input type="checkbox" id="names-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group">
+                <label for="rotation-speed-slider">Rotation Speed</label>
+                <input type="range" id="rotation-speed-slider" min="-0.5" max="0.5" value="0" step="0.01">
+            </div>
+            <div class="setting">
+                <label for="lifespan-toggle">Enable Lifespan</label>
+                <label class="switch">
+                    <input type="checkbox" id="lifespan-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-group" id="lifespan-slider-container" style="display: none;">
+                <label for="lifespan-slider">Lifespan (s)</label>
+                <input type="range" id="lifespan-slider" min="1" max="20" value="5">
+            </div>
+            <button id="clear-balls-btn" class="control-btn">Clear Balls</button>
+            <hr>
+            <div class="setting-group">
+                <h4>State Management</h4>
+                <div class="setting-group">
+                    <button id="save-state-btn" class="control-btn">Save State</button>
+                </div>
+                <div class="setting-group">
+                    <button id="load-state-btn" class="control-btn">Load State</button>
+                    <input type="file" id="load-state-input" style="display: none;" accept=".json">
+                </div>
+                <div class="setting-group">
+                    <button id="reset-settings-btn" class="control-btn" style="background-color: #c0392b;">Reset All Settings</button>
+                </div>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4>World Settings</h4>
+                <div class="setting">
+                    <label for="invisible-welds-toggle">Invisible Welds</label>
+                    <label class="switch">
+                        <input type="checkbox" id="invisible-welds-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label for="wall-bounciness-slider">Wall Bounciness</label>
+                    <input type="range" id="wall-bounciness-slider" min="0" max="1.5" value="1" step="0.05">
+                </div>
+                <div class="setting-group">
+                    <label for="attraction-strength-slider">Attraction Strength</label>
+                    <input type="range" id="attraction-strength-slider" min="0.1" max="10" value="5" step="0.1">
+                </div>
+                <div class="setting-group">
+                    <label for="attraction-radius-slider">Attraction Radius</label>
+                    <input type="range" id="attraction-radius-slider" min="50" max="500" value="200" step="10">
+                </div>
+                <div class="setting-group">
+                    <label for="explosion-strength-slider">Explosion Strength</label>
+                    <input type="range" id="explosion-strength-slider" min="0.01" max="0.2" value="0.05" step="0.005">
+                </div>
+                <div class="setting-group">
+                    <label for="explosion-radius-slider">Explosion Radius</label>
+                    <input type="range" id="explosion-radius-slider" min="50" max="500" value="150" step="10">
+                </div>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4>UI Settings</h4>
+                <div class="setting">
+                    <label for="toolbar-toggle">Show Toolbar</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toolbar-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4>Background</h4>
+                <div class="setting">
+                    <label for="grid-toggle">Show Grid</label>
+                    <label class="switch">
+                        <input type="checkbox" id="grid-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting" id="grid-color-container">
+                    <label for="grid-color-picker">Grid Color</label>
+                    <input type="color" id="grid-color-picker" value="#0000FF">
+                </div>
+                <div class="setting">
+                    <label for="bg-color-picker">BG Color</label>
+                    <input type="color" id="bg-color-picker" value="#1a1a1a">
+                </div>
+            </div>
+            <hr>
+            <h4>Object Colors</h4>
+            <div id="color-settings-container">
+                <!-- Color pickers will be dynamically added here -->
+            </div>
+            <div class="setting-controls">
+                <button id="add-color-btn">Add</button>
+                <button id="remove-color-btn">Remove</button>
+            </div>
+            <hr>
+            <div class="setting-group">
+                <h4>Play Statistics</h4>
+                <div id="play-time-container" class="setting">
+                    <span>Total Play Time:</span>
+                    <span id="play-time-display">0h 0m</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="shapes-library" class="hidden">
+        <div id="shapes-panel">
+            <div class="templates-header">
+                <h3>Shapes Library</h3>
+                <button id="close-shapes-library-btn">&times;</button>
+            </div>
+            <div id="shapes-container">
+                <!-- Shapes will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="templates-library" class="hidden">
+        <div id="templates-panel">
+            <div class="templates-header">
+                <h3>Color Templates</h3>
+                <button id="close-library-btn">&times;</button>
+            </div>
+            <div id="templates-container">
+                <!-- Templates will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="bottom-toolbar">
+        <button id="spawn-mode-btn" class="toolbar-btn active">Spawn</button>
+        <button id="drag-mode-btn" class="toolbar-btn">Drag</button>
+        <button id="attract-mode-btn" class="toolbar-btn">Attract</button>
+        <button id="weld-mode-btn" class="toolbar-btn">Weld</button>
+        <button id="delete-mode-btn" class="toolbar-btn">Delete</button>
+        <button id="explode-mode-btn" class="toolbar-btn">Explode</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
