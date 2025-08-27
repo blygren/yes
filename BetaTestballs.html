@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Trajectory Simulation</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            font-family: sans-serif;
+            margin: 0;
+        }
+
+        canvas {
+            border: 1px solid black;
+            background-color: #fff;
+            cursor: crosshair;
+            display: block;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 1;
+        }
+
+        canvas.dragging {
+            cursor: grabbing;
+        }
+
+        h1, p {
+            text-align: center;
+            margin-left: 0;
+        }
+
+        /* Side panel styles */
+        .side-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 240px;
+            height: 100vh;
+            background: #fff;
+            border-right: 1px solid #ccc;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            z-index: 20;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 12px 12px 12px;
+        }
+        .side-panel.closed {
+            transform: translateX(-100%);
+            box-shadow: none;
+        }
+        .side-panel h2 {
+            margin-top:0;
+            margin-bottom:10px;
+            font-size:1.2em;
+        }
+        .side-panel .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .side-panel .controls div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .side-panel .controls label {
+            font-weight: bold;
+            min-width: 80px;
+        }
+        .side-panel .controls input[type="range"] {
+            flex: 1;
+        }
+        .side-panel .controls span {
+            display: none;
+        }
+        .side-panel-toggle {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            z-index: 30;
+            background: #0074d9;
+            color: #fff;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 22px;
+            box-shadow: 1px 2px 8px rgba(0,0,0,0.08);
+            transition: left 0.25s cubic-bezier(.4,2,.6,1), background 0.2s;
+        }
+        .side-panel.closed ~ .side-panel-toggle {
+            left: 0;
+        }
+        .side-panel:not(.closed) ~ .side-panel-toggle {
+            left: 240px;
+        }
+        .side-panel-toggle:focus {
+            outline: 2px solid #005fa3;
+        }
+        @media (max-width: 600px) {
+            .side-panel {
+                width: 90vw;
+                min-width: 0;
+                padding: 10px 6px 6px 6px;
+            }
+            .side-panel.closed {
+                transform: translateX(-100%);
+            }
+            .side-panel:not(.closed) ~ .side-panel-toggle {
+                left: 90vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="side-panel closed" id="sidePanel">
+        <h2>Settings</h2>
+        <div class="controls">
+            <div>
+                <label for="gravitySlider">Gravity:</label>
+                <input type="range" id="gravitySlider" min="0.05" max="2.0" step="0.05" value="0.5">
+            </div>
+            <div>
+                <label for="bounceSlider">Bounciness:</label>
+                <input type="range" id="bounceSlider" min="0.1" max="0.95" step="0.05" value="0.7">
+            </div>
+            <div>
+                <label for="colorPicker">Ball Color:</label>
+                <input type="color" id="colorPicker" value="#0000ff">
+            </div>
+        </div>
+    </div>
+    <button class="side-panel-toggle" id="panelToggleBtn">&#9776;</button>
+    <h1>Ball Trajectory Simulation</h1>
+    <p>Click and drag on the canvas to set the launch direction and power, then release to launch the ball!</p>
+    <canvas id="simulationCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const gravitySlider = document.getElementById('gravitySlider');
+        const bounceSlider = document.getElementById('bounceSlider');
+        const colorPicker = document.getElementById('colorPicker');
+        const sidePanel = document.getElementById('sidePanel');
+        const panelToggleBtn = document.getElementById('panelToggleBtn');
+
+        let gravity = parseFloat(gravitySlider.value);
+        let bounceFactor = parseFloat(bounceSlider.value);
+        let ballColor = colorPicker.value;
+        const airResistance = 0.01;
+        const launchPowerMultiplier = 0.15;
+        const predictionSteps = 200;
+        const predictionPointRadius = 2;
+        const gridSpacing = 50;
+
+        let ball = null;
+        let isDragging = false;
+        let startDragPos = { x: 0, y: 0 };
+        let currentDragPos = { x: 0, y: 0 };
+
+        gravitySlider.oninput = function() {
+            gravity = parseFloat(this.value);
+        }
+        bounceSlider.oninput = function() {
+            bounceFactor = parseFloat(this.value);
+        }
+        colorPicker.oninput = function() {
+            ballColor = this.value;
+        }
+
+        // Responsive canvas (full window)
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Panel toggle logic
+        panelToggleBtn.onclick = function() {
+            sidePanel.classList.toggle('closed');
+            // Move toggle button to edge of panel
+            if (sidePanel.classList.contains('closed')) {
+                panelToggleBtn.innerHTML = "&#9776;";
+            } else {
+                panelToggleBtn.innerHTML = "&times;";
+            }
+            resizeCanvas();
+        };
+        // Initial state
+        panelToggleBtn.innerHTML = "&#9776;";
+        resizeCanvas();
+
+        class Ball {
+            constructor(x, y, vx, vy, radius = 15, color = 'blue') {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.radius = radius;
+                this.color = color;
+                this.isActive = true;
+            }
+
+            update() {
+                if (!this.isActive) return;
+
+                this.vy += gravity;
+                this.vx *= (1 - airResistance);
+                this.vy *= (1 - airResistance);
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.vy *= -bounceFactor;
+                    this.vx *= 0.95;
+                    if (Math.abs(this.vy) < 0.1 && gravity > 0) {
+                        this.vy = 0;
+                        if (Math.abs(this.vx) < 0.1) {
+                            this.vx = 0;
+                        }
+                    }
+                }
+
+                if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                    this.vx *= -bounceFactor;
+                } else if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx *= -bounceFactor;
+                }
+
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.vy *= -bounceFactor;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            for (let x = gridSpacing; x < canvas.width; x += gridSpacing) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+            }
+            for (let y = gridSpacing; y < canvas.height; y += gridSpacing) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+            }
+            ctx.stroke();
+            ctx.lineWidth = 1;
+        }
+
+        function predictTrajectory(startX, startY, startVx, startVy) {
+            let simX = startX;
+            let simY = startY;
+            let simVx = startVx;
+            let simVy = startVy;
+            const simRadius = predictionPointRadius;
+
+            let prevX = simX;
+            let prevY = simY;
+
+            for (let i = 0; i < predictionSteps; i++) {
+                simVy += gravity;
+                simVx *= (1 - airResistance);
+                simVy *= (1 - airResistance);
+                simX += simVx;
+                simY += simVy;
+
+                let bounced = false;
+                if (simY + simRadius > canvas.height) {
+                    simY = canvas.height - simRadius;
+                    simVy *= -bounceFactor;
+                    simVx *= 0.95;
+                    bounced = true;
+                }
+                if (simX + simRadius > canvas.width) {
+                    simX = canvas.width - simRadius;
+                    simVx *= -bounceFactor;
+                    bounced = true;
+                } else if (simX - simRadius < 0) {
+                    simX = simRadius;
+                    simVx *= -bounceFactor;
+                    bounced = true;
+                }
+                if (simY - simRadius < 0) {
+                    simY = simRadius;
+                    simVy *= -bounceFactor;
+                    bounced = true;
+                }
+
+                if (i % 5 === 0) {
+                    const progress = i / predictionSteps;
+                    const r = Math.floor(255 * progress);
+                    const g = Math.floor(255 * (1 - progress));
+                    ctx.strokeStyle = `rgba(${r}, ${g}, 0, 0.75)`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(prevX, prevY);
+                    ctx.lineTo(simX, simY);
+                    ctx.stroke();
+                    ctx.closePath();
+
+                    ctx.fillStyle = `rgba(${r}, ${g}, 0, 0.75)`;
+                    ctx.beginPath();
+                    ctx.arc(simX, simY, simRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    prevX = simX;
+                    prevY = simY;
+                }
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(startDragPos.x, startDragPos.y);
+            ctx.lineTo(currentDragPos.x, currentDragPos.y);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+            ctx.lineWidth = 1;
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawGrid();
+
+            if (isDragging) {
+                const dx = currentDragPos.x - startDragPos.x;
+                const dy = currentDragPos.y - startDragPos.y;
+                const launchVx = -dx * launchPowerMultiplier;
+                const launchVy = -dy * launchPowerMultiplier;
+                predictTrajectory(startDragPos.x, startDragPos.y, launchVx, launchVy);
+            }
+
+            if (ball) {
+                ball.update();
+                ball.draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function getMousePos(event) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+        }
+
+        canvas.addEventListener('mousedown', (event) => {
+            if (!isDragging) {
+                isDragging = true;
+                canvas.classList.add('dragging');
+                startDragPos = getMousePos(event);
+                currentDragPos = { ...startDragPos };
+                ball = null;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                currentDragPos = getMousePos(event);
+            }
+        });
+
+        canvas.addEventListener('mouseup', (event) => {
+            if (isDragging) {
+                isDragging = false;
+                canvas.classList.remove('dragging');
+                const endDragPos = getMousePos(event);
+
+                const dx = endDragPos.x - startDragPos.x;
+                const dy = endDragPos.y - startDragPos.y;
+                const launchVx = -dx * launchPowerMultiplier;
+                const launchVy = -dy * launchPowerMultiplier;
+
+                ball = new Ball(startDragPos.x, startDragPos.y, launchVx, launchVy, 15, ballColor);
+            }
+        });
+
+        canvas.addEventListener('mouseleave', (event) => {
+            if (isDragging) {
+                isDragging = false;
+                canvas.classList.remove('dragging');
+                const dx = currentDragPos.x - startDragPos.x;
+                const dy = currentDragPos.y - startDragPos.y;
+                const launchVx = -dx * launchPowerMultiplier;
+                const launchVy = -dy * launchPowerMultiplier;
+                ball = new Ball(startDragPos.x, startDragPos.y, launchVx, launchVy, 15, ballColor);
+            }
+        });
+
+        animate();
+    </script>
+</body>
+</html>
