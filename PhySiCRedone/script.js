@@ -474,6 +474,8 @@ function saveState() {
                 lookTimer: body.lookTimer,
                 isLooking: body.isLooking,
                 lookDuration: body.lookDuration,
+                isSad: body.isSad || false,
+                sadTimer: body.sadTimer || 0,
                 collisionFilter: { ...body.collisionFilter },
                 vertices: body.vertices.map(v => ({ x: v.x, y: v.y })),
                 id: body.id, // Save the body ID for constraint references
@@ -578,6 +580,8 @@ function loadState(state) {
             body.lookTimer = obj.lookTimer || Math.random() * 300 + 120;
             body.isLooking = obj.isLooking || false;
             body.lookDuration = obj.lookDuration || 0;
+            body.isSad = obj.isSad || false;
+            body.sadTimer = obj.sadTimer || 0;
             body.hasAsymmetricEyes = obj.hasAsymmetricEyes || false; // Restore this property
         }
         Body.setVelocity(body, obj.velocity);
@@ -751,6 +755,8 @@ function spawnBall(x, y) {
         ball.lookTimer = Math.random() * 300 + 120; // Random look timer (2-7 seconds)
         ball.isLooking = false; // Currently looking at something
         ball.lookDuration = 0; // How long been looking
+        ball.isSad = false; // Track sadness state
+        ball.sadTimer = 0; // Timer for sadness duration
         // Add asymmetric eyes with 1/20 probability
         ball.hasAsymmetricEyes = Math.random() < 0.05;
         stats.facesCreated++;
@@ -1379,6 +1385,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                // Update sadness timer
+                if (body.isSad && body.sadTimer > 0) {
+                    body.sadTimer--;
+                    if (body.sadTimer <= 0) {
+                        body.isSad = false;
+                    }
+                }
+
                 // Update emotion timer
                 if (body.emotionTimer > 0) {
                     body.emotionTimer--;
@@ -1559,6 +1573,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     context.beginPath();
                     context.arc(0, mouthOffsetY, mouthWidth * 0.3, 0, 2 * Math.PI);
                     context.stroke();
+                } else if (body.isSad) {
+                    // Draw sad mouth (upside down smile)
+                    context.beginPath();
+                    context.arc(0, mouthOffsetY + mouthWidth * 0.3, mouthWidth, 1.2 * Math.PI, 1.8 * Math.PI);
+                    context.stroke();
                 } else {
                     // Draw normal smile
                     context.beginPath();
@@ -1653,6 +1672,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             body.isBlinking = false;
                             // Make dead bodies less bouncy
                             body.restitution *= 0.3;
+                            
+                            // Make nearby faces sad
+                            const sadnessRadius = 150; // Range to detect death
+                            const bodies = Composite.allBodies(world);
+                            bodies.forEach(nearbyBody => {
+                                if (nearbyBody.hasFace && !nearbyBody.isDead && nearbyBody !== body) {
+                                    const distance = Matter.Vector.magnitude(
+                                        Matter.Vector.sub(body.position, nearbyBody.position)
+                                    );
+                                    
+                                    if (distance < sadnessRadius) {
+                                        nearbyBody.isSad = true;
+                                        nearbyBody.sadTimer = 600; // 10 seconds (60 frames per second)
+                                    }
+                                }
+                            });
                         }
                     }
                 }
