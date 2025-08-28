@@ -124,13 +124,75 @@ const COLOR_TEMPLATES = {
     "Rainbow Sherbet": ["#fca311", "#e5e5e5", "#90be6d", "#ff006e", "#fb5607"],
     "Cosmic Latte": ["#fffcf2", "#ccc5b9", "#a5a58d", "#6b705c", "#403d39"],
     "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"],
-    "Festive": ["#CC0000", "#006400", "#FFFFFF", "#FFD700", "#C0C0C0"]
+    "Festive": ["#CC0000", "#006400", "#FFFFFF", "#FFD700", "#C0C0C0"],
+    
+    // New templates for various categories
+    
+    // Colors & Effects
+    "Holographic": ["#83eaf1", "#63a4ff", "#b721ff", "#ffafbd", "#c9ffbf"],
+    "Vaporwave": ["#ff71ce", "#01cdfe", "#05ffa1", "#b967ff", "#fffb96"],
+    "Northern Lights": ["#00a8ff", "#0097e6", "#8c7ae6", "#9c88ff", "#12CBC4"],
+    "Blacklight Glow": ["#fc00ff", "#43ff00", "#00fff3", "#8000ff", "#ffff00"],
+    
+    // Minerals & Metals
+    "Copper Patina": ["#8D6E63", "#A1887F", "#43A047", "#26A69A", "#00ACC1"],
+    "Gemstone": ["#E91E63", "#880E4F", "#1A237E", "#01579B", "#33691E"],
+    "Bismuth Crystal": ["#ffcab1", "#facbea", "#abf8f7", "#8ef6e4", "#d8b5ff"],
+    
+    // Nature & Landscapes
+    "Tropical Rainforest": ["#38A3A5", "#57CC99", "#80ED99", "#22577A", "#C7F9CC"],
+    "Northern Tundra": ["#CAF0F8", "#90E0EF", "#48CAE4", "#00B4D8", "#0077B6"],
+    "Savanna Sunset": ["#FFC300", "#FF5733", "#C70039", "#900C3F", "#581845"],
+    
+    // Sky & Space
+    "Interstellar": ["#0B0C10", "#1F2833", "#C5C6C7", "#66FCF1", "#45A29E"],
+    "Supernova": ["#9D50BB", "#6E48AA", "#B8D8D8", "#4B4453", "#EF6C57"],
+    "Aurora Borealis": ["#A9DEF9", "#D0F4DE", "#E4C1F9", "#FF99C8", "#FCF6BD"],
+    
+    // Food & Drink
+    "Berry Smoothie": ["#FF0A54", "#FF477E", "#FF5C8A", "#FF7096", "#FF85A1"],
+    "Citrus Grove": ["#FF9F1C", "#FFBF69", "#CBF3F0", "#2EC4B6", "#FDFFFC"],
+    "Dark Chocolate": ["#7B3F00", "#552A00", "#3D1F00", "#2E1700", "#1A0D00"],
+    
+    // Themes & Styles
+    "Brutalist": ["#E6E6E6", "#CCCCCC", "#808080", "#333333", "#000000"],
+    "Bauhaus": ["#ED2B33", "#0433FF", "#FFD013", "#000000", "#F2F2F2"],
+    "Art Deco": ["#EAC696", "#C8AE7D", "#765827", "#65451F", "#3F2305"],
+    
+    // Seasons & Weather
+    "Stormy Sky": ["#2C3E50", "#34495E", "#7F8C8D", "#95A5A6", "#BDC3C7"],
+    "Foggy Morning": ["#D3D3D3", "#C0C0C0", "#A9A9A9", "#808080", "#DCDCDC"],
+    "Heat Wave": ["#D63031", "#E84393", "#FD79A8", "#F53B57", "#FF9FF3"],
+    
+    // Fantasy & Magic
+    "Wizard's Potion": ["#6157FF", "#EE49FD", "#FF8484", "#FFDF40", "#24D05B"],
+    "Dragon's Hoard": ["#E6AF2E", "#BE8C2C", "#957F2A", "#6C7327", "#436325"],
+    "Celestial": ["#001F3F", "#083358", "#0A4B85", "#476D87", "#EBEBD3"],
+    
+    // Fire & Heat
+    "Phoenix": ["#FF6B35", "#F7C59F", "#EFEFD0", "#004E89", "#1A659E"],
+    "Lava Flow": ["#4C0027", "#800039", "#BF0049", "#FF4057", "#FF9E58"],
+    "Ember": ["#FFD166", "#FF6B6B", "#CB2D3E", "#7A0000", "#370000"],
+    
+    // Places & Locations
+    "Tokyo Nights": ["#FC466B", "#3F5EFB", "#FFFFFF", "#6DECFF", "#00FFAD"],
+    "Ancient Ruins": ["#E6D690", "#B8A369", "#8A7B47", "#5C5326", "#2E2A04"],
+    "Underwater Cave": ["#00458B", "#003C76", "#002F60", "#00234A", "#001733"],
+    
+    // Misc
+    "Space Nebula": ["#4B0082", "#800080", "#9932CC", "#BA55D3", "#DA70D6"],
+    "Digital Dream": ["#00F5FF", "#00BFFF", "#1E90FF", "#4169E1", "#0000FF"],
+    "Starlight": ["#F8F9FA", "#E9ECEF", "#DEE2E6", "#CED4DA", "#ADB5BD"]
 };
 
 // Friends of PhySiC templates
 const FRIENDS_TEMPLATES = {
     "PHYSIC!": ["#C44569", "#D6A2E8", "#786FA6", "#596275", "#2C3A47"], // Default colors
     "Veges": ["#FFA500", "#33CC33", "#FFFF00"], // Just 3 colors as requested
+    // New friends templates
+    "CoffeeTime": ["#6F4E37", "#B87333", "#FFEBCD", "#FFF8DC", "#F5DEB3"],
+    "Midnight": ["#2C3E50", "#E74C3C", "#ECF0F1", "#3498DB", "#2980B9"],
+    "Retro": ["#FF8E00", "#00A3FF", "#FF5F5F", "#42FF00", "#FFEA00"],
     "platynium": ["#00FFFF", "#40E0D0", "#48D1CC", "#20B2AA", "#00CED1"],
     "treeMaine": ["#FFD700", "#FFFFFF", "#4169E1", "#C8A2C8", "#B19CD9"],
     "the attack master": ["#000000", "#1C1C1C", "#282828", "#363636", "#424242"],

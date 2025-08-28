@@ -253,33 +253,33 @@ function populateTemplatesLibrary() {
     
     // Define categories and their templates with expanded categorization
     const categories = {
-        "Minerals & Metals": ["Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", "Bronze Age", "Amethyst", "Jade", "Rose Gold"],
+        "Minerals & Metals": ["Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", "Bronze Age", "Amethyst", "Jade", "Rose Gold", "Copper Patina", "Gemstone", "Bismuth Crystal"],
         
         "Liquids & Fluids": ["Tidal", "Toxic Waste", "Ocean Depths", "Deep Sea", "Ocean Breeze", "Electric Eel", "Glacier", "Waterfall", "Ocean", "Rainy Day"],
         
-        "Nature & Landscapes": ["Forest", "Meadow", "Jungle", "Deep Forest", "Lavender Fields", "Enchanted Forest", "Canyon", "Desert", "Sahara", "Tuscany", "Misty Mountains", "Frozen Tundra", "Arctic", "Coral Reef"],
+        "Nature & Landscapes": ["Forest", "Meadow", "Jungle", "Deep Forest", "Lavender Fields", "Enchanted Forest", "Canyon", "Desert", "Sahara", "Tuscany", "Misty Mountains", "Frozen Tundra", "Arctic", "Coral Reef", "Tropical Rainforest", "Northern Tundra", "Savanna Sunset"],
         
-        "Seasons & Weather": ["Winter", "Spring", "Summer", "Autumn", "Autumn Leaves", "Rainy Day", "Sunset", "Sunrise", "Golden Hour", "Desert Sunset"],
+        "Seasons & Weather": ["Winter", "Spring", "Summer", "Autumn", "Autumn Leaves", "Rainy Day", "Sunset", "Sunrise", "Golden Hour", "Desert Sunset", "Festive", "Stormy Sky", "Foggy Morning", "Heat Wave"],
         
-        "Sky & Space": ["Deep Space", "Galaxy", "Cosmic Dust", "Cosmic Latte", "Nebula", "Twilight", "Cotton Candy Sky", "Nightshade", "Midnight City"],
+        "Sky & Space": ["Deep Space", "Galaxy", "Cosmic Dust", "Cosmic Latte", "Nebula", "Twilight", "Cotton Candy Sky", "Nightshade", "Midnight City", "Interstellar", "Supernova", "Aurora Borealis", "Space Nebula", "Starlight"],
         
         "Time of Day": ["Sunrise", "Sunset", "Golden Hour", "City at Night", "Midnight City", "Twilight"],
         
-        "Colors & Effects": ["Rainbow", "Pastel", "Monochrome", "Neon Glow", "Muted Tones", "Rainbow Sherbet", "Glitch", "Matrix"],
+        "Colors & Effects": ["Rainbow", "Pastel", "Monochrome", "Neon Glow", "Muted Tones", "Rainbow Sherbet", "Glitch", "Matrix", "Holographic", "Vaporwave", "Northern Lights", "Blacklight Glow", "Digital Dream"],
         
-        "Fantasy & Magic": ["Fairy Tale", "Enchanted Forest", "Dragon Fire", "Vampire", "Poison Ivy", "Nightshade", "Wisteria"],
+        "Fantasy & Magic": ["Fairy Tale", "Enchanted Forest", "Dragon Fire", "Vampire", "Poison Ivy", "Nightshade", "Wisteria", "Wizard's Potion", "Dragon's Hoard", "Celestial"],
         
-        "Food & Drink": ["Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields"],
+        "Food & Drink": ["Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields", "Berry Smoothie", "Citrus Grove", "Dark Chocolate"],
         
         "Materials & Textures": ["Velvet", "Clay", "Paper & Ink", "Slate", "Silver Lining", "Golden Sands", "Bronze Age"],
         
-        "Themes & Styles": ["Cyberpunk", "Retro Diner", "Vintage", "Industrial", "Steampunk", "Synthwave", "Hacker", "Gothic", "Nordic", "80s Pop", "Royal", "Matcha", "Earthy"],
+        "Themes & Styles": ["Cyberpunk", "Retro Diner", "Vintage", "Industrial", "Steampunk", "Synthwave", "Hacker", "Gothic", "Nordic", "80s Pop", "Royal", "Matcha", "Earthy", "Brutalist", "Bauhaus", "Art Deco"],
         
         "Plants & Gardens": ["Lavender Fields", "Cherry Blossom", "Sakura Season", "Wisteria", "Poison Ivy", "Orchid", "Peppermint", "Moss"],
         
-        "Fire & Heat": ["Volcano", "Dragon Fire", "Volcanic", "Fire and Ice"],
+        "Fire & Heat": ["Volcano", "Dragon Fire", "Volcanic", "Fire and Ice", "Phoenix", "Lava Flow", "Ember"],
         
-        "Places & Locations": ["Beach Day", "City at Night", "Misty Mountains", "Canyon", "Desert", "Tuscany", "Coral Reef", "Coffee Shop", "Retro Diner", "Sahara"]
+        "Places & Locations": ["Beach Day", "City at Night", "Misty Mountains", "Canyon", "Desert", "Tuscany", "Coral Reef", "Coffee Shop", "Retro Diner", "Sahara", "Tokyo Nights", "Ancient Ruins", "Underwater Cave"]
     };
     
     // Combine custom templates with predefined ones
@@ -324,7 +324,7 @@ function populateTemplatesLibrary() {
         templatesContainer.appendChild(categoryHeader);
         
         // Display templates in this category
-        for (const templateName of categories[category]) {
+        for (const templateName of categories[category].sort()) {
             if (templates[templateName]) {
                 createTemplateItem(templateName, templates[templateName], false);
             }
