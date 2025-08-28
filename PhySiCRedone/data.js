@@ -182,5 +182,6 @@ const NAME_POOL = [
     "Click Me", "Am I Real?", "CTRL+ALT+DEL", "Glitch", "Override", "Admin", "Skynet",
     "HAL 9000", "GLaDOS", "Missingno", "Herobrine", "Player 1", "Final Boss", "Secret Char",
     // Additional goofy names
-    "Birdy", "Look", "Bruhh", "Lmao", "Dawg", "UwU", "Smash", "Steve", "Bud", "Sack"
+    "Birdy", "Look", "Lucky", "Lmao", "Dawg", "Lenny", "Smash", "Steve", "Bud", "Sack"
+
 ];
