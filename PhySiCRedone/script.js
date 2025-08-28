@@ -117,6 +117,7 @@ let isStaticEnabled = false;
 let initialRotationSpeed = 0;
 let lifespanEnabled = false;
 let facesEnabled = false;
+let invincibleFacesEnabled = false;
 let objectLifespan = 5000; // in ms
 let selectedShape = { type: 'circle' };
 let objectDensity = 0.001;
@@ -253,9 +254,9 @@ function populateTemplatesLibrary() {
     
     // Define categories and their templates with expanded categorization
     const categories = {
-        "Minerals & Metals": ["Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", "Bronze Age", "Amethyst", "Jade", "Rose Gold", "Copper Patina", "Gemstone", "Bismuth Crystal", "Mercury", "Liquid Gold"],
+        "Minerals & Metals": ["Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", "Bronze Age", "Amethyst", "Jade", "Rose Gold", "Copper Patina", "Gemstone", "Bismuth Crystal"],
         
-        "Liquids & Fluids": ["Tidal", "Toxic Waste", "Ocean Depths", "Deep Sea", "Ocean Breeze", "Electric Eel", "Glacier", "Waterfall", "Ocean", "Rainy Day", "Molten Lava", "Toxic Slime", "Liquid Nitrogen", "Oil Slick", "Plasma", "Acid Pool", "Liquid Crystal", "Magma Flow"],
+        "Liquids & Fluids": ["Tidal", "Toxic Waste", "Ocean Depths", "Deep Sea", "Ocean Breeze", "Electric Eel", "Glacier", "Waterfall", "Ocean", "Rainy Day"],
         
         "Nature & Landscapes": ["Forest", "Meadow", "Jungle", "Deep Forest", "Lavender Fields", "Enchanted Forest", "Canyon", "Desert", "Sahara", "Tuscany", "Misty Mountains", "Frozen Tundra", "Arctic", "Coral Reef", "Tropical Rainforest", "Northern Tundra", "Savanna Sunset"],
         
@@ -269,7 +270,7 @@ function populateTemplatesLibrary() {
         
         "Fantasy & Magic": ["Fairy Tale", "Enchanted Forest", "Dragon Fire", "Vampire", "Poison Ivy", "Nightshade", "Wisteria", "Wizard's Potion", "Dragon's Hoard", "Celestial"],
         
-        "Food & Drink": ["Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields", "Berry Smoothie", "Citrus Grove", "Dark Chocolate", "Milk Chocolate", "White Chocolate", "Ruby Chocolate", "Chocolate Mint", "Caramel", "Peanut Butter", "Cookie Dough", "Hazelnut Spread", "Maple Syrup"],
+        "Food & Drink": ["Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields", "Berry Smoothie", "Citrus Grove", "Dark Chocolate"],
         
         "Materials & Textures": ["Velvet", "Clay", "Paper & Ink", "Slate", "Silver Lining", "Golden Sands", "Bronze Age"],
         
@@ -414,6 +415,7 @@ function saveState() {
             initialRotationSpeed,
             lifespanEnabled,
             facesEnabled,
+            invincibleFacesEnabled,
             objectLifespan,
             selectedShape,
             objectDensity,
@@ -524,6 +526,7 @@ function loadState(state) {
     initialRotationSpeed = s.initialRotationSpeed;
     lifespanEnabled = s.lifespanEnabled;
     facesEnabled = s.facesEnabled;
+    invincibleFacesEnabled = s.invincibleFacesEnabled || false; // Add with backward compatibility
     objectLifespan = s.objectLifespan;
     selectedShape = s.selectedShape;
     objectDensity = s.objectDensity;
@@ -633,6 +636,7 @@ function updateUIFromState() {
     document.getElementById('rotation-speed-slider').value = initialRotationSpeed;
     document.getElementById('lifespan-toggle').checked = lifespanEnabled;
     document.getElementById('faces-toggle').checked = facesEnabled;
+    document.getElementById('invincible-faces-toggle').checked = invincibleFacesEnabled;
     document.getElementById('lifespan-toggle').dispatchEvent(new Event('change'));
     document.getElementById('lifespan-slider').value = objectLifespan / 1000;
     document.getElementById('density-slider').value = objectDensity;
@@ -735,6 +739,7 @@ function spawnBall(x, y) {
 
     if (facesEnabled) {
         ball.hasFace = true;
+        ball.isInvincible = invincibleFacesEnabled; // Apply invincibility setting
         ball.blinkTimer = Math.random() * 600 + 480; // Random initial blink timer (8-20 seconds)
         ball.isBlinking = false;
         ball.blinkDuration = 0;
@@ -947,6 +952,7 @@ function resetAllSettings() {
     initialRotationSpeed = 0;
     lifespanEnabled = false;
     facesEnabled = false;
+    invincibleFacesEnabled = false;
     objectLifespan = 5000;
     selectedShape = { type: 'circle' };
     objectDensity = 0.001;
@@ -1273,6 +1279,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('faces-toggle').addEventListener('change', (e) => {
         facesEnabled = e.target.checked;
+        // Show/hide invincible faces toggle based on faces toggle
+        const invincibleFacesContainer = document.getElementById('invincible-faces-container');
+        invincibleFacesContainer.style.display = facesEnabled ? 'flex' : 'none';
+    });
+    
+    document.getElementById('invincible-faces-toggle').addEventListener('change', (e) => {
+        invincibleFacesEnabled = e.target.checked;
     });
 
     document.getElementById('names-toggle').addEventListener('change', (e) => {
@@ -1624,9 +1637,9 @@ document.addEventListener('DOMContentLoaded', () => {
         pairs.forEach(pair => {
             const { bodyA, bodyB } = pair;
             
-            // Only process bodies with faces that aren't already dead
+            // Only process bodies with faces that aren't already dead and aren't invincible
             [bodyA, bodyB].forEach(body => {
-                if (body.hasFace && !body.isDead && !boundaries.includes(body)) {
+                if (body.hasFace && !body.isDead && !boundaries.includes(body) && !body.isInvincible) {
                     // Calculate impact force based on velocity
                     const speed = Matter.Vector.magnitude(body.velocity);
                     const damage = Math.max(0, speed - 4.8); // Damage threshold increased from 3 to 4.8 (60% higher velocity tolerance)

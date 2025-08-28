@@ -53,7 +53,7 @@
             </div>
             <div class="setting-group" id="size-slider-container">
                 <label for="size-slider">Size</label>
-                <input type="range" id="size-slider" min="5" max="70" value="20">
+                <input type="range" id="size-slider" min="5" max="50" value="20">
             </div>
             <div class="setting-group">
                 <label for="spawn-speed-slider">Spawn Speed</label>
@@ -61,7 +61,7 @@
             </div>
             <div class="setting-group">
                 <label for="time-scale-slider">Time Scale</label>
-                <input type="range" id="time-scale-slider" min="0.0" max="4" value="1" step="0.1">
+                <input type="range" id="time-scale-slider" min="0.1" max="2" value="1" step="0.1">
             </div>
             <div class="setting-group">
                 <label for="gravity-y-slider">Gravity Y</label>
@@ -80,7 +80,7 @@
             </div>
             <div class="setting-group">
                 <label for="bounciness-slider">Bounciness</label>
-                <input type="range" id="bounciness-slider" min="0" max="1.70" value="0.7" step="0.05">
+                <input type="range" id="bounciness-slider" min="0" max="1.2" value="0.7" step="0.05">
             </div>
             <div class="setting-group">
                 <label for="friction-slider">Friction</label>
@@ -96,7 +96,7 @@
             </div>
             <div class="setting-group">
                 <label for="density-slider">Density (Weight)</label>
-                <input type="range" id="density-slider" min="0.0001" max="0.070" value="0.001" step="0.0001">
+                <input type="range" id="density-slider" min="0.0001" max="0.015" value="0.001" step="0.0001">
             </div>
             <div class="setting">
                 <label for="object-collision-toggle">Object Collisions</label>
@@ -123,6 +123,13 @@
                 <label for="faces-toggle">Show Faces</label>
                 <label class="switch">
                     <input type="checkbox" id="faces-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting" id="invincible-faces-container" style="display: none;">
+                <label for="invincible-faces-toggle">Invincible Faces</label>
+                <label class="switch">
+                    <input type="checkbox" id="invincible-faces-toggle">
                     <span class="slider"></span>
                 </label>
             </div>
