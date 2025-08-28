@@ -1174,7 +1174,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('reset-stats-btn').addEventListener('click', resetStats);
 
     const pauseBtn = document.getElementById('pause-btn');
-    pauseBtn.addEventListener('click', () => {
+    
+    // Create a function to toggle pause state that can be called from multiple places
+    function togglePause() {
         runner.enabled = !runner.enabled;
         isPaused = !runner.enabled; // Update pause state
         
@@ -1191,6 +1193,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         pauseBtn.textContent = runner.enabled ? 'Pause Simulation' : 'Resume Simulation';
+    }
+    
+    // Use the togglePause function for the pause button
+    pauseBtn.addEventListener('click', togglePause);
+    
+    // Add keyboard event listener for spacebar to toggle pause
+    document.addEventListener('keydown', (e) => {
+        // Check if key is spacebar and that we're not typing in an input field
+        if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+            e.preventDefault(); // Prevent page scrolling
+            togglePause();
+        }
     });
 
     const sizeSliderContainer = document.getElementById('size-slider-container');

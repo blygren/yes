@@ -27,7 +27,7 @@ const COLOR_TEMPLATES = {
     "Neon Glow": ["#39ff14", "#ff14bd", "#14f1ff", "#faff00", "#ff5500"],
     "80s Pop": ["#f94144", "#f3722c", "#f8961e", "#f9c74f", "#90be6d"],
     "Royal": ["#4a148c", "#7b1fa2", "#9c27b0", "#ba68c8", "#e1bee7"],
-    "Autumn": ["#a44a3f", "#d36135", "#f4a261", "#e76f51", "#2a9d8f"],
+    "Autumn": ["#a44a3f", "#d36135", "#f4a261", "#e76f51", "#b86c15ff"],
     "Winter": ["#f0f8ff", "#e6e6fa", "#b0c4de", "#778899", "#4682b4"],
     "Spring": ["#ffb3ba", "#ffdfba", "#ffffba", "#baffc9", "#bae1ff"],
     "Summer": ["#ff6b6b", "#ffd166", "#06d6a0", "#118ab2", "#073b4c"],
