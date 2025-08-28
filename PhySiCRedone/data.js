@@ -123,11 +123,14 @@ const COLOR_TEMPLATES = {
     "Misty Mountains": ["#6c757d", "#adb5bd", "#dee2e6", "#f8f9fa", "#495057"],
     "Rainbow Sherbet": ["#fca311", "#e5e5e5", "#90be6d", "#ff006e", "#fb5607"],
     "Cosmic Latte": ["#fffcf2", "#ccc5b9", "#a5a58d", "#6b705c", "#403d39"],
-    "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"]
+    "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"],
+    "Festive": ["#CC0000", "#006400", "#FFFFFF", "#FFD700", "#C0C0C0"]
 };
 
 // Friends of PhySiC templates
 const FRIENDS_TEMPLATES = {
+    "PHYSIC!": ["#C44569", "#D6A2E8", "#786FA6", "#596275", "#2C3A47"], // Default colors
+    "Veges": ["#FFA500", "#33CC33", "#FFFF00"], // Just 3 colors as requested
     "platynium": ["#00FFFF", "#40E0D0", "#48D1CC", "#20B2AA", "#00CED1"],
     "treeMaine": ["#FFD700", "#FFFFFF", "#4169E1", "#C8A2C8", "#B19CD9"],
     "the attack master": ["#000000", "#1C1C1C", "#282828", "#363636", "#424242"],

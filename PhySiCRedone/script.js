@@ -251,11 +251,99 @@ function deleteCustomTemplate(name) {
 function populateTemplatesLibrary() {
     templatesContainer.innerHTML = '';
     
+    // Define categories and their templates with expanded categorization
+    const categories = {
+        "Minerals & Metals": ["Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", "Bronze Age", "Amethyst", "Jade", "Rose Gold"],
+        
+        "Liquids & Fluids": ["Tidal", "Toxic Waste", "Ocean Depths", "Deep Sea", "Ocean Breeze", "Electric Eel", "Glacier", "Waterfall", "Ocean", "Rainy Day"],
+        
+        "Nature & Landscapes": ["Forest", "Meadow", "Jungle", "Deep Forest", "Lavender Fields", "Enchanted Forest", "Canyon", "Desert", "Sahara", "Tuscany", "Misty Mountains", "Frozen Tundra", "Arctic", "Coral Reef"],
+        
+        "Seasons & Weather": ["Winter", "Spring", "Summer", "Autumn", "Autumn Leaves", "Rainy Day", "Sunset", "Sunrise", "Golden Hour", "Desert Sunset"],
+        
+        "Sky & Space": ["Deep Space", "Galaxy", "Cosmic Dust", "Cosmic Latte", "Nebula", "Twilight", "Cotton Candy Sky", "Nightshade", "Midnight City"],
+        
+        "Time of Day": ["Sunrise", "Sunset", "Golden Hour", "City at Night", "Midnight City", "Twilight"],
+        
+        "Colors & Effects": ["Rainbow", "Pastel", "Monochrome", "Neon Glow", "Muted Tones", "Rainbow Sherbet", "Glitch", "Matrix"],
+        
+        "Fantasy & Magic": ["Fairy Tale", "Enchanted Forest", "Dragon Fire", "Vampire", "Poison Ivy", "Nightshade", "Wisteria"],
+        
+        "Food & Drink": ["Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields"],
+        
+        "Materials & Textures": ["Velvet", "Clay", "Paper & Ink", "Slate", "Silver Lining", "Golden Sands", "Bronze Age"],
+        
+        "Themes & Styles": ["Cyberpunk", "Retro Diner", "Vintage", "Industrial", "Steampunk", "Synthwave", "Hacker", "Gothic", "Nordic", "80s Pop", "Royal", "Matcha", "Earthy"],
+        
+        "Plants & Gardens": ["Lavender Fields", "Cherry Blossom", "Sakura Season", "Wisteria", "Poison Ivy", "Orchid", "Peppermint", "Moss"],
+        
+        "Fire & Heat": ["Volcano", "Dragon Fire", "Volcanic", "Fire and Ice"],
+        
+        "Places & Locations": ["Beach Day", "City at Night", "Misty Mountains", "Canyon", "Desert", "Tuscany", "Coral Reef", "Coffee Shop", "Retro Diner", "Sahara"]
+    };
+    
+    // Combine custom templates with predefined ones
     const allTemplates = { ...customTemplates, ...templates };
-
+    
+    // Create a set of all categorized templates
+    const categorizedTemplates = new Set();
+    for (const category in categories) {
+        for (const templateName of categories[category]) {
+            categorizedTemplates.add(templateName);
+        }
+    }
+    
+    // Add templates that aren't in any category to "Misc"
+    categories["Misc"] = [];
     for (const name in allTemplates) {
-        const isCustom = customTemplates.hasOwnProperty(name);
-        const template = allTemplates[name];
+        if (!categorizedTemplates.has(name) && !customTemplates.hasOwnProperty(name)) {
+            categories["Misc"].push(name);
+        }
+    }
+    
+    // Display custom templates first with their own heading
+    if (Object.keys(customTemplates).length > 0) {
+        const customHeader = document.createElement('h3');
+        customHeader.textContent = "My Templates";
+        customHeader.className = "template-category-header";
+        templatesContainer.appendChild(customHeader);
+        
+        for (const name in customTemplates) {
+            const template = customTemplates[name];
+            createTemplateItem(name, template, true);
+        }
+    }
+    
+    // Display templates by category
+    for (const category in categories) {
+        if (categories[category].length === 0) continue; // Skip empty categories
+        
+        const categoryHeader = document.createElement('h3');
+        categoryHeader.textContent = category;
+        categoryHeader.className = "template-category-header";
+        templatesContainer.appendChild(categoryHeader);
+        
+        // Display templates in this category
+        for (const templateName of categories[category]) {
+            if (templates[templateName]) {
+                createTemplateItem(templateName, templates[templateName], false);
+            }
+        }
+    }
+    
+    // Add Friends of PhySiC section
+    const friendsHeader = document.createElement('h3');
+    friendsHeader.textContent = "Friends of PhySiC";
+    friendsHeader.className = "template-category-header";
+    templatesContainer.appendChild(friendsHeader);
+
+    for (const name in friendsOfPhysicTemplates) {
+        const template = friendsOfPhysicTemplates[name];
+        createTemplateItem(name, template, false);
+    }
+    
+    // Helper function to create template items
+    function createTemplateItem(name, template, isCustom) {
         const item = document.createElement('div');
         item.className = 'template-item';
 
@@ -289,34 +377,6 @@ function populateTemplatesLibrary() {
                 }
             });
         }
-
-        templatesContainer.appendChild(item);
-    }
-
-    // Add Friends of PhySiC section
-    const friendsHeader = document.createElement('h3');
-    friendsHeader.textContent = "Friends of PhySiC";
-    friendsHeader.style.cssText = "grid-column: 1 / -1; text-align: center; border-bottom: 1px solid #555; padding-bottom: 10px; margin: 20px 0 10px 0;";
-    templatesContainer.appendChild(friendsHeader);
-
-    for (const name in friendsOfPhysicTemplates) {
-        const template = friendsOfPhysicTemplates[name];
-        const item = document.createElement('div');
-        item.className = 'template-item';
-
-        let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
-
-        item.innerHTML = `
-            <h4 style="margin-bottom: 10px;">${name}</h4>
-            <div class="color-swatches">${swatchesHTML}</div>
-            <button class="apply-template-btn">Apply</button>
-        `;
-
-        item.querySelector('.apply-template-btn').addEventListener('click', () => {
-            ballColors = [...template];
-            renderColorPickers();
-            templatesLibrary.classList.add('hidden');
-        });
 
         templatesContainer.appendChild(item);
     }
@@ -992,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('beforeunload', savePlayTime);
 
     const spawnBtn = document.getElementById('spawn-mode-btn');
-    const dragBtn = document.getElementById('drag-mode-btn'); // <-- FIXED LINE
+    const dragBtn = document.getElementById('drag-mode-btn'); // Fix: was incorrectly using delete-mode-btn
     const deleteBtn = document.getElementById('delete-mode-btn');
     const explodeBtn = document.getElementById('explode-mode-btn');
     const attractBtn = document.getElementById('attract-mode-btn');

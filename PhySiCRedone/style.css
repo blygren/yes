@@ -613,3 +613,31 @@ input:checked + .slider:before {
     font-weight: bold;
     color: #4a69bd;
 }
+
+.template-category-header {
+    grid-column: 1 / -1;
+    text-align: center;
+    border-bottom: 1px solid #555;
+    padding-bottom: 10px;
+    margin: 20px 0 10px 0;
+    color: #fff;
+    background: linear-gradient(90deg, rgba(70, 70, 70, 0), rgba(70, 70, 70, 0.5), rgba(70, 70, 70, 0));
+    text-shadow: 0 0 8px rgba(120, 120, 255, 0.6);
+    font-size: 16px;
+    letter-spacing: 1px;
+    position: relative;
+}
+
+.template-category-header:first-child {
+    margin-top: 0;
+}
+
+#templates-panel {
+    max-width: 900px; /* Increased width */
+    max-height: 85vh; /* Increased height to show more templates */
+}
+
+#templates-container {
+    max-height: calc(85vh - 80px); /* Adjust to fit within the panel */
+    overflow-y: auto;
+}
