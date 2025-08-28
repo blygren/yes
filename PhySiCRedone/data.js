@@ -126,9 +126,30 @@ const COLOR_TEMPLATES = {
     "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"],
     "Festive": ["#CC0000", "#006400", "#FFFFFF", "#FFD700", "#C0C0C0"],
     
-    // New templates for various categories
+    // New liquid-themed templates
+    "Molten Lava": ["#FF4500", "#FF6347", "#FF7F50", "#FF8C00", "#FFA500"],
+    "Toxic Slime": ["#39FF14", "#00FF00", "#32CD32", "#00FA9A", "#00FF7F"],
+    "Mercury": ["#B5B5B5", "#C0C0C0", "#D3D3D3", "#A9A9A9", "#E8E8E8"],
+    "Liquid Gold": ["#FFD700", "#FFC125", "#E6BC5C", "#DAA520", "#B8860B"],
+    "Liquid Nitrogen": ["#AFEEEE", "#E0FFFF", "#B0E0E6", "#87CEEB", "#00BFFF"],
+    "Oil Slick": ["#2C3531", "#116466", "#D9B08C", "#FFCB9A", "#D1E8E2"],
+    "Plasma": ["#FF00FF", "#FF00CC", "#CC00FF", "#9900FF", "#FF33FF"],
+    "Acid Pool": ["#CCFF00", "#00FF00", "#33CC33", "#BFFF00", "#39FF14"],
+    "Liquid Crystal": ["#43B3AE", "#00B8A9", "#3BAEA0", "#0A97B0", "#0E9AA7"],
+    "Magma Flow": ["#DE0000", "#FF2400", "#FF4500", "#BF3030", "#801818"],
     
-    // Colors & Effects
+    // New chocolate and food-themed templates
+    "Dark Chocolate": ["#4B3621", "#3C280D", "#352315", "#2E1503", "#1E0F00"],
+    "Milk Chocolate": ["#7B3F00", "#5D2906", "#8B4513", "#6F4E37", "#A0522D"],
+    "White Chocolate": ["#F5F5DC", "#FAEBD7", "#FFF8DC", "#FFFAF0", "#F0E6D2"],
+    "Ruby Chocolate": ["#E0115F", "#CB416B", "#D87093", "#C71585", "#DB7093"],
+    "Chocolate Mint": ["#4F3222", "#3D1C02", "#3CB371", "#2E8B57", "#98FB98"],
+    "Caramel": ["#C68E17", "#CD7F32", "#E2A76F", "#CC8833", "#D19241"],
+    "Peanut Butter": ["#CD853F", "#D2691E", "#B5651D", "#A67B5B", "#E6A756"],
+    "Cookie Dough": ["#F5DEB3", "#DEB887", "#D2B48C", "#C19A6B", "#E6CCB2"],
+    "Hazelnut Spread": ["#513005", "#704214", "#8B4513", "#A0522D", "#CBA135"],
+    "Maple Syrup": ["#C45D06", "#CD7F32", "#E08D3C", "#B87333", "#DAA06D"],
+    
     "Holographic": ["#83eaf1", "#63a4ff", "#b721ff", "#ffafbd", "#c9ffbf"],
     "Vaporwave": ["#ff71ce", "#01cdfe", "#05ffa1", "#b967ff", "#fffb96"],
     "Northern Lights": ["#00a8ff", "#0097e6", "#8c7ae6", "#9c88ff", "#12CBC4"],

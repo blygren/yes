@@ -253,9 +253,9 @@ function populateTemplatesLibrary() {
     
     // Define categories and their templates with expanded categorization
     const categories = {
-        "Minerals & Metals": ["Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", "Bronze Age", "Amethyst", "Jade", "Rose Gold", "Copper Patina", "Gemstone", "Bismuth Crystal"],
+        "Minerals & Metals": ["Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", "Bronze Age", "Amethyst", "Jade", "Rose Gold", "Copper Patina", "Gemstone", "Bismuth Crystal", "Mercury", "Liquid Gold"],
         
-        "Liquids & Fluids": ["Tidal", "Toxic Waste", "Ocean Depths", "Deep Sea", "Ocean Breeze", "Electric Eel", "Glacier", "Waterfall", "Ocean", "Rainy Day"],
+        "Liquids & Fluids": ["Tidal", "Toxic Waste", "Ocean Depths", "Deep Sea", "Ocean Breeze", "Electric Eel", "Glacier", "Waterfall", "Ocean", "Rainy Day", "Molten Lava", "Toxic Slime", "Liquid Nitrogen", "Oil Slick", "Plasma", "Acid Pool", "Liquid Crystal", "Magma Flow"],
         
         "Nature & Landscapes": ["Forest", "Meadow", "Jungle", "Deep Forest", "Lavender Fields", "Enchanted Forest", "Canyon", "Desert", "Sahara", "Tuscany", "Misty Mountains", "Frozen Tundra", "Arctic", "Coral Reef", "Tropical Rainforest", "Northern Tundra", "Savanna Sunset"],
         
@@ -269,7 +269,7 @@ function populateTemplatesLibrary() {
         
         "Fantasy & Magic": ["Fairy Tale", "Enchanted Forest", "Dragon Fire", "Vampire", "Poison Ivy", "Nightshade", "Wisteria", "Wizard's Potion", "Dragon's Hoard", "Celestial"],
         
-        "Food & Drink": ["Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields", "Berry Smoothie", "Citrus Grove", "Dark Chocolate"],
+        "Food & Drink": ["Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields", "Berry Smoothie", "Citrus Grove", "Dark Chocolate", "Milk Chocolate", "White Chocolate", "Ruby Chocolate", "Chocolate Mint", "Caramel", "Peanut Butter", "Cookie Dough", "Hazelnut Spread", "Maple Syrup"],
         
         "Materials & Textures": ["Velvet", "Clay", "Paper & Ink", "Slate", "Silver Lining", "Golden Sands", "Bronze Age"],
         
