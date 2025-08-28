@@ -101,6 +101,18 @@ function createBoundaries() {
 // Create initial boundaries
 boundaries = createBoundaries();
 
+// Add window resize handler to adjust boundaries when screen size changes
+window.addEventListener('resize', () => {
+    // Update renderer size
+    render.options.width = window.innerWidth;
+    render.options.height = window.innerHeight;
+    render.canvas.width = window.innerWidth;
+    render.canvas.height = window.innerHeight;
+    
+    // Recreate boundaries with new dimensions
+    createBoundaries();
+});
+
 // Ball spawning logic
 let isMouseDown = false;
 let ballRadius = 20;
