@@ -530,6 +530,29 @@ input:checked + .slider:before {
     box-shadow: 0 0 20px #27ae60 !important;
 }
 
+/* Statistics styling */
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding-right: 5px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #4a69bd;
+}
+
 /* Media Queries for Mobile Friendliness */
 @media (max-width: 768px) {
     #settings-panel, #library-panel {

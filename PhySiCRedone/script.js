@@ -11,6 +11,20 @@ let lastSaveTime = Date.now();
 let playTimeInterval;
 const SAVE_INTERVAL = 30000; // Save every 30 seconds
 
+// Statistics tracking variables
+let stats = {
+    totalSpawned: 0,
+    circlesSpawned: 0,
+    polygonsSpawned: 0,
+    rectanglesSpawned: 0,
+    explosionsTriggered: 0,
+    objectsDeleted: 0,
+    weldsCreated: 0,
+    namesGiven: 0,
+    facesCreated: 0,
+    objectsCleared: 0
+};
+
 // Create a renderer
 const render = Render.create({
     element: document.body,
@@ -231,6 +245,98 @@ function deleteCustomTemplate(name) {
         delete customTemplates[name];
         saveCustomTemplates();
         populateTemplatesLibrary();
+    }
+}
+
+function populateTemplatesLibrary() {
+    templatesContainer.innerHTML = '';
+    
+    const allTemplates = { ...customTemplates, ...templates };
+
+    for (const name in allTemplates) {
+        const isCustom = customTemplates.hasOwnProperty(name);
+        const template = allTemplates[name];
+        const item = document.createElement('div');
+        item.className = 'template-item';
+
+        let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
+
+        const headerHTML = isCustom ? `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0;">${name}</h4>
+                <button class="delete-template-btn" data-name="${name}">&times;</button>
+            </div>
+        ` : `<h4 style="margin-bottom: 10px;">${name}</h4>`;
+
+        item.innerHTML = `
+            ${headerHTML}
+            <div class="color-swatches">${swatchesHTML}</div>
+            <button class="apply-template-btn">Apply</button>
+        `;
+
+        item.querySelector('.apply-template-btn').addEventListener('click', () => {
+            ballColors = [...template];
+            renderColorPickers();
+            templatesLibrary.classList.add('hidden');
+        });
+
+        if (isCustom) {
+            item.querySelector('.delete-template-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const templateName = e.target.getAttribute('data-name');
+                if (confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
+                    deleteCustomTemplate(templateName);
+                }
+            });
+        }
+
+        templatesContainer.appendChild(item);
+    }
+
+    // Add Friends of PhySiC section
+    const friendsHeader = document.createElement('h3');
+    friendsHeader.textContent = "Friends of PhySiC";
+    friendsHeader.style.cssText = "grid-column: 1 / -1; text-align: center; border-bottom: 1px solid #555; padding-bottom: 10px; margin: 20px 0 10px 0;";
+    templatesContainer.appendChild(friendsHeader);
+
+    for (const name in friendsOfPhysicTemplates) {
+        const template = friendsOfPhysicTemplates[name];
+        const item = document.createElement('div');
+        item.className = 'template-item';
+
+        let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
+
+        item.innerHTML = `
+            <h4 style="margin-bottom: 10px;">${name}</h4>
+            <div class="color-swatches">${swatchesHTML}</div>
+            <button class="apply-template-btn">Apply</button>
+        `;
+
+        item.querySelector('.apply-template-btn').addEventListener('click', () => {
+            ballColors = [...template];
+            renderColorPickers();
+            templatesLibrary.classList.add('hidden');
+        });
+
+        templatesContainer.appendChild(item);
+    }
+}
+
+function populateShapesLibrary() {
+    shapesContainer.innerHTML = '';
+    for (const name in shapes) {
+        const shape = shapes[name];
+        const item = document.createElement('div');
+        item.className = 'shape-item';
+        item.innerHTML = `
+            <svg viewBox="0 0 50 50">${shape.svg}</svg>
+            <h4>${name}</h4>
+        `;
+        item.addEventListener('click', () => {
+            selectedShape = shape;
+            shapesLibrary.classList.add('hidden');
+        });
+        shapesContainer.appendChild(item);
     }
 }
 
@@ -529,21 +635,30 @@ function spawnBall(x, y) {
     switch (selectedShape.type) {
         case 'box':
             ball = Bodies.rectangle(x, y, size, size, options);
+            stats.polygonsSpawned++;
             break;
         case 'rectangle':
             ball = Bodies.rectangle(x, y, size * 1.5, size, options);
+            stats.rectanglesSpawned++;
             break;
         case 'polygon':
             ball = Bodies.polygon(x, y, selectedShape.sides, size, options);
+            stats.polygonsSpawned++;
             break;
         case 'trapezoid':
             ball = Bodies.trapezoid(x, y, size, size * 0.8, selectedShape.slope, options);
+            stats.polygonsSpawned++;
             break;
         case 'circle':
         default:
             ball = Bodies.circle(x, y, size, options);
+            stats.circlesSpawned++;
             break;
     }
+
+    // Increment total spawned count
+    stats.totalSpawned++;
+    saveStats();
 
     if (namesEnabled) {
         if (manualNameEnabled && customName) {
@@ -554,6 +669,8 @@ function spawnBall(x, y) {
         // Glitch 1/40, else Rainbow 1/50 (exclusive)
         ball.isGlitchName = Math.random() < (1 / 40);
         ball.isRainbowName = !ball.isGlitchName && (Math.random() < (1 / 50)); // updated from 1/30
+        stats.namesGiven++;
+        saveStats();
     }
 
     if (facesEnabled) {
@@ -571,6 +688,8 @@ function spawnBall(x, y) {
         ball.lookDuration = 0; // How long been looking
         // Add asymmetric eyes with 1/20 probability
         ball.hasAsymmetricEyes = Math.random() < 0.05;
+        stats.facesCreated++;
+        saveStats();
     }
 
     if (lifespanEnabled && !isStaticEnabled) {
@@ -614,6 +733,8 @@ function handleInteractionStart(e) {
                 Body.applyForce(body, body.position, force);
             }
         });
+        stats.explosionsTriggered++;
+        saveStats();
         return;
     }
 
@@ -644,6 +765,8 @@ function handleInteractionStart(e) {
                 
                 Composite.add(world, constraint);
                 weldingConstraints.push(constraint);
+                stats.weldsCreated++;
+                saveStats();
                 
                 // Clear selection styling
                 weldingFirstBody.render.strokeStyle = undefined;
@@ -796,6 +919,60 @@ function resetAllSettings() {
     alert('All settings have been reset to their default values.');
 }
 
+// Statistics functions
+function loadStats() {
+    try {
+        const savedStats = localStorage.getItem('physicsStats');
+        if (savedStats) {
+            stats = { ...stats, ...JSON.parse(savedStats) };
+            updateStatsDisplay();
+        }
+    } catch (error) {
+        console.error("Error loading statistics:", error);
+    }
+}
+
+function saveStats() {
+    try {
+        localStorage.setItem('physicsStats', JSON.stringify(stats));
+    } catch (error) {
+        console.error("Error saving statistics:", error);
+    }
+}
+
+function updateStatsDisplay() {
+    document.getElementById('total-spawned').textContent = stats.totalSpawned.toLocaleString();
+    document.getElementById('circles-spawned').textContent = stats.circlesSpawned.toLocaleString();
+    document.getElementById('polygons-spawned').textContent = stats.polygonsSpawned.toLocaleString();
+    document.getElementById('rectangles-spawned').textContent = stats.rectanglesSpawned.toLocaleString();
+    document.getElementById('explosions-triggered').textContent = stats.explosionsTriggered.toLocaleString();
+    document.getElementById('objects-deleted').textContent = stats.objectsDeleted.toLocaleString();
+    document.getElementById('welds-created').textContent = stats.weldsCreated.toLocaleString();
+    document.getElementById('names-given').textContent = stats.namesGiven.toLocaleString();
+    document.getElementById('faces-created').textContent = stats.facesCreated.toLocaleString();
+    document.getElementById('objects-cleared').textContent = stats.objectsCleared.toLocaleString();
+}
+
+function resetStats() {
+    if (confirm('Are you sure you want to reset all statistics? This cannot be undone.')) {
+        stats = {
+            totalSpawned: 0,
+            circlesSpawned: 0,
+            polygonsSpawned: 0,
+            rectanglesSpawned: 0,
+            explosionsTriggered: 0,
+            objectsDeleted: 0,
+            weldsCreated: 0,
+            namesGiven: 0,
+            facesCreated: 0,
+            objectsCleared: 0
+        };
+        saveStats();
+        updateStatsDisplay();
+        alert('Statistics have been reset.');
+    }
+}
+
 // Initialize color pickers and controls
 document.addEventListener('DOMContentLoaded', () => {
     customTemplates = getCustomTemplates();
@@ -807,6 +984,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load and start tracking play time
     loadPlayTime();
     startPlayTimeTracking();
+    
+    // Load statistics
+    loadStats();
 
     // Add event listener to save play time when page is about to unload
     window.addEventListener('beforeunload', savePlayTime);
@@ -906,6 +1086,8 @@ document.addEventListener('DOMContentLoaded', () => {
             resetAllSettings();
         }
     });
+
+    document.getElementById('reset-stats-btn').addEventListener('click', resetStats);
 
     const pauseBtn = document.getElementById('pause-btn');
     pauseBtn.addEventListener('click', () => {
@@ -1556,6 +1738,10 @@ function deleteBodyAndConstraints(body) {
     
     // Remove the body
     Composite.remove(world, body);
+    
+    // Increment deletion counter
+    stats.objectsDeleted++;
+    saveStats();
 }
 
 function clearBalls() {
@@ -1576,110 +1762,14 @@ function clearBalls() {
     // Clear welding selection
     weldingFirstBody = null;
     
+    const countRemoved = bodiesToRemove.length;
+    if (countRemoved > 0) {
+        stats.objectsCleared += countRemoved;
+        saveStats();
+    }
+    
     Composite.remove(world, bodiesToRemove);
 }
-
-function populateTemplatesLibrary() {
-    templatesContainer.innerHTML = '';
-    
-    const allTemplates = { ...customTemplates, ...templates };
-
-    for (const name in allTemplates) {
-        const isCustom = customTemplates.hasOwnProperty(name);
-        const template = allTemplates[name];
-        const item = document.createElement('div');
-        item.className = 'template-item';
-
-        let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
-
-        const headerHTML = isCustom ? `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h4 style="margin: 0;">${name}</h4>
-                <button class="delete-template-btn" data-name="${name}">&times;</button>
-            </div>
-        ` : `<h4 style="margin-bottom: 10px;">${name}</h4>`;
-
-        item.innerHTML = `
-            ${headerHTML}
-            <div class="color-swatches">${swatchesHTML}</div>
-            <button class="apply-template-btn">Apply</button>
-        `;
-
-        item.querySelector('.apply-template-btn').addEventListener('click', () => {
-            ballColors = [...template];
-            renderColorPickers();
-            templatesLibrary.classList.add('hidden');
-        });
-
-        if (isCustom) {
-            item.querySelector('.delete-template-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                const templateName = e.target.getAttribute('data-name');
-                if (confirm(`Are you sure you want to delete the "${templateName}" template?`)) {
-                    deleteCustomTemplate(templateName);
-                }
-            });
-        }
-
-        templatesContainer.appendChild(item);
-    }
-
-    // Add Friends of PhySiC section
-    const friendsHeader = document.createElement('h3');
-    friendsHeader.textContent = "Friends of PhySiC";
-    friendsHeader.style.cssText = "grid-column: 1 / -1; text-align: center; border-bottom: 1px solid #555; padding-bottom: 10px; margin: 20px 0 10px 0;";
-    templatesContainer.appendChild(friendsHeader);
-
-    for (const name in friendsOfPhysicTemplates) {
-        const template = friendsOfPhysicTemplates[name];
-        const item = document.createElement('div');
-        item.className = 'template-item';
-
-        let swatchesHTML = template.map(color => `<div class="swatch" style="background-color: ${color};"></div>`).join('');
-
-        item.innerHTML = `
-            <h4 style="margin-bottom: 10px;">${name}</h4>
-            <div class="color-swatches">${swatchesHTML}</div>
-            <button class="apply-template-btn">Apply</button>
-        `;
-
-        item.querySelector('.apply-template-btn').addEventListener('click', () => {
-            ballColors = [...template];
-            renderColorPickers();
-            templatesLibrary.classList.add('hidden');
-        });
-
-        templatesContainer.appendChild(item);
-    }
-}
-
-function populateShapesLibrary() {
-    shapesContainer.innerHTML = '';
-    for (const name in shapes) {
-        const shape = shapes[name];
-        const item = document.createElement('div');
-        item.className = 'shape-item';
-        item.innerHTML = `
-            <svg viewBox="0 0 50 50">${shape.svg}</svg>
-            <h4>${name}</h4>
-        `;
-        item.addEventListener('click', () => {
-            selectedShape = shape;
-            shapesLibrary.classList.add('hidden');
-        });
-        shapesContainer.appendChild(item);
-    }
-}
-
-// Handle window resizing
-window.addEventListener('resize', () => {
-    // Update canvas dimensions
-    render.canvas.width = window.innerWidth;
-    render.canvas.height = window.innerHeight;
-    
-    // Recreate boundaries with correct dimensions for the new window size
-    boundaries = createBoundaries();
-});
 
 // Play time tracking functions
 function loadPlayTime() {
