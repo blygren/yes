@@ -118,6 +118,8 @@ let shockwaves = [];
 let isPaused = false; // Add pause state tracking
 let invisibleWeldsEnabled = false;
 let namesEnabled = false;
+let manualNameEnabled = false; // New variable for manual naming
+let customName = ""; // New variable to store custom name
 
 // Reference data from the external data file
 const namePool = NAME_POOL;
@@ -259,6 +261,8 @@ function saveState() {
             gridColor,
             backgroundColor,
             namesEnabled,
+            manualNameEnabled, // Add the new setting
+            customName, // Add the custom name to the saved state
             engine: {
                 gravity: { ...engine.world.gravity },
                 airFriction: engine.airFriction,
@@ -367,6 +371,8 @@ function loadState(state) {
     gridColor = s.gridColor;
     backgroundColor = s.backgroundColor;
     namesEnabled = s.namesEnabled || false;
+    manualNameEnabled = s.manualNameEnabled || false; // Restore manual naming state
+    customName = s.customName || ""; // Restore custom name
 
     engine.world.gravity = { ...s.engine.gravity };
     engine.airFriction = s.engine.airFriction;
@@ -475,6 +481,18 @@ function updateUIFromState() {
     document.getElementById('grid-color-picker').value = gridColor;
     document.getElementById('bg-color-picker').value = backgroundColor;
     document.getElementById('names-toggle').checked = namesEnabled;
+    document.getElementById('names-toggle').dispatchEvent(new Event('change'));
+    
+    // Update manual name UI if it exists in the loaded state
+    if (manualNameEnabled && document.getElementById('manual-name-toggle')) {
+        document.getElementById('manual-name-toggle').checked = manualNameEnabled;
+        document.getElementById('manual-name-toggle').dispatchEvent(new Event('change'));
+        
+        if (customName && document.getElementById('custom-name-input')) {
+            document.getElementById('custom-name-input').value = customName;
+        }
+    }
+    
     updateBackground();
     document.getElementById('gravity-y-slider').value = engine.world.gravity.y;
     document.getElementById('gravity-x-slider').value = engine.world.gravity.x;
@@ -528,7 +546,11 @@ function spawnBall(x, y) {
     }
 
     if (namesEnabled) {
-        ball.customName = namePool[Math.floor(Math.random() * namePool.length)];
+        if (manualNameEnabled && customName) {
+            ball.customName = customName;
+        } else {
+            ball.customName = namePool[Math.floor(Math.random() * namePool.length)];
+        }
         // Glitch 1/40, else Rainbow 1/50 (exclusive)
         ball.isGlitchName = Math.random() < (1 / 40);
         ball.isRainbowName = !ball.isGlitchName && (Math.random() < (1 / 50)); // updated from 1/30
@@ -755,6 +777,8 @@ function resetAllSettings() {
     gridColor = '#0000FF';
     backgroundColor = '#1a1a1a';
     namesEnabled = false;
+    manualNameEnabled = false;
+    customName = "";
 
     engine.world.gravity.y = 1;
     engine.world.gravity.x = 0;
@@ -1011,6 +1035,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('names-toggle').addEventListener('change', (e) => {
         namesEnabled = e.target.checked;
+        
+        // Show/hide manual name container based on names toggle
+        const manualNameContainer = document.getElementById('manual-name-container');
+        if (manualNameContainer) {
+            manualNameContainer.style.display = namesEnabled ? 'block' : 'none';
+        }
+    });
+    
+    // Add event listener for manual name toggle
+    document.getElementById('manual-name-toggle').addEventListener('change', (e) => {
+        manualNameEnabled = e.target.checked;
+        
+        // Show/hide custom name input based on manual name toggle
+        const customNameInputContainer = document.getElementById('custom-name-input-container');
+        if (customNameInputContainer) {
+            customNameInputContainer.style.display = manualNameEnabled ? 'block' : 'none';
+        }
+    });
+    
+    // Add event listener for custom name input
+    document.getElementById('custom-name-input').addEventListener('input', (e) => {
+        customName = e.target.value;
     });
 
     document.getElementById('rotation-speed-slider').addEventListener('input', (e) => {
