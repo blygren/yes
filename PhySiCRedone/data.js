@@ -194,7 +194,7 @@ const FRIENDS_TEMPLATES = {
     "Midnight": ["#2C3E50", "#E74C3C", "#ECF0F1", "#3498DB", "#2980B9"],
     "Retro": ["#FF8E00", "#00A3FF", "#FF5F5F", "#42FF00", "#FFEA00"],
     "platynium": ["#00FFFF", "#40E0D0", "#48D1CC", "#20B2AA", "#00CED1"],
-    "treeMaine": ["#FFD700", "#FFFFFF", "#4169E1", "#C8A2C8", "#B19CD9"],
+    "tree": ["#FFD700", "#FFFFFF", "#4169E1", "#C8A2C8", "#B19CD9"],
     "the attack master": ["#000000", "#1C1C1C", "#282828", "#363636", "#424242"],
     "burple": ["#8A2BE2", "#9400D3", "#9932CC", "#4B0082", "#6A5ACD"],
     "wobbly bob": ["#FFFF00", "#000000"],
@@ -258,3 +258,4 @@ const NAME_POOL = [
     "IYKYK", "W", "L", "GOAT", "ASMR", "BLJ", "Rizz", "XD", "WDYM", "Skrrt",
     "Frog", "Bro", "Bae", "Cuh", "Naur", "Fr fr", "TFW", "SMH", "Ded", "Skill"
 ];
+
