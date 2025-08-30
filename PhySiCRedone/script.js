@@ -12,6 +12,7 @@ let playTimeInterval;
 const SAVE_INTERVAL = 30000; // Save every 30 seconds
 
 // Statistics tracking variables
+// Add creation time tracking to statistics tracking variables
 let stats = {
     totalSpawned: 0,
     circlesSpawned: 0,
@@ -24,6 +25,11 @@ let stats = {
     facesCreated: 0,
     objectsCleared: 0
 };
+
+// Add a variable for the inspection panel
+let inspectionPanel = null;
+let inspectedBody = null;
+let isInspectMode = false;
 
 // Create a renderer
 const render = Render.create({
@@ -147,6 +153,11 @@ let invisibleWeldsEnabled = false;
 let namesEnabled = false;
 let manualNameEnabled = false; // New variable for manual naming
 let customName = ""; // New variable to store custom name
+
+// Add missing variables
+let currentMode = 'spawn'; // Define the current mode variable
+let mouse; // Define mouse variable
+let mouseConstraint; // Define mouse constraint variable
 
 // Reference data from the external data file
 const namePool = NAME_POOL;
@@ -740,6 +751,10 @@ function spawnBall(x, y) {
     stats.totalSpawned++;
     saveStats();
 
+    // Add creation time to the ball
+    ball.creationTime = new Date();
+    ball.creationTimeFormatted = ball.creationTime.toLocaleTimeString();
+
     if (namesEnabled) {
         if (manualNameEnabled && customName) {
             ball.customName = customName;
@@ -792,7 +807,9 @@ function handleInteractionStart(e) {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
     // Prevent spawning balls when clicking on UI elements
-    if (e.target.closest('#settings-panel') || e.target.closest('#bottom-toolbar') || e.target.closest('#library-panel') || e.target.closest('#templates-library') || e.target.closest('#shapes-library')) {
+    if (e.target.closest('#settings-panel') || e.target.closest('#bottom-toolbar') || 
+        e.target.closest('#library-panel') || e.target.closest('#templates-library') || 
+        e.target.closest('#shapes-library') || e.target.closest('#inspection-panel')) {
         return;
     }
 
@@ -872,6 +889,19 @@ function handleInteractionStart(e) {
         return;
     }
 
+    if (currentMode === 'inspect') {
+        const bodies = Composite.allBodies(world);
+        const foundBodies = Matter.Query.point(bodies, { x: clientX, y: clientY });
+        const clickedBody = foundBodies.find(body => !boundaries.includes(body));
+        
+        if (clickedBody) {
+            showInspectionPanel(clickedBody);
+        } else {
+            hideInspectionPanel();
+        }
+        return;
+    }
+
     isMouseDown = true;
 
     if (currentMode === 'delete') {
@@ -939,23 +969,174 @@ document.body.addEventListener('touchstart', handleInteractionStart, { passive: 
 document.body.addEventListener('touchend', handleInteractionEnd);
 document.body.addEventListener('touchmove', handleInteractionMove, { passive: false });
 
-// --- Mouse and Mode Controls ---
-let currentMode = 'spawn';
-const mouse = Mouse.create(render.canvas);
-const mouseConstraint = MouseConstraint.create(engine, {
-    mouse: mouse,
-    constraint: {
-        stiffness: 0.2,
-        render: {
-            visible: false
+// Fix the inspection panel functions
+function showInspectionPanel(body) {
+    inspectedBody = body;
+    
+    const panel = document.getElementById('inspection-panel');
+    const content = document.getElementById('inspection-content');
+    
+    if (!panel || !content) {
+        console.error('Inspection panel or content element not found');
+        return;
+    }
+    
+    // Gather information about the body
+    const shapeType = getShapeType(body);
+    const color = body.render.fillStyle;
+    const size = getBodySize(body);
+    const position = `X: ${body.position.x.toFixed(1)}, Y: ${body.position.y.toFixed(1)}`;
+    const velocity = `X: ${body.velocity.x.toFixed(2)}, Y: ${body.velocity.y.toFixed(2)}`;
+    const angle = `${(body.angle * 180 / Math.PI).toFixed(1)}°`;
+    const density = body.density.toFixed(4);
+    const restitution = body.restitution.toFixed(2);
+    const friction = body.friction.toFixed(2);
+    const name = body.customName || 'Unnamed';
+    const isStatic = body.isStatic ? 'Yes' : 'No';
+    const hasFace = body.hasFace ? 'Yes' : 'No';
+    const creationTime = body.creationTimeFormatted || 'Unknown';
+    
+    // Create HTML content
+    let html = '';
+    html = addInfoRow(html, 'Name', name);
+    html = addInfoRow(html, 'Shape', shapeType);
+    html = addInfoRow(html, 'Created', creationTime);
+    html = addInfoRow(html, 'Color', `${color} <span class="color-preview" style="background-color: ${color}"></span>`);
+    html = addInfoRow(html, 'Size', size);
+    html = addInfoRow(html, 'Position', position);
+    html = addInfoRow(html, 'Velocity', velocity);
+    html = addInfoRow(html, 'Angle', angle);
+    html = addInfoRow(html, 'Density', density);
+    html = addInfoRow(html, 'Bounciness', restitution);
+    html = addInfoRow(html, 'Friction', friction);
+    html = addInfoRow(html, 'Static', isStatic);
+    html = addInfoRow(html, 'Has Face', hasFace);
+    
+    // Add face-specific information if the body has a face
+    if (body.hasFace) {
+        const maxHealth = 13; // Death threshold from collision system
+        const currentHealth = Math.max(0, maxHealth - (body.damage || 0));
+        const healthPercentage = Math.round((currentHealth / maxHealth) * 100);
+        
+        // Health bar color based on percentage
+        let healthColor = '#4CAF50'; // Green
+        if (healthPercentage < 50) healthColor = '#FF9800'; // Orange
+        if (healthPercentage < 25) healthColor = '#F44336'; // Red
+        if (body.isDead) healthColor = '#9E9E9E'; // Gray
+        
+        const healthBar = `
+            <div style="width: 100px; height: 8px; background-color: #333; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle;">
+                <div style="width: ${body.isDead ? 0 : healthPercentage}%; height: 100%; background-color: ${healthColor}; transition: width 0.3s;"></div>
+            </div>
+        `;
+        
+        html = addInfoRow(html, 'Health', `${healthBar} ${body.isDead ? 'DEAD' : `${healthPercentage}%`}`);
+        html = addInfoRow(html, 'Damage Taken', (body.damage || 0).toFixed(1));
+        html = addInfoRow(html, 'Status', body.isDead ? '💀 Dead' : body.isSad ? '😢 Sad' : body.isBeingDragged ? '😨 Scared' : '😊 Happy');
+        html = addInfoRow(html, 'Invincible', body.isInvincible ? 'Yes' : 'No');
+        
+        // Emotion states
+        let emotionState = 'Normal';
+        if (body.isDead) emotionState = 'Dead';
+        else if (body.isBeingDragged && body.emotionTimer > 0) emotionState = 'Scared';
+        else if (body.isSad) emotionState = `Sad (${Math.ceil(body.sadTimer / 60)}s left)`;
+        else if (body.isBlinking) emotionState = 'Blinking';
+        else if (body.isLooking) emotionState = 'Looking at friend';
+        
+        html = addInfoRow(html, 'Emotion', emotionState);
+        
+        // Eye information
+        const eyeInfo = body.hasAsymmetricEyes ? 'Asymmetric (Unique!)' : 'Normal';
+        html = addInfoRow(html, 'Eyes', eyeInfo);
+        
+        // Next blink countdown (only if alive)
+        if (!body.isDead && !body.isBlinking) {
+            const nextBlinkSeconds = Math.ceil(body.blinkTimer / 60);
+            html = addInfoRow(html, 'Next Blink', `${nextBlinkSeconds}s`);
         }
     }
-});
-Composite.add(world, mouseConstraint);
-// Initially disable mouse constraint for spawn mode
-mouseConstraint.collisionFilter.mask = 0;
+    
+    // No longer adding delete button here
+    
+    content.innerHTML = html;
+    panel.classList.remove('hidden');
+    
+    // Function to add an info row to the HTML
+    function addInfoRow(currentHtml, label, value) {
+        return currentHtml + `
+            <div class="info-row">
+                <div class="info-label">${label}:</div>
+                <div class="info-value">${value}</div>
+            </div>
+        `;
+    }
+}
 
+function hideInspectionPanel() {
+    inspectedBody = null;
+    const panel = document.getElementById('inspection-panel');
+    if (panel) {
+        panel.classList.add('hidden');
+    }
+}
 
+// Move the Statistics functions before they're used in DOMContentLoaded
+// Statistics functions
+function loadStats() {
+    try {
+        const savedStats = localStorage.getItem('physicsStats');
+        if (savedStats) {
+            stats = { ...stats, ...JSON.parse(savedStats) };
+            updateStatsDisplay();
+        }
+    } catch (error) {
+        console.error("Error loading statistics:", error);
+    }
+}
+
+function saveStats() {
+    try {
+        localStorage.setItem('physicsStats', JSON.stringify(stats));
+        updateStatsDisplay(); // Update display immediately after saving stats
+    } catch (error) {
+        console.error("Error saving statistics:", error);
+    }
+}
+
+function updateStatsDisplay() {
+    document.getElementById('total-spawned').textContent = stats.totalSpawned.toLocaleString();
+    document.getElementById('circles-spawned').textContent = stats.circlesSpawned.toLocaleString();
+    document.getElementById('polygons-spawned').textContent = stats.polygonsSpawned.toLocaleString();
+    document.getElementById('rectangles-spawned').textContent = stats.rectanglesSpawned.toLocaleString();
+    document.getElementById('explosions-triggered').textContent = stats.explosionsTriggered.toLocaleString();
+    document.getElementById('objects-deleted').textContent = stats.objectsDeleted.toLocaleString();
+    document.getElementById('welds-created').textContent = stats.weldsCreated.toLocaleString();
+    document.getElementById('names-given').textContent = stats.namesGiven.toLocaleString();
+    document.getElementById('faces-created').textContent = stats.facesCreated.toLocaleString();
+    document.getElementById('objects-cleared').textContent = stats.objectsCleared.toLocaleString();
+}
+
+function resetStats() {
+    if (confirm('Are you sure you want to reset all statistics? This cannot be undone.')) {
+        stats = {
+            totalSpawned: 0,
+            circlesSpawned: 0,
+            polygonsSpawned: 0,
+            rectanglesSpawned: 0,
+            explosionsTriggered: 0,
+            objectsDeleted: 0,
+            weldsCreated: 0,
+            namesGiven: 0,
+            facesCreated: 0,
+            objectsCleared: 0
+        };
+        saveStats();
+        updateStatsDisplay();
+        alert('Statistics have been reset.');
+    }
+}
+
+// Add functions needed by DOMContentLoaded if not already defined
 function resetAllSettings() {
     // Reset all settings to their default values
     ballRadius = 20;
@@ -1003,57 +1184,31 @@ function resetAllSettings() {
     alert('All settings have been reset to their default values.');
 }
 
-// Statistics functions
-function loadStats() {
-    try {
-        const savedStats = localStorage.getItem('physicsStats');
-        if (savedStats) {
-            stats = { ...stats, ...JSON.parse(savedStats) };
-            updateStatsDisplay();
+// Add missing shape type and body size functions
+function getShapeType(body) {
+    if (body.circleRadius) {
+        return 'Circle';
+    } else {
+        const vertices = body.vertices.length;
+        if (vertices === 4) {
+            const bounds = body.bounds;
+            const width = bounds.max.x - bounds.min.x;
+            const height = bounds.max.y - bounds.min.y;
+            return Math.abs(width - height) < 5 ? 'Square' : 'Rectangle';
+        } else {
+            return `Polygon (${vertices} sides)`;
         }
-    } catch (error) {
-        console.error("Error loading statistics:", error);
     }
 }
 
-function saveStats() {
-    try {
-        localStorage.setItem('physicsStats', JSON.stringify(stats));
-    } catch (error) {
-        console.error("Error saving statistics:", error);
-    }
-}
-
-function updateStatsDisplay() {
-    document.getElementById('total-spawned').textContent = stats.totalSpawned.toLocaleString();
-    document.getElementById('circles-spawned').textContent = stats.circlesSpawned.toLocaleString();
-    document.getElementById('polygons-spawned').textContent = stats.polygonsSpawned.toLocaleString();
-    document.getElementById('rectangles-spawned').textContent = stats.rectanglesSpawned.toLocaleString();
-    document.getElementById('explosions-triggered').textContent = stats.explosionsTriggered.toLocaleString();
-    document.getElementById('objects-deleted').textContent = stats.objectsDeleted.toLocaleString();
-    document.getElementById('welds-created').textContent = stats.weldsCreated.toLocaleString();
-    document.getElementById('names-given').textContent = stats.namesGiven.toLocaleString();
-    document.getElementById('faces-created').textContent = stats.facesCreated.toLocaleString();
-    document.getElementById('objects-cleared').textContent = stats.objectsCleared.toLocaleString();
-}
-
-function resetStats() {
-    if (confirm('Are you sure you want to reset all statistics? This cannot be undone.')) {
-        stats = {
-            totalSpawned: 0,
-            circlesSpawned: 0,
-            polygonsSpawned: 0,
-            rectanglesSpawned: 0,
-            explosionsTriggered: 0,
-            objectsDeleted: 0,
-            weldsCreated: 0,
-            namesGiven: 0,
-            facesCreated: 0,
-            objectsCleared: 0
-        };
-        saveStats();
-        updateStatsDisplay();
-        alert('Statistics have been reset.');
+function getBodySize(body) {
+    if (body.circleRadius) {
+        return `Radius: ${body.circleRadius.toFixed(1)}`;
+    } else {
+        const bounds = body.bounds;
+        const width = bounds.max.x - bounds.min.x;
+        const height = bounds.max.y - bounds.min.y;
+        return `W: ${width.toFixed(1)}, H: ${height.toFixed(1)}`;
     }
 }
 
@@ -1076,17 +1231,24 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('beforeunload', savePlayTime);
 
     const spawnBtn = document.getElementById('spawn-mode-btn');
-    const dragBtn = document.getElementById('drag-mode-btn'); // Fix: was incorrectly using delete-mode-btn
+    const dragBtn = document.getElementById('drag-mode-btn'); // Fix this line - was incorrectly referencing delete-mode-btn
     const deleteBtn = document.getElementById('delete-mode-btn');
     const explodeBtn = document.getElementById('explode-mode-btn');
     const attractBtn = document.getElementById('attract-mode-btn');
     const weldBtn = document.getElementById('weld-mode-btn');
+    const inspectBtn = document.getElementById('inspect-mode-btn');
+
+    // Add proper event listener for inspection panel close button
+    const closeInspectionBtn = document.getElementById('close-inspection-btn');
+    if (closeInspectionBtn) {
+        closeInspectionBtn.addEventListener('click', hideInspectionPanel);
+    }
 
     function setActiveButton(activeBtn) {
-        [spawnBtn, dragBtn, deleteBtn, explodeBtn, attractBtn, weldBtn].forEach(btn => {
-            btn.classList.remove('active');
+        [spawnBtn, dragBtn, deleteBtn, explodeBtn, attractBtn, weldBtn, inspectBtn].forEach(btn => {
+            if (btn) btn.classList.remove('active'); // Add null check
         });
-        activeBtn.classList.add('active');
+        if (activeBtn) activeBtn.classList.add('active'); // Add null check
     }
 
     function clearWeldingSelection() {
@@ -1097,46 +1259,68 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    spawnBtn.addEventListener('click', () => {
-        currentMode = 'spawn';
-        mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
-        clearWeldingSelection();
-        setActiveButton(spawnBtn);
-    });
+    if (spawnBtn) {
+        spawnBtn.addEventListener('click', () => {
+            currentMode = 'spawn';
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0;
+            clearWeldingSelection();
+            setActiveButton(spawnBtn);
+        });
+    }
 
-    dragBtn.addEventListener('click', () => {
-        currentMode = 'drag';
-        mouseConstraint.collisionFilter.mask = -1; // Always enable dragging for drag mode
-        clearWeldingSelection();
-        setActiveButton(dragBtn);
-    });
+    if (dragBtn) {
+        dragBtn.addEventListener('click', () => {
+            currentMode = 'drag';
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = -1;
+            clearWeldingSelection();
+            setActiveButton(dragBtn);
+        });
+    }
 
-    attractBtn.addEventListener('click', () => {
-        currentMode = 'attract';
-        mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
-        clearWeldingSelection();
-        setActiveButton(attractBtn);
-    });
+    if (attractBtn) {
+        attractBtn.addEventListener('click', () => {
+            currentMode = 'attract';
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0;
+            clearWeldingSelection();
+            setActiveButton(attractBtn);
+        });
+    }
 
-    weldBtn.addEventListener('click', () => {
-        currentMode = 'weld';
-        mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
-        setActiveButton(weldBtn);
-    });
+    if (weldBtn) {
+        weldBtn.addEventListener('click', () => {
+            currentMode = 'weld';
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0;
+            setActiveButton(weldBtn);
+        });
+    }
 
-    deleteBtn.addEventListener('click', () => {
-        currentMode = 'delete';
-        mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
-        clearWeldingSelection();
-        setActiveButton(deleteBtn);
-    });
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            currentMode = 'delete';
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0;
+            clearWeldingSelection();
+            setActiveButton(deleteBtn);
+        });
+    }
 
-    explodeBtn.addEventListener('click', () => {
-        currentMode = 'explode';
-        mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0; // Enable dragging if paused
-        clearWeldingSelection();
-        setActiveButton(explodeBtn);
-    });
+    if (explodeBtn) {
+        explodeBtn.addEventListener('click', () => {
+            currentMode = 'explode';
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0;
+            clearWeldingSelection();
+            setActiveButton(explodeBtn);
+        });
+    }
+
+    if (inspectBtn) {
+        inspectBtn.addEventListener('click', () => {
+            currentMode = 'inspect';
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = isPaused ? -1 : 0;
+            clearWeldingSelection();
+            setActiveButton(inspectBtn);
+            hideInspectionPanel();
+        });
+    }
 
     document.getElementById('add-color-btn').addEventListener('click', addColor);
     document.getElementById('remove-color-btn').addEventListener('click', removeColor);
@@ -1182,21 +1366,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // When paused, always enable dragging regardless of current mode
         if (isPaused) {
-            mouseConstraint.collisionFilter.mask = -1; // Enable dragging
+            if (mouseConstraint) mouseConstraint.collisionFilter.mask = -1; // Enable dragging
         } else {
             // When unpaused, restore mode-appropriate dragging behavior
             if (currentMode === 'drag') {
-                mouseConstraint.collisionFilter.mask = -1;
+                if (mouseConstraint) mouseConstraint.collisionFilter.mask = -1;
             } else {
-                mouseConstraint.collisionFilter.mask = 0;
+                if (mouseConstraint) mouseConstraint.collisionFilter.mask = 0;
             }
         }
         
-        pauseBtn.textContent = runner.enabled ? 'Pause Simulation' : 'Resume Simulation';
+        if (pauseBtn) pauseBtn.textContent = runner.enabled ? 'Pause Simulation' : 'Resume Simulation';
     }
     
     // Use the togglePause function for the pause button
-    pauseBtn.addEventListener('click', togglePause);
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', togglePause);
+    }
     
     // Add keyboard event listener for spacebar to toggle pause
     document.addEventListener('keydown', (e) => {
@@ -1728,7 +1914,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (body.hasFace && !body.isDead) {
                 // Check if body is being dragged by mouse constraint
                 const wasBeingDragged = body.isBeingDragged;
-                body.isBeingDragged = (mouseConstraint.body === body);
+                body.isBeingDragged = (mouseConstraint && mouseConstraint.body === body);
                 
                 // If just started being dragged, set emotion timer
                 if (body.isBeingDragged && !wasBeingDragged) {
@@ -1737,7 +1923,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        if (currentMode === 'attract' && isMouseDown && mouse.position.x) {
+        if (currentMode === 'attract' && isMouseDown && mouse && mouse.position && mouse.position.x) {
             const bodies = Composite.allBodies(world);
             const basePullForce = 0.0005;
             const pullForce = basePullForce * attractionStrength;
@@ -1875,7 +2061,7 @@ function deleteBodyAndConstraints(body) {
     
     // Increment deletion counter
     stats.objectsDeleted++;
-    saveStats();
+    saveStats(); // This now calls updateStatsDisplay()
 }
 
 function clearBalls() {
@@ -1899,7 +2085,7 @@ function clearBalls() {
     const countRemoved = bodiesToRemove.length;
     if (countRemoved > 0) {
         stats.objectsCleared += countRemoved;
-        saveStats();
+        saveStats(); // This now calls updateStatsDisplay()
     }
     
     Composite.remove(world, bodiesToRemove);
@@ -1954,3 +2140,36 @@ function updatePlayTimeDisplay() {
         playTimeDisplay.textContent = `${hours}h ${minutes}m`;
     }
 }
+
+// Initialize mouse and mouse constraint IMMEDIATELY after render is created
+mouse = Mouse.create(render.canvas);
+mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+        stiffness: 0.2,
+        render: {
+            visible: false
+        }
+    }
+});
+Composite.add(world, mouseConstraint);
+// Initially disable mouse constraint for spawn mode
+mouseConstraint.collisionFilter.mask = 0;
+
+// Add inspection panel update to engine afterUpdate event
+Events.on(engine, 'afterUpdate', () => {
+    // Update position of the inspection panel to follow the inspected body if it exists
+    if (inspectedBody && !document.getElementById('inspection-panel').classList.contains('hidden')) {
+        // Check if the body still exists in the world
+        if (!Composite.get(world, inspectedBody.id, 'body')) {
+            hideInspectionPanel();
+        } else {
+            // Always update the inspection panel for real-time changes
+            // Previously this only updated for faces, now it updates for all objects
+            const panel = document.getElementById('inspection-panel');
+            if (panel && !panel.classList.contains('hidden')) {
+                showInspectionPanel(inspectedBody);
+            }
+        }
+    }
+});
