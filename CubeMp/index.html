@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PhySiC Redone (Multiplayer)</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; background-color: #111; color: #eee; display: flex; flex-direction: column; align-items: center; }
+        canvas { background-color: #222; display: block; }
+        .ui { padding: 10px; display: flex; flex-direction: column; gap: 10px; align-items: center; background: #333; border-radius: 5px; margin: 10px; width: 800px; }
+        .row { display: flex; gap: 10px; align-items: center; }
+        input[type="text"] { padding: 5px; width: 250px; }
+        button { padding: 8px 12px; cursor: pointer; }
+        #status { font-weight: bold; }
+        /* Chat and speech bubble styles */
+        #game-container { position: relative; overflow: hidden; width: 800px; height: 600px; }
+        #chat-input {
+            position: absolute;
+            bottom: 20px;
+            left: 400px;
+            transform: translateX(-50%);
+            padding: 8px;
+            width: 300px;
+            border: 1px solid #999;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            display: none;
+            z-index: 100;
+        }
+        .speech-bubble {
+            position: absolute;
+            background: white;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 10px;
+            max-width: 120px;
+            font-size: 12px;
+            text-align: center;
+            word-wrap: break-word;
+            transform: translate(-50%, -100%);
+            transition: opacity 0.5s;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="row">
+            <span>Your ID: <strong id="my-id">...</strong></span>
+            <input type="text" id="peer-id-input" placeholder="Host's ID">
+            <button id="connect-btn">Connect</button>
+            <span id="status">Waiting for connection...</span>
+        </div>
+    </div>
+    <div id="game-container"></div>
+    <input type="text" id="chat-input" placeholder="Say something... (press Enter to send)" maxlength="50">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    
+    <!-- Game Logic -->
+    <script src="game.js"></script>
+</body>
+</html>
+        // --- Game Setup ---
+        const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
+        const engine = Engine.create();
+        const world = engine.world;
+        const render = Render.create({
+            element: document.getElementById('game-container'),
+            engine: engine,
+            options: { width: 800, height: 600, wireframes: false, background: '#1a1a1a' }
+        });
+        Render.run(render);
+        Runner.run(Runner.create(), engine);
+
+        // --- Game Objects ---
+        const ground = Bodies.rectangle(400, 600, 810, 60, { isStatic: true });
+        const player = Bodies.rectangle(400, 500, 40, 40, { restitution: 0.1, friction: 0.01, render: { fillStyle: '#4287f5' } });
+        let friend = null;
+        World.add(world, [ground, Bodies.rectangle(0, 300, 20, 600, { isStatic: true }), Bodies.rectangle(800, 300, 20, 600, { isStatic: true }), player]);
+
+        // --- Controls ---
+        const keys = {};
+        let canJump = true;
+        const chatInput = document.getElementById('chat-input');
+        let chatActive = false;
+        const speechBubbles = [];
+
+        // Function to create and display speech bubbles
+        function displaySpeechBubble(body, message) {
+            const bubble = document.createElement('div');
+            bubble.className = 'speech-bubble';
+            bubble.textContent = message;
+            document.getElementById('game-container').appendChild(bubble);
+
+            const bubbleData = { element: bubble, body: body };
+            speechBubbles.push(bubbleData);
+
+            // Remove the bubble after 3 seconds with a fade-out animation
+            setTimeout(() => {
+                bubble.style.opacity = '0';
+                setTimeout(() => {
+                    bubble.remove();
+                    const index = speechBubbles.indexOf(bubbleData);
+                    if (index > -1) {
+                        speechBubbles.splice(index, 1);
+                    }
+                }, 500);
+            }, 3000);
+        }
+
+        // Function to update speech bubble positions in sync with their bodies
+        function updateBubbles() {
+            speechBubbles.forEach(bubbleData => {
+                const pos = bubbleData.body.position;
+                bubbleData.element.style.left = `${pos.x}px`;
+                bubbleData.element.style.top = `${pos.y - 30}px`; // 30px above the body's center
+            });
+            requestAnimationFrame(updateBubbles);
+        }
+        updateBubbles(); // Start the update loop
+
+        // Modified keyboard handling to support chat
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Enter') {
+                e.preventDefault();
+                if (chatActive) {
+                    // Send message when Enter is pressed while chat is active
+                    const message = chatInput.value.trim();
+                    if (message) {
+                        displaySpeechBubble(player, message);
+                        if (dataChannel && dataChannel.readyState === 'open') {
+                            dataChannel.send(JSON.stringify({ type: 'chat', msg: message }));
+                        }
+                    }
+                    chatInput.value = '';
+                    chatInput.style.display = 'none';
+                    chatActive = false;
+                } else {
+                    // Open chat when Enter is pressed and chat is not active
+                    chatInput.style.display = 'block';
+                    chatInput.focus();
+                    chatActive = true;
+                }
+            } else if (e.code === 'Escape' && chatActive) {
+                // Cancel chat with Escape
+                chatInput.style.display = 'none';
+                chatInput.blur();
+                chatActive = false;
+            } else if (!chatActive) {
+                // Only register other keys for movement when chat is not active
+                keys[e.code] = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (!chatActive) {
+                keys[e.code] = false;
+            }
+        });
+
+        Events.on(engine, 'collisionStart', (event) => {
+            if (event.pairs.some(p => p.bodyA === player || p.bodyB === player)) canJump = true;
+        });
+
+        Events.on(engine, 'beforeUpdate', () => {
+            if (keys['KeyA'] || keys['ArrowLeft']) Body.setVelocity(player, { x: -5, y: player.velocity.y });
+            if (keys['KeyD'] || keys['ArrowRight']) Body.setVelocity(player, { x: 5, y: player.velocity.y });
+            if ((keys['Space'] || keys['KeyW'] || keys['ArrowUp']) && canJump) {
+                Body.setVelocity(player, { x: player.velocity.x, y: -10 });
+                canJump = false;
+            }
+        });
+
+        // --- Multiplayer (WebRTC) ---
+        const createOfferBtn = document.getElementById('create-offer-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const localSdpText = document.getElementById('local-sdp');
+        const remoteSdpText = document.getElementById('remote-sdp');
+        const statusSpan = document.getElementById('status');
+
+        let peerConnection;
+        let dataChannel;
+
+        const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }; // Public STUN server
+
+        function setupDataChannelEvents(channel) {
+            channel.onopen = () => {
+                statusSpan.textContent = 'Status: Connected!';
+                if (!friend) {
+                    friend = Bodies.rectangle(400, 500, 40, 40, { isStatic: true, render: { fillStyle: '#f5a142' } });
+                    World.add(world, friend);
+                }
+                setInterval(() => {
+                    if (channel.readyState === 'open') {
+                        const data = { p: player.position, v: player.velocity };
+                        channel.send(JSON.stringify(data));
+                    }
+                }, 50);
+            };
+            
+            // Modified to handle chat messages
+            channel.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'chat' && friend) {
+                    // Handle incoming chat message
+                    displaySpeechBubble(friend, data.msg);
+                } else if (friend && data.p && data.v) {
+                    // Handle position updates
+                    Body.setPosition(friend, data.p);
+                    Body.setVelocity(friend, data.v);
+                }
+            };
+            
+            channel.onclose = () => {
+                statusSpan.textContent = 'Status: Disconnected';
+                if (friend) {
+                    World.remove(world, friend);
+                    friend = null;
+                }
+            };
+        }
+
+        async function createConnection(isOffering) {
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            // This promise resolves when all ICE candidates have been gathered.
+            const iceGatheringPromise = new Promise(resolve => {
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate === null) {
+                        // When gathering is complete, update the text area and resolve the promise.
+                        localSdpText.value = JSON.stringify(peerConnection.localDescription);
+                        resolve();
+                    }
+                };
+            });
+
+            if (isOffering) {
+                dataChannel = peerConnection.createDataChannel('game-data');
+                setupDataChannelEvents(dataChannel);
+            } else {
+                peerConnection.ondatachannel = event => {
+                    dataChannel = event.channel;
+                    setupDataChannelEvents(dataChannel);
+                };
+            }
+            
+            // Return the promise so it can be awaited at the correct time.
+            return iceGatheringPromise;
+        }
+
+        createOfferBtn.onclick = async () => {
+            statusSpan.textContent = 'Status: Creating offer...';
+            const icePromise = createConnection(true);
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            await icePromise; // Wait for ICE gathering to complete.
+            statusSpan.textContent = 'Status: Offer created. Send it to your friend.';
+        };
+
+        submitBtn.onclick = async () => {
+            if (!remoteSdpText.value.trim()) {
+                statusSpan.textContent = "Status: Error - Friend's data is empty.";
+                return;
+            }
+            try {
+                const remoteSdp = JSON.parse(remoteSdpText.value);
+                if (!peerConnection) { // This user is the one joining
+                    statusSpan.textContent = 'Status: Joining... Creating answer...';
+                    const icePromise = createConnection(false);
+                    await peerConnection.setRemoteDescription(remoteSdp);
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    await icePromise; // Wait for ICE gathering to complete.
+                    statusSpan.textContent = 'Status: Answer created. Send it back.';
+                } else { // This user created the offer and is now receiving the answer
+                    statusSpan.textContent = 'Status: Connecting...';
+                    await peerConnection.setRemoteDescription(remoteSdp);
+                }
+            } catch (e) {
+                statusSpan.textContent = "Status: Error - Invalid connection data.";
+                console.error("Error processing connection data:", e);
+            }
+        };
+    </script>
+</body>
+</html>
