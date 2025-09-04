@@ -28,9 +28,11 @@ let player;
 const platforms = [];
 const effectParticles = [];
 const interactiveElements = []; // Array to track interactive cubes
-const keys = { left: false, right: false, up: false, boost: false };
+const keys = { left: false, right: false, up: false }; // Removed boost key
 let upPressedLastFrame = false; // Track up key for jump edge detection
 let playerOnGround = false;
+let canDoubleJump = false; // Track if player can double jump
+let hasDoubleJumped = false; // Track if player has used double jump
 let highestY = window.innerHeight;
 let score = 0;
 const scoreElement = document.getElementById('score');
@@ -65,14 +67,6 @@ const CUBE_COLORS = ['#eee', '#f5d442', '#f54242', '#42f5a7', '#42a7f5', '#d642f
 let isSquinting = false;
 let squintTimer = 0;
 const squintDuration = 20; // Frames to show squint face
-
-// Boost variables
-let boostPower = 100;
-const maxBoostPower = 100;
-const boostRechargeRate = 0.5 / 3; // 3x slower recharge
-const boostDepletionRate = 1.5;
-const boostForce = 0.2 * 0.1; // 90% slower boost
-const boostMeter = document.getElementById('boost-meter');
 
 // Utility to get a random color
 function getRandomColor() {
@@ -164,7 +158,7 @@ Composite.add(world, player);
 function createRegularPlatform(x, y) {
     const platform = Bodies.rectangle(x + platformWidth / 2, y, platformWidth, platformHeight, {
         isStatic: true,
-        render: { fillStyle: '#ddd' },
+        render: { fillStyle: '#ddd' }, // Always visible
         label: 'platform'
     });
     return platform;
@@ -187,7 +181,7 @@ function createRampPlatform(x, y, isLeftFacing) {
     
     const ramp = Bodies.fromVertices(x + platformWidth / 2, y + platformHeight / 2, [vertices], {
         isStatic: true,
-        render: { fillStyle: '#ddd' },
+        render: { fillStyle: '#ddd' }, // Always visible
         label: 'platform',
         chamfer: { radius: 2 }
     });
@@ -327,7 +321,7 @@ function createNarrowPlatform(x, y) {
     const narrowWidth = platformWidth / 2;
     const platform = Bodies.rectangle(x + narrowWidth / 2, y, narrowWidth, platformHeight, {
         isStatic: true,
-        render: { fillStyle: '#ddd' },
+        render: { fillStyle: '#ddd' }, // Always visible
         label: 'platform'
     });
     return platform;
@@ -532,14 +526,14 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = true;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = true;
     if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = true;
-    if (e.key === ' ' || e.code === 'Space') keys.boost = true;
+    // Removed boost control
 });
 
 window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = false;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = false;
     if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = false;
-    if (e.key === ' ' || e.code === 'Space') keys.boost = false;
+    // Removed boost control
 });
 
 // Collision detection for ground status
@@ -565,45 +559,59 @@ function checkGround(pairs) {
 Events.on(engine, 'beforeUpdate', () => {
     playerOnGround = checkGround(engine.pairs.list.filter(p => p.isActive));
 
+    // Reset double jump when player is on ground
+    if (playerOnGround) {
+        canDoubleJump = true;
+        hasDoubleJumped = false;
+    }
+
     // Player movement
     const velocity = player.velocity;
     let newVelocityX = 0;
     if (keys.left) newVelocityX = -5;
     if (keys.right) newVelocityX = 5;
     
+    // Apply terminal velocity to prevent clipping through floor
+    if (velocity.y > 15) {
+        velocity.y = 15; // Limit maximum falling speed
+    }
+    
     Body.setVelocity(player, { x: newVelocityX, y: velocity.y });
 
-    // Jump only on up key press (not hold), and not if using boost
-    if (keys.up && playerOnGround && !upPressedLastFrame) {
-        Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
+    // Jump mechanics - First jump on ground, double jump in air
+    if (keys.up && !upPressedLastFrame) {
+        // First jump (on ground)
+        if (playerOnGround) {
+            Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
+        }
+        // Double jump (in air)
+        else if (canDoubleJump && !hasDoubleJumped) {
+            Body.setVelocity(player, { x: player.velocity.x, y: 0 }); // Reset vertical velocity
+            Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
+            hasDoubleJumped = true;
+            canDoubleJump = false;
+            
+            // Double jump effect particles
+            for (let i = 0; i < 10; i++) {
+                const x = player.position.x + (Math.random() - 0.5) * 40;
+                const y = player.position.y + 20;
+                const jumpParticle = Bodies.circle(x, y, 2 + Math.random() * 3, {
+                    isSensor: true,
+                    render: { fillStyle: 'rgba(255, 255, 255, 0.7)' },
+                    label: 'effect'
+                });
+                Body.setVelocity(jumpParticle, { 
+                    x: (Math.random() - 0.5) * 3, 
+                    y: Math.random() * 2 + 2 
+                });
+                effectParticles.push(jumpParticle);
+                Composite.add(world, jumpParticle);
+            }
+        }
     }
     upPressedLastFrame = keys.up;
 
-    // Boost logic: only boost if not on ground
-    if (keys.boost && boostPower > 0 && !playerOnGround) {
-        Body.applyForce(player, player.position, { x: 0, y: -boostForce });
-        boostPower -= boostDepletionRate;
-        
-        // Boost particles
-        for (let i = 0; i < 2; i++) {
-            const x = player.position.x + (Math.random() - 0.5) * 30;
-            const y = player.position.y + 20 + Math.random() * 5;
-            const boostParticle = Bodies.rectangle(x, y, 3, 10 + Math.random() * 10, {
-                isSensor: true,
-                render: { fillStyle: 'rgba(77, 255, 255, 0.7)' },
-                label: 'effect'
-            });
-            Body.setVelocity(boostParticle, { x: (Math.random() - 0.5) * 1, y: Math.random() * 2 + 2 });
-            effectParticles.push(boostParticle);
-            Composite.add(world, boostParticle);
-        }
-    } else if (boostPower < maxBoostPower) {
-        // Recharge boost when not boosting
-        boostPower = Math.min(boostPower + boostRechargeRate, maxBoostPower);
-    }
-    
-    // Update boost meter display
-    boostMeter.style.width = `${(boostPower / maxBoostPower) * 100}%`;
+    // Removed boost logic
 
     // Wind effects when falling
     if (player.velocity.y > 5) { // Add wind effect when falling fast
@@ -647,7 +655,7 @@ Events.on(engine, 'beforeUpdate', () => {
         if (particle.isSensor) { // Wind/jump particles
             particle.render.opacity -= 0.02;
         } else { // Smash/shatter particles
-            particle.render.opacity -= 0.000625; // 2x slower fade out (was 0.00125)
+            particle.render.opacity -= 0.0003125; // 4x slower fade out (was 0.000625)
         }
 
         if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
@@ -902,45 +910,57 @@ Events.on(engine, 'collisionStart', (event) => {
 Events.on(engine, 'beforeUpdate', () => {
     playerOnGround = checkGround(engine.pairs.list.filter(p => p.isActive));
 
+    // Reset double jump when player is on ground
+    if (playerOnGround) {
+        canDoubleJump = true;
+        hasDoubleJumped = false;
+    }
+
     // Player movement
     const velocity = player.velocity;
     let newVelocityX = 0;
     if (keys.left) newVelocityX = -5;
     if (keys.right) newVelocityX = 5;
     
-    Body.setVelocity(player, { x: newVelocityX, y: velocity.y });
-
-    // Jump only on up key press (not hold), and not if using boost
-    if (keys.up && playerOnGround && !upPressedLastFrame) {
-        Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
-    }
-    upPressedLastFrame = keys.up;
-
-    // Boost logic: only boost if not on ground
-    if (keys.boost && boostPower > 0 && !playerOnGround) {
-        Body.applyForce(player, player.position, { x: 0, y: -boostForce });
-        boostPower -= boostDepletionRate;
-        
-        // Boost particles
-        for (let i = 0; i < 2; i++) {
-            const x = player.position.x + (Math.random() - 0.5) * 30;
-            const y = player.position.y + 20 + Math.random() * 5;
-            const boostParticle = Bodies.rectangle(x, y, 3, 10 + Math.random() * 10, {
-                isSensor: true,
-                render: { fillStyle: 'rgba(77, 255, 255, 0.7)' },
-                label: 'effect'
-            });
-            Body.setVelocity(boostParticle, { x: (Math.random() - 0.5) * 1, y: Math.random() * 2 + 2 });
-            effectParticles.push(boostParticle);
-            Composite.add(world, boostParticle);
-        }
-    } else if (boostPower < maxBoostPower) {
-        // Recharge boost when not boosting
-        boostPower = Math.min(boostPower + boostRechargeRate, maxBoostPower);
+    // Apply terminal velocity to prevent clipping through floor
+    if (velocity.y > 15) {
+        velocity.y = 15; // Limit maximum falling speed
     }
     
-    // Update boost meter display
-    boostMeter.style.width = `${(boostPower / maxBoostPower) * 100}%`;
+    Body.setVelocity(player, { x: newVelocityX, y: velocity.y });
+
+    // Jump mechanics - First jump on ground, double jump in air
+    if (keys.up && !upPressedLastFrame) {
+        // First jump (on ground)
+        if (playerOnGround) {
+            Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
+        }
+        // Double jump (in air)
+        else if (canDoubleJump && !hasDoubleJumped) {
+            Body.setVelocity(player, { x: player.velocity.x, y: 0 }); // Reset vertical velocity
+            Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
+            hasDoubleJumped = true;
+            canDoubleJump = false;
+            
+            // Double jump effect particles
+            for (let i = 0; i < 10; i++) {
+                const x = player.position.x + (Math.random() - 0.5) * 40;
+                const y = player.position.y + 20;
+                const jumpParticle = Bodies.circle(x, y, 2 + Math.random() * 3, {
+                    isSensor: true,
+                    render: { fillStyle: 'rgba(255, 255, 255, 0.7)' },
+                    label: 'effect'
+                });
+                Body.setVelocity(jumpParticle, { 
+                    x: (Math.random() - 0.5) * 3, 
+                    y: Math.random() * 2 + 2 
+                });
+                effectParticles.push(jumpParticle);
+                Composite.add(world, jumpParticle);
+            }
+        }
+    }
+    upPressedLastFrame = keys.up;
 
     // Wind effects when falling
     if (player.velocity.y > 5) { // Add wind effect when falling fast
@@ -984,7 +1004,7 @@ Events.on(engine, 'beforeUpdate', () => {
         if (particle.isSensor) { // Wind/jump particles
             particle.render.opacity -= 0.02;
         } else { // Smash/shatter particles
-            particle.render.opacity -= 0.000625; // 2x slower fade out (was 0.00125)
+            particle.render.opacity -= 0.0003125; // 4x slower fade out (was 0.000625)
         }
 
         if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
