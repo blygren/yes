@@ -40,6 +40,11 @@ const platformWidth = 120;
 const platformHeight = 20;
 const platformGap = 180;
 
+// Player face variables
+let isSquinting = false;
+let squintTimer = 0;
+const squintDuration = 20; // Frames to show squint face
+
 // Boost variables
 let boostPower = 100;
 const maxBoostPower = 100;
@@ -54,6 +59,66 @@ function getRandomColor() {
     return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
 }
 
+// Custom render function for player with face
+function renderPlayer(body, ctx) {
+    const width = 40;
+    const height = 40;
+    
+    // Draw cube body
+    ctx.fillStyle = body.render.fillStyle;
+    ctx.beginPath();
+    ctx.rect(-(width / 2), -(height / 2), width, height);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+    
+    // Draw face
+    const eyeSize = 6;
+    const mouthWidth = 14;
+    const mouthHeight = isSquinting ? 2 : 6;
+
+    // Draw eyes
+    ctx.fillStyle = '#000';
+    
+    // Left eye
+    if (isSquinting) {
+        // Squinting left eye (line)
+        ctx.beginPath();
+        ctx.rect(-15, -5, 10, 2);
+        ctx.fill();
+    } else {
+        // Normal left eye (circle)
+        ctx.beginPath();
+        ctx.arc(-10, -5, eyeSize/2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    // Right eye
+    if (isSquinting) {
+        // Squinting right eye (line)
+        ctx.beginPath();
+        ctx.rect(5, -5, 10, 2);
+        ctx.fill();
+    } else {
+        // Normal right eye (circle)
+        ctx.beginPath();
+        ctx.arc(10, -5, eyeSize/2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    // Draw mouth
+    ctx.beginPath();
+    if (isSquinting) {
+        // Grimacing mouth
+        ctx.rect(-mouthWidth/2, 8, mouthWidth, mouthHeight);
+    } else {
+        // Normal mouth (smile)
+        ctx.arc(0, 5, mouthWidth/2, 0, Math.PI);
+    }
+    ctx.fill();
+}
+
 // Create player
 player = Bodies.rectangle(
     window.innerWidth / 2,
@@ -64,7 +129,14 @@ player = Bodies.rectangle(
         friction: 0.01,
         restitution: 0,
         density: 0.005,
-        render: { fillStyle: getRandomColor() }, // Random color each spawn
+        render: {
+            fillStyle: getRandomColor(),
+            sprite: {
+                xScale: 1,
+                yScale: 1
+            },
+            visualComponent: renderPlayer
+        },
         label: 'player'
     }
 );
@@ -139,6 +211,10 @@ Events.on(engine, 'collisionStart', (event) => {
             const platform = bodyA.label === 'platform' ? bodyA : bodyB;
             // Smash effect on hard landing
             if (player.velocity.y > 10) {
+                // Set squinting face when impact is hard
+                isSquinting = true;
+                squintTimer = squintDuration;
+                
                 const particleCount = 10;
                 for (let i = 0; i < particleCount; i++) {
                     // Player smash particles
@@ -302,6 +378,46 @@ Events.on(engine, 'beforeUpdate', () => {
         highScoreElement.innerText = `High Score: ${highScore}`;
         localStorage.setItem('highScore', highScore);
     }
+
+    // Update squint timer
+    if (isSquinting) {
+        squintTimer--;
+        if (squintTimer <= 0) {
+            isSquinting = false;
+        }
+    }
+});
+
+// Override the default render
+// Add this after your existing render setup
+Events.on(render, 'afterRender', function() {
+    const bodies = Composite.allBodies(world);
+    const context = render.context;
+    
+    context.save();
+    
+    // Adjust the context for camera position
+    const viewportCenterX = render.options.width * 0.5;
+    const viewportCenterY = render.options.height * 0.5;
+    
+    bodies.forEach(body => {
+        if (body.render.visualComponent) {
+            const { x, y } = body.position;
+            const initialX = x - render.bounds.min.x;
+            const initialY = y - render.bounds.min.y;
+            
+            context.save();
+            context.translate(initialX, initialY);
+            context.rotate(body.angle);
+            
+            // Call the custom render function
+            body.render.visualComponent(body, context);
+            
+            context.restore();
+        }
+    });
+    
+    context.restore();
 });
 
 // Handle window resize
