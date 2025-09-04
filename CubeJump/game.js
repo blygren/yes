@@ -23,6 +23,24 @@ Render.run(render);
 const runner = Runner.create();
 Runner.run(runner, engine);
 
+// Add name pool for intro story text
+const namePool = [
+    "Timmy", "Wobbly", "Alex", "Seth", "Max", "Joe", "Gordan", "Square", "Bob", 
+    "Rob", "Physic", "Travis", "Jim", "Sam", "Tree", "Frank", "James", 
+    "Morgan", "Blake", "Cameron", "Jesse", "Lucky", "Sam", "John", "Finn"
+];
+
+// Story intro variables
+let selectedName = namePool[Math.floor(Math.random() * namePool.length)];
+let showStoryIntro = true;
+let storyIntroTimer = 180; // 3 seconds at 60fps
+
+// Create story intro overlay
+const storyIntroElement = document.createElement('div');
+storyIntroElement.id = 'story-intro';
+storyIntroElement.innerHTML = `This is <strong>${selectedName}'s</strong> story`;
+document.body.appendChild(storyIntroElement);
+
 // Game variables
 let player;
 const platforms = [];
@@ -45,7 +63,7 @@ let isBlockRain = Math.random() < 0.5; // 50% chance for block rain
 let rainTimer = 0;
 const initialRainDuration = 1800; // 30 seconds at 60fps
 const rainOnDuration = 3600; // 60fps × 60 seconds = 1 minute of rain
-const rainOffDuration = 5400; // 60fps × 90 seconds = 1 minute 30 seconds of dry weather
+const rainOffDuration = 14400; // 60fps × 240 seconds = 4 minutes minus 1 minute of rain = 3 minutes of dry weather
 const rainIntensity = 12; // Raindrops per frame
 const maxRaindrops = 400; // Maximum number of raindrops to prevent performance issues
 
@@ -647,6 +665,19 @@ function checkGround(pairs) {
 
 // Clean up off-screen platforms and interactive elements
 Events.on(engine, 'beforeUpdate', () => {
+    // Update story intro timer
+    if (showStoryIntro) {
+        storyIntroTimer--;
+        if (storyIntroTimer <= 0) {
+            showStoryIntro = false;
+            storyIntroElement.style.opacity = '0';
+            // Remove element after fade animation completes
+            setTimeout(() => {
+                storyIntroElement.remove();
+            }, 1000);
+        }
+    }
+    
     playerOnGround = checkGround(engine.pairs.list.filter(p => p.isActive));
 
     // Reset double jump when player is on ground
@@ -714,18 +745,37 @@ Events.on(engine, 'beforeUpdate', () => {
     }
     upPressedLastFrame = keys.up;
 
-    // Wind effects when falling
+    // Enhanced wind effects when falling
     if (player.velocity.y > 5) { // Add wind effect when falling fast
-        const particleCount = Math.floor(player.velocity.y / 10);
+        // Increase particle count based on fall speed for more dramatic effect
+        const particleCount = Math.floor(player.velocity.y / 8);
         for (let i = 0; i < particleCount; i++) {
-            const x = player.position.x + (Math.random() - 0.5) * 40;
-            const y = player.position.y + 20 + Math.random() * 20;
-            const windParticle = Bodies.rectangle(x, y, 2, 10 + Math.random() * 10, {
+            // Wider spread of particles
+            const x = player.position.x + (Math.random() - 0.5) * 50;
+            const y = player.position.y + 20 + Math.random() * 30;
+            
+            // Create longer, thinner particles with varying opacity
+            const windParticle = Bodies.rectangle(x, y, 1.5, 15 + Math.random() * 20, {
                 isSensor: true,
-                render: { fillStyle: 'rgba(255, 255, 255, 0.5)' },
+                angle: Math.PI / 12 * (Math.random() - 0.5), // Add slight angle variation
+                render: { 
+                    // Add color variation - slight blue tint to some particles
+                    fillStyle: Math.random() > 0.3 ? 
+                        `rgba(255, 255, 255, ${0.3 + Math.random() * 0.4})` : 
+                        `rgba(220, 230, 255, ${0.3 + Math.random() * 0.4})`
+                },
                 label: 'effect'
             });
-            Body.setVelocity(windParticle, { x: (Math.random() - 0.5) * 2, y: -player.velocity.y * (Math.random() * 0.2 + 0.2) });
+            
+            // More dynamic movement
+            Body.setVelocity(windParticle, { 
+                x: (Math.random() - 0.5) * 3, 
+                y: -player.velocity.y * (Math.random() * 0.3 + 0.3) 
+            });
+            
+            // Add some rotation for more dynamic effect
+            Body.setAngularVelocity(windParticle, (Math.random() - 0.5) * 0.05);
+            
             effectParticles.push(windParticle);
             Composite.add(world, windParticle);
         }
