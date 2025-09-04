@@ -35,7 +35,7 @@ let canDoubleJump = false; // Track if player can double jump
 let hasDoubleJumped = false; // Track if player has used double jump
 // Add double jump cooldown variables
 let doubleJumpCooldown = 0; // Cooldown timer in frames
-const doubleJumpCooldownMax = 82; // 1.2 seconds at 60fps (changed from 30)
+const doubleJumpCooldownMax = 180; // 3 seconds at 60fps
 // Removed flash effect variable
 let highestY = window.innerHeight;
 let score = 0;
