@@ -91,14 +91,14 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = true;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = true;
     if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = true;
-    if (e.code === 'Space') keys.boost = true;
+    if (e.key === ' ' || e.code === 'Space') keys.boost = true;
 });
 
 window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = false;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = false;
     if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = false;
-    if (e.code === 'Space') keys.boost = false;
+    if (e.key === ' ' || e.code === 'Space') keys.boost = false;
 });
 
 // Collision detection for ground status
