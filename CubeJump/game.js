@@ -66,7 +66,14 @@ const CUBE_COLORS = ['#eee', '#f5d442', '#f54242', '#42f5a7', '#42a7f5', '#d642f
 // Player face variables
 let isSquinting = false;
 let squintTimer = 0;
-const squintDuration = 20; // Frames to show squint face
+const squintDuration = 120; // Increased from 60 to 120 (2x longer)
+
+// Eye animation variables
+let eyeDirection = { x: 0, y: 0 };
+let targetEyeDirection = { x: 0, y: 0 };
+let eyeMovementTimer = 0;
+let blinkTimer = 0;
+let isBlinking = false;
 
 // Utility to get a random color
 function getRandomColor() {
@@ -85,41 +92,62 @@ function renderPlayer(body, ctx) {
     ctx.rect(-(width / 2), -(height / 2), width, height);
     ctx.fill();
     
-    // Draw face
-    const eyeSize = 6;
+    // Face variables
+    const eyeSize = 8;
+    const pupilSize = 4;
     const mouthWidth = 14;
     const mouthHeight = isSquinting ? 2 : 6;
 
     // Draw eyes
-    ctx.fillStyle = '#000';
+    // Left eye socket
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-10, -5, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Right eye socket
+    ctx.beginPath();
+    ctx.arc(10, -5, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
     
-    // Left eye
     if (isSquinting) {
+        // Squinting eyes
+        ctx.fillStyle = '#000';
         // Squinting left eye (line)
         ctx.beginPath();
         ctx.rect(-15, -5, 10, 2);
         ctx.fill();
-    } else {
-        // Normal left eye (circle)
-        ctx.beginPath();
-        ctx.arc(-10, -5, eyeSize/2, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    
-    // Right eye
-    if (isSquinting) {
+        
         // Squinting right eye (line)
         ctx.beginPath();
         ctx.rect(5, -5, 10, 2);
         ctx.fill();
-    } else {
-        // Normal right eye (circle)
+    } else if (isBlinking) {
+        // Blinking eyes (mostly closed)
+        ctx.fillStyle = '#000';
         ctx.beginPath();
-        ctx.arc(10, -5, eyeSize/2, 0, Math.PI * 2);
+        ctx.rect(-14, -5, 8, 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.rect(6, -5, 8, 2);
+        ctx.fill();
+    } else {
+        // Draw pupils - they move based on eye direction
+        ctx.fillStyle = '#000';
+        // Left pupil
+        ctx.beginPath();
+        ctx.arc(-10 + eyeDirection.x * 3, -5 + eyeDirection.y * 2, pupilSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Right pupil
+        ctx.beginPath();
+        ctx.arc(10 + eyeDirection.x * 3, -5 + eyeDirection.y * 2, pupilSize, 0, Math.PI * 2);
         ctx.fill();
     }
     
     // Draw mouth
+    ctx.fillStyle = '#000';
     ctx.beginPath();
     if (isSquinting) {
         // Grimacing mouth
@@ -668,6 +696,33 @@ Events.on(engine, 'beforeUpdate', () => {
             isSquinting = false;
         }
     }
+    
+    // Idle animation - eye movement and blinking
+    // Handle eye movement for looking around
+    eyeMovementTimer--;
+    if (eyeMovementTimer <= 0) {
+        // Set new target direction for eyes to look
+        targetEyeDirection = {
+            x: (Math.random() - 0.5) * 2,
+            y: (Math.random() - 0.5) * 2
+        };
+        // Set timer for next eye movement (between 1-4 seconds)
+        eyeMovementTimer = 60 * (1 + Math.random() * 3);
+    }
+    
+    // Smoothly move eyes toward target direction
+    eyeDirection.x += (targetEyeDirection.x - eyeDirection.x) * 0.1;
+    eyeDirection.y += (targetEyeDirection.y - eyeDirection.y) * 0.1;
+    
+    // Handle random blinking
+    blinkTimer--;
+    if (blinkTimer <= 0 && !isBlinking) {
+        isBlinking = true;
+        blinkTimer = 5; // Blink duration in frames
+    } else if (isBlinking && blinkTimer <= 0) {
+        isBlinking = false;
+        blinkTimer = 60 * (2 + Math.random() * 5); // 2-7 seconds between blinks
+    }
 
     // Update moving platforms
     for (const platform of movingPlatforms) {
@@ -1019,6 +1074,240 @@ Events.on(engine, 'beforeUpdate', () => {
         squintTimer--;
         if (squintTimer <= 0) {
             isSquinting = false;
+        }
+    }
+    
+    // Idle animation - eye movement and blinking
+    // Handle eye movement for looking around
+    eyeMovementTimer--;
+    if (eyeMovementTimer <= 0) {
+        // Set new target direction for eyes to look
+        targetEyeDirection = {
+            x: (Math.random() - 0.5) * 2,
+            y: (Math.random() - 0.5) * 2
+        };
+        // Set timer for next eye movement (between 1-4 seconds)
+        eyeMovementTimer = 60 * (1 + Math.random() * 3);
+    }
+    
+    // Smoothly move eyes toward target direction
+    eyeDirection.x += (targetEyeDirection.x - eyeDirection.x) * 0.1;
+    eyeDirection.y += (targetEyeDirection.y - eyeDirection.y) * 0.1;
+    
+    // Handle random blinking
+    blinkTimer--;
+    if (blinkTimer <= 0 && !isBlinking) {
+        isBlinking = true;
+        blinkTimer = 5; // Blink duration in frames
+    } else if (isBlinking && blinkTimer <= 0) {
+        isBlinking = false;
+        blinkTimer = 60 * (2 + Math.random() * 5); // 2-7 seconds between blinks
+    }
+
+    // Update moving platforms
+    for (const platform of movingPlatforms) {
+        const newX = platform.initialX + Math.sin(engine.timing.timestamp * 0.001 * platform.movementSpeed) * platform.movementRange/2;
+        Body.setPosition(platform, {
+            x: newX,
+            y: platform.position.y
+        });
+    }
+    
+    // Only remove interactive elements, keep all platforms
+    for (let i = interactiveElements.length - 1; i >= 0; i--) {
+        if (interactiveElements[i].position.y > player.position.y + window.innerHeight * 1.5) {
+            Composite.remove(world, interactiveElements[i]);
+            interactiveElements.splice(i, 1);
+        }
+    }
+    
+    // Platform cleanup code removed to keep all platforms
+    // Platforms will remain in the world even when off-screen
+});
+
+// Collision detection for effects
+Events.on(engine, 'collisionStart', (event) => {
+    const pairs = event.pairs;
+    for (const pair of pairs) {
+        const { bodyA, bodyB } = pair;
+        
+        // Check for player and platform collisions
+        if ((bodyA.label === 'player' && (bodyB.label === 'platform' || bodyB.label === 'bouncy_platform' || bodyB.label === 'crumbling_platform' || bodyB.label === 'moving_platform')) || 
+            ((bodyA.label === 'platform' || bodyA.label === 'bouncy_platform' || bodyA.label === 'crumbling_platform' || bodyA.label === 'moving_platform') && bodyB.label === 'player')) {
+            
+            const platform = bodyA.label.includes('platform') ? bodyA : bodyB;
+            const isPlayerOnTop = Math.abs(player.position.y - platform.position.y) < (40 / 2 + platformHeight / 2 + 5) && player.velocity.y >= 0;
+            
+            // Start crumbling if it's a crumbling platform and player landed on top
+            if (platform.label === 'crumbling_platform' && isPlayerOnTop && !platform.isCrumbling) {
+                platform.isCrumbling = true;
+                
+                // Change color to indicate crumbling
+                platform.render.fillStyle = '#ff9966';
+                platform.render.strokeStyle = '#cc6633';
+                
+                // Add shake effect
+                const originalPos = { x: platform.position.x, y: platform.position.y };
+                const shakeInterval = setInterval(() => {
+                    const offsetX = (Math.random() - 0.5) * 3; // Increased shake
+                    const offsetY = (Math.random() - 0.5) * 3;
+                    Body.setPosition(platform, {
+                        x: originalPos.x + offsetX,
+                        y: originalPos.y + offsetY
+                    });
+                }, 30);
+                
+                // Remove platform after delay
+                setTimeout(() => {
+                    clearInterval(shakeInterval);
+                    
+                    // Create crumbling effect particles
+                    const particleCount = 20; // More particles for visibility
+                    for (let i = 0; i < particleCount; i++) {
+                        const x = platform.position.x + (Math.random() - 0.5) * platformWidth;
+                        const y = platform.position.y + (Math.random() - 0.5) * platformHeight;
+                        const size = 3 + Math.random() * 5;
+                        
+                        const particle = Bodies.rectangle(x, y, size, size, {
+                            friction: 0.05,
+                            restitution: 0.1,
+                            render: { fillStyle: '#ddd' },
+                            label: 'effect'
+                        });
+                        
+                        Body.setVelocity(particle, {
+                            x: (Math.random() - 0.5) * 5,
+                            y: Math.random() * 2
+                        });
+                        
+                        effectParticles.push(particle);
+                        Composite.add(world, particle);
+                    }
+                    
+                    // Remove the platform
+                    const index = platforms.indexOf(platform);
+                    if (index > -1) {
+                        platforms.splice(index, 1);
+                    }
+                    Composite.remove(world, platform);
+                }, 500);
+            }
+            
+            // Smash effect on hard landing
+            if (player.velocity.y > 10) {
+                // Set squinting face when impact is hard
+                isSquinting = true;
+                squintTimer = squintDuration;
+                
+                const particleCount = 20; // 2x less debris (was 40)
+                for (let i = 0; i < particleCount; i++) {
+                    // Player smash particles
+                    const x = player.position.x + (Math.random() - 0.5) * 40;
+                    const y = player.position.y + 20;
+                    const particle = Bodies.rectangle(x, y, 5 + Math.random() * 5, 5 + Math.random() * 5, {
+                        friction: 0.1,
+                        restitution: 0.5,
+                        render: { fillStyle: '#ccc' },
+                        label: 'effect'
+                    });
+                    Body.setVelocity(particle, {
+                        x: (Math.random() - 0.5) * 10,
+                        y: -Math.random() * 5
+                    });
+                    effectParticles.push(particle);
+                    Composite.add(world, particle);
+
+                    // Platform shatter particles
+                    const shatterX = player.position.x + (Math.random() - 0.5) * platform.bounds.max.x - platform.bounds.min.x;
+                    const shatterY = platform.position.y - platformHeight / 2;
+                    const shatterParticle = Bodies.rectangle(shatterX, shatterY, 3 + Math.random() * 3, 3 + Math.random() * 3, {
+                        friction: 0.05,
+                        restitution: 0.1,
+                        render: { fillStyle: '#ddd' },
+                        label: 'effect'
+                    });
+                    Body.setVelocity(shatterParticle, {
+                        x: (Math.random() - 0.5) * 3,
+                        y: -Math.random() * 2
+                    });
+                    effectParticles.push(shatterParticle);
+                    Composite.add(world, shatterParticle);
+                }
+            }
+            
+            // Bounce effect for bouncy platforms
+            if (platform.label === 'bouncy_platform' && isPlayerOnTop) {
+                // Extra boost for bouncy platforms
+                const bounceFactor = 0.04;
+                Body.setVelocity(player, {
+                    x: player.velocity.x,
+                    y: -Math.abs(player.velocity.y) * 1.5
+                });
+                
+                // Bouncy platform effect particles
+                for (let i = 0; i < 15; i++) {
+                    const x = platform.position.x + (Math.random() - 0.5) * platformWidth;
+                    const y = platform.position.y - platformHeight/2;
+                    
+                    const particle = Bodies.circle(x, y, 2 + Math.random() * 3, {
+                        isSensor: true,
+                        render: { 
+                            fillStyle: 'rgba(200, 200, 255, 0.7)',
+                        },
+                        label: 'effect'
+                    });
+                    
+                    Body.setVelocity(particle, {
+                        x: (Math.random() - 0.5) * 3,
+                        y: -Math.random() * 5 - 2
+                    });
+                    
+                    effectParticles.push(particle);
+                    Composite.add(world, particle);
+                }
+            }
+        }
+        
+        // Interaction with cube elements and other interactive objects
+        if ((bodyA.label === 'player' && (bodyB.label === 'interactive_cube' || bodyB.label === 'interactive_object')) || 
+            ((bodyA.label === 'interactive_cube' || bodyA.label === 'interactive_object') && bodyB.label === 'player')) {
+            
+            const object = bodyA.label.includes('interactive') ? bodyA : bodyB;
+            
+            // Apply a force to the object when hit by player
+            const forceDirection = Vector.normalise(
+                Vector.sub(object.position, player.position)
+            );
+            
+            // Adjust force based on velocity
+            const speed = Vector.magnitude(player.velocity);
+            const forceMagnitude = Vector.mult(forceDirection, 0.01 * Math.min(speed, 10));
+            
+            Body.applyForce(object, object.position, forceMagnitude);
+            
+            // Small particle effect on collision
+            if (speed > 5) {
+                for (let i = 0; i < 5; i++) {
+                    const x = object.position.x + (Math.random() - 0.5) * 10;
+                    const y = object.position.y + (Math.random() - 0.5) * 10;
+                    
+                    const particle = Bodies.circle(x, y, 1 + Math.random() * 2, {
+                        isSensor: true,
+                        render: { 
+                            fillStyle: 'rgba(255, 255, 255, 0.7)'
+                        },
+                        label: 'effect'
+                    });
+                    
+                    Body.setVelocity(particle, {
+                        x: (Math.random() - 0.5) * 2,
+                        y: (Math.random() - 0.5) * 2
+                    });
+                    
+                    effectParticles.push(particle);
+                    Composite.add(world, particle);
+                }
+            }
         }
     }
 });
