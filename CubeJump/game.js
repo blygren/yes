@@ -27,7 +27,7 @@ Runner.run(runner, engine);
 let player;
 const platforms = [];
 const effectParticles = [];
-const keys = { left: false, right: false, up: false };
+const keys = { left: false, right: false, up: false, boost: false };
 let playerOnGround = false;
 let highestY = window.innerHeight;
 let score = 0;
@@ -38,6 +38,14 @@ highScoreElement.innerText = `High Score: ${highScore}`;
 const platformWidth = 120;
 const platformHeight = 20;
 const platformGap = 180;
+
+// Boost variables
+let boostPower = 100;
+const maxBoostPower = 100;
+const boostRechargeRate = 0.5;
+const boostDepletionRate = 1.5;
+const boostForce = 0.2 * 0.1; // 90% slower boost
+const boostMeter = document.getElementById('boost-meter');
 
 // Create player
 player = Bodies.rectangle(window.innerWidth / 2, window.innerHeight - 100, 40, 40, {
@@ -81,13 +89,15 @@ generatePlatforms(window.innerHeight - platformGap, 20);
 window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = true;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = true;
-    if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w' || e.key === ' ') keys.up = true;
+    if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = true;
+    if (e.key === ' ') keys.boost = true;
 });
 
 window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = false;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = false;
-    if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w' || e.key === ' ') keys.up = false;
+    if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = false;
+    if (e.key === ' ') keys.boost = false;
 });
 
 // Collision detection for ground status
@@ -170,6 +180,32 @@ Events.on(engine, 'beforeUpdate', () => {
     if (keys.up && playerOnGround) {
         Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 }); // Increased jump force by 20%
     }
+    
+    // Boost logic
+    if (keys.boost && boostPower > 0) {
+        Body.applyForce(player, player.position, { x: 0, y: -boostForce });
+        boostPower -= boostDepletionRate;
+        
+        // Boost particles
+        for (let i = 0; i < 2; i++) {
+            const x = player.position.x + (Math.random() - 0.5) * 30;
+            const y = player.position.y + 20 + Math.random() * 5;
+            const boostParticle = Bodies.rectangle(x, y, 3, 10 + Math.random() * 10, {
+                isSensor: true,
+                render: { fillStyle: 'rgba(77, 255, 255, 0.7)' },
+                label: 'effect'
+            });
+            Body.setVelocity(boostParticle, { x: (Math.random() - 0.5) * 1, y: Math.random() * 2 + 2 });
+            effectParticles.push(boostParticle);
+            Composite.add(world, boostParticle);
+        }
+    } else if (boostPower < maxBoostPower) {
+        // Recharge boost when not boosting
+        boostPower = Math.min(boostPower + boostRechargeRate, maxBoostPower);
+    }
+    
+    // Update boost meter display
+    boostMeter.style.width = `${(boostPower / maxBoostPower) * 100}%`;
 
     // Wind effects when falling
     if (player.velocity.y > 5) { // Add wind effect when falling fast
