@@ -33,6 +33,10 @@ let upPressedLastFrame = false; // Track up key for jump edge detection
 let playerOnGround = false;
 let canDoubleJump = false; // Track if player can double jump
 let hasDoubleJumped = false; // Track if player has used double jump
+// Add double jump cooldown variables
+let doubleJumpCooldown = 0; // Cooldown timer in frames
+const doubleJumpCooldownMax = 82; // 1.2 seconds at 60fps (changed from 30)
+// Removed flash effect variable
 let highestY = window.innerHeight;
 let score = 0;
 const scoreElement = document.getElementById('score');
@@ -75,11 +79,62 @@ let eyeMovementTimer = 0;
 let blinkTimer = 0;
 let isBlinking = false;
 
-// Utility to get a random color
+// Music variables
+const music1 = document.getElementById('music1');
+const music2 = document.getElementById('music2');
+let currentMusic = music1;
+let musicInitialized = false;
+
+// Utility to get a random color - Add this function back in
 function getRandomColor() {
     // Generate a random hex color
     return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
 }
+
+// Initialize and play background music
+function initMusic() {
+    if (!musicInitialized) {
+        // Set up volume
+        music1.volume = 0.5;
+        music2.volume = 0.5;
+        
+        // Start with the first song
+        playCurrentMusic();
+        
+        // Add event listeners to handle song transitions
+        music1.addEventListener('ended', switchToNextSong);
+        music2.addEventListener('ended', switchToNextSong);
+        
+        musicInitialized = true;
+    }
+}
+
+// Play the current music track
+function playCurrentMusic() {
+    currentMusic.play().catch(err => {
+        console.log("Music play failed, will retry on user interaction:", err);
+    });
+}
+
+// Switch to the next song when one ends
+function switchToNextSong() {
+    currentMusic.pause();
+    currentMusic.currentTime = 0;
+    
+    // Toggle between the two songs
+    currentMusic = (currentMusic === music1) ? music2 : music1;
+    
+    playCurrentMusic();
+}
+
+// Handle user interaction to start music (browsers require user interaction)
+window.addEventListener('click', () => {
+    initMusic();
+});
+
+window.addEventListener('keydown', () => {
+    initMusic();
+});
 
 // Custom render function for player with face
 function renderPlayer(body, ctx) {
@@ -92,6 +147,12 @@ function renderPlayer(body, ctx) {
     ctx.rect(-(width / 2), -(height / 2), width, height);
     ctx.fill();
     
+    // Draw face features
+    drawFace(ctx, width, height);
+}
+
+// Function to draw the face features
+function drawFace(ctx, width, height) {
     // Face variables
     const eyeSize = 8;
     const pupilSize = 4;
@@ -539,9 +600,28 @@ function checkGround(pairs) {
             // Check all platform types, including ground_platform
             const platform = bodyA.label.includes('platform') ? bodyA : 
                            (bodyB.label.includes('platform') ? bodyB : null);
+                           
+            // Check for interactive objects and debris
+            const interactiveObj = bodyA.label === 'interactive_cube' || bodyA.label === 'interactive_object' ? bodyA : 
+                                 (bodyB.label === 'interactive_cube' || bodyB.label === 'interactive_object' ? bodyB : null);
+            
+            // Check for effect particles (debris)
+            const debris = bodyA.label === 'effect' ? bodyA : 
+                         (bodyB.label === 'effect' ? bodyB : null);
+            
             if (platform) {
                 // Check if player is on top of the platform
                 if (Math.abs(player.position.y - platform.position.y) < (40 / 2 + platformHeight / 2 + 5) && player.velocity.y >= 0) {
+                    return true;
+                }
+            } else if (interactiveObj) {
+                // Check if player is on top of interactive object
+                if (Math.abs(player.position.y - interactiveObj.position.y) < (40 / 2 + interactiveObj.circleRadius || 10) && player.velocity.y >= 0) {
+                    return true;
+                }
+            } else if (debris) {
+                // Check if player is on top of debris
+                if (Math.abs(player.position.y - debris.position.y) < (40 / 2 + 5) && player.velocity.y >= 0) {
                     return true;
                 }
             }
@@ -559,6 +639,13 @@ Events.on(engine, 'beforeUpdate', () => {
         canDoubleJump = true;
         hasDoubleJumped = false;
     }
+    
+    // Update double jump cooldown
+    if (doubleJumpCooldown > 0) {
+        doubleJumpCooldown--;
+    }
+    
+    // Removed flash effect update code
 
     // Player movement
     const velocity = player.velocity;
@@ -580,11 +667,15 @@ Events.on(engine, 'beforeUpdate', () => {
             Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
         }
         // Double jump (in air)
-        else if (canDoubleJump && !hasDoubleJumped) {
+        else if (canDoubleJump && !hasDoubleJumped && doubleJumpCooldown <= 0) {
             Body.setVelocity(player, { x: player.velocity.x, y: 0 }); // Reset vertical velocity
             Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
             hasDoubleJumped = true;
             canDoubleJump = false;
+            
+            // Set cooldown
+            doubleJumpCooldown = doubleJumpCooldownMax;
+            // Removed flash effect code
             
             // Double jump effect particles
             for (let i = 0; i < 10; i++) {
@@ -603,388 +694,7 @@ Events.on(engine, 'beforeUpdate', () => {
                 Composite.add(world, jumpParticle);
             }
         }
-    }
-    upPressedLastFrame = keys.up;
-
-    // Removed boost logic
-
-    // Wind effects when falling
-    if (player.velocity.y > 5) { // Add wind effect when falling fast
-        const particleCount = Math.floor(player.velocity.y / 10);
-        for (let i = 0; i < particleCount; i++) {
-            const x = player.position.x + (Math.random() - 0.5) * 40;
-            const y = player.position.y + 20 + Math.random() * 20;
-            const windParticle = Bodies.rectangle(x, y, 2, 10 + Math.random() * 10, {
-                isSensor: true,
-                render: { fillStyle: 'rgba(255, 255, 255, 0.5)' },
-                label: 'effect'
-            });
-            Body.setVelocity(windParticle, { x: (Math.random() - 0.5) * 2, y: -player.velocity.y * (Math.random() * 0.2 + 0.2) });
-            effectParticles.push(windParticle);
-            Composite.add(world, windParticle);
-        }
-    }
-
-    // Wind effects when jumping
-    if (player.velocity.y < -5) { // Add wind effect when jumping fast
-        const particleCount = Math.floor(-player.velocity.y / 5);
-        for (let i = 0; i < particleCount; i++) {
-            const x = player.position.x + (Math.random() - 0.5) * 40;
-            const y = player.position.y - 20 - Math.random() * 20;
-            const jumpParticle = Bodies.rectangle(x, y, 2, 10 + Math.random() * 10, {
-                isSensor: true,
-                render: { fillStyle: 'rgba(255, 255, 255, 0.4)' },
-                label: 'effect'
-            });
-            Body.setVelocity(jumpParticle, { x: (Math.random() - 0.5) * 2, y: -player.velocity.y * (Math.random() * 0.1 + 0.1) });
-            effectParticles.push(jumpParticle);
-            Composite.add(world, jumpParticle);
-        }
-    }
-
-    // Update and remove effect particles
-    for (let i = effectParticles.length - 1; i >= 0; i--) {
-        const particle = effectParticles[i];
-        if (!particle.render.opacity) particle.render.opacity = 1;
-        
-        if (particle.isSensor) { // Wind/jump particles
-            particle.render.opacity -= 0.02;
-        } else { // Smash/shatter particles
-            particle.render.opacity -= 0.000625; // 2x slower fade out (was 0.00125)
-        }
-
-        if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
-            Composite.remove(world, particle);
-            effectParticles.splice(i, 1);
-        }
-    }
-
-    // Camera follow
-    const cameraY = player.position.y - window.innerHeight / 2;
-    Render.lookAt(render, {
-        min: { x: 0, y: cameraY },
-        max: { x: window.innerWidth, y: cameraY + window.innerHeight }
-    });
-
-    // Infinite generation
-    if (player.position.y < highestY + window.innerHeight) {
-        generatePlatforms(highestY, 20);
-    }
-    
-    // Player wrap around screen
-    if (player.position.x > window.innerWidth + 20) {
-        Body.setPosition(player, { x: -20, y: player.position.y });
-    } else if (player.position.x < -20) {
-        Body.setPosition(player, { x: window.innerWidth + 20, y: player.position.y });
-    }
-
-    // Update score
-    score = Math.floor((window.innerHeight - 100 - player.position.y) / 10);
-    if (score < 0) score = 0; // Prevent score from going negative
-    scoreElement.innerText = `Score: ${score}`;
-
-    if (score > highScore) {
-        highScore = score;
-        highScoreElement.innerText = `High Score: ${highScore}`;
-        localStorage.setItem('highScore', highScore);
-    }
-
-    // Update squint timer
-    if (isSquinting) {
-        squintTimer--;
-        if (squintTimer <= 0) {
-            isSquinting = false;
-        }
-    }
-    
-    // Idle animation - eye movement and blinking
-    // Handle eye movement for looking around
-    eyeMovementTimer--;
-    if (eyeMovementTimer <= 0) {
-        // Set new target direction for eyes to look
-        targetEyeDirection = {
-            x: (Math.random() - 0.5) * 2,
-            y: (Math.random() - 0.5) * 2
-        };
-        // Set timer for next eye movement (between 1-4 seconds)
-        eyeMovementTimer = 60 * (1 + Math.random() * 3);
-    }
-    
-    // Smoothly move eyes toward target direction
-    eyeDirection.x += (targetEyeDirection.x - eyeDirection.x) * 0.1;
-    eyeDirection.y += (targetEyeDirection.y - eyeDirection.y) * 0.1;
-    
-    // Handle random blinking
-    blinkTimer--;
-    if (blinkTimer <= 0 && !isBlinking) {
-        isBlinking = true;
-        blinkTimer = 5; // Blink duration in frames
-    } else if (isBlinking && blinkTimer <= 0) {
-        isBlinking = false;
-        blinkTimer = 60 * (2 + Math.random() * 5); // 2-7 seconds between blinks
-    }
-
-    // Update moving platforms
-    for (const platform of movingPlatforms) {
-        const newX = platform.initialX + Math.sin(engine.timing.timestamp * 0.001 * platform.movementSpeed) * platform.movementRange/2;
-        Body.setPosition(platform, {
-            x: newX,
-            y: platform.position.y
-        });
-    }
-    
-    // Only remove interactive elements, keep all platforms
-    for (let i = interactiveElements.length - 1; i >= 0; i--) {
-        if (interactiveElements[i].position.y > player.position.y + window.innerHeight * 1.5) {
-            Composite.remove(world, interactiveElements[i]);
-            interactiveElements.splice(i, 1);
-        }
-    }
-    
-    // Platform cleanup code removed to keep all platforms
-    // Platforms will remain in the world even when off-screen
-});
-
-// Collision detection for effects
-Events.on(engine, 'collisionStart', (event) => {
-    const pairs = event.pairs;
-    for (const pair of pairs) {
-        const { bodyA, bodyB } = pair;
-        
-        // Check for player and platform collisions
-        if ((bodyA.label === 'player' && (bodyB.label === 'platform' || bodyB.label === 'bouncy_platform' || bodyB.label === 'crumbling_platform' || bodyB.label === 'moving_platform')) || 
-            ((bodyA.label === 'platform' || bodyA.label === 'bouncy_platform' || bodyA.label === 'crumbling_platform' || bodyA.label === 'moving_platform') && bodyB.label === 'player')) {
-            
-            const platform = bodyA.label.includes('platform') ? bodyA : bodyB;
-            const isPlayerOnTop = Math.abs(player.position.y - platform.position.y) < (40 / 2 + platformHeight / 2 + 5) && player.velocity.y >= 0;
-            
-            // Start crumbling if it's a crumbling platform and player landed on top
-            if (platform.label === 'crumbling_platform' && isPlayerOnTop && !platform.isCrumbling) {
-                platform.isCrumbling = true;
-                
-                // Change color to indicate crumbling
-                platform.render.fillStyle = '#ff9966';
-                platform.render.strokeStyle = '#cc6633';
-                
-                // Add shake effect
-                const originalPos = { x: platform.position.x, y: platform.position.y };
-                const shakeInterval = setInterval(() => {
-                    const offsetX = (Math.random() - 0.5) * 3; // Increased shake
-                    const offsetY = (Math.random() - 0.5) * 3;
-                    Body.setPosition(platform, {
-                        x: originalPos.x + offsetX,
-                        y: originalPos.y + offsetY
-                    });
-                }, 30);
-                
-                // Remove platform after delay
-                setTimeout(() => {
-                    clearInterval(shakeInterval);
-                    
-                    // Create crumbling effect particles
-                    const particleCount = 20; // More particles for visibility
-                    for (let i = 0; i < particleCount; i++) {
-                        const x = platform.position.x + (Math.random() - 0.5) * platformWidth;
-                        const y = platform.position.y + (Math.random() - 0.5) * platformHeight;
-                        const size = 3 + Math.random() * 5;
-                        
-                        const particle = Bodies.rectangle(x, y, size, size, {
-                            friction: 0.05,
-                            restitution: 0.1,
-                            render: { fillStyle: '#ddd' },
-                            label: 'effect'
-                        });
-                        
-                        Body.setVelocity(particle, {
-                            x: (Math.random() - 0.5) * 5,
-                            y: Math.random() * 2
-                        });
-                        
-                        effectParticles.push(particle);
-                        Composite.add(world, particle);
-                    }
-                    
-                    // Remove the platform
-                    const index = platforms.indexOf(platform);
-                    if (index > -1) {
-                        platforms.splice(index, 1);
-                    }
-                    Composite.remove(world, platform);
-                }, 500);
-            }
-            
-            // Smash effect on hard landing
-            if (player.velocity.y > 10) {
-                // Set squinting face when impact is hard
-                isSquinting = true;
-                squintTimer = squintDuration;
-                
-                const particleCount = 20; // 2x less debris (was 40)
-                for (let i = 0; i < particleCount; i++) {
-                    // Player smash particles
-                    const x = player.position.x + (Math.random() - 0.5) * 40;
-                    const y = player.position.y + 20;
-                    const particle = Bodies.rectangle(x, y, 5 + Math.random() * 5, 5 + Math.random() * 5, {
-                        friction: 0.1,
-                        restitution: 0.5,
-                        render: { fillStyle: '#ccc' },
-                        label: 'effect'
-                    });
-                    Body.setVelocity(particle, {
-                        x: (Math.random() - 0.5) * 10,
-                        y: -Math.random() * 5
-                    });
-                    effectParticles.push(particle);
-                    Composite.add(world, particle);
-
-                    // Platform shatter particles
-                    const shatterX = player.position.x + (Math.random() - 0.5) * platform.bounds.max.x - platform.bounds.min.x;
-                    const shatterY = platform.position.y - platformHeight / 2;
-                    const shatterParticle = Bodies.rectangle(shatterX, shatterY, 3 + Math.random() * 3, 3 + Math.random() * 3, {
-                        friction: 0.05,
-                        restitution: 0.1,
-                        render: { fillStyle: '#ddd' },
-                        label: 'effect'
-                    });
-                    Body.setVelocity(shatterParticle, {
-                        x: (Math.random() - 0.5) * 3,
-                        y: -Math.random() * 2
-                    });
-                    effectParticles.push(shatterParticle);
-                    Composite.add(world, shatterParticle);
-                }
-            }
-            
-            // Bounce effect for bouncy platforms
-            if (platform.label === 'bouncy_platform' && isPlayerOnTop) {
-                // Extra boost for bouncy platforms
-                const bounceFactor = 0.04;
-                Body.setVelocity(player, {
-                    x: player.velocity.x,
-                    y: -Math.abs(player.velocity.y) * 1.5
-                });
-                
-                // Bouncy platform effect particles
-                for (let i = 0; i < 15; i++) {
-                    const x = platform.position.x + (Math.random() - 0.5) * platformWidth;
-                    const y = platform.position.y - platformHeight/2;
-                    
-                    const particle = Bodies.circle(x, y, 2 + Math.random() * 3, {
-                        isSensor: true,
-                        render: { 
-                            fillStyle: 'rgba(200, 200, 255, 0.7)',
-                        },
-                        label: 'effect'
-                    });
-                    
-                    Body.setVelocity(particle, {
-                        x: (Math.random() - 0.5) * 3,
-                        y: -Math.random() * 5 - 2
-                    });
-                    
-                    effectParticles.push(particle);
-                    Composite.add(world, particle);
-                }
-            }
-        }
-        
-        // Interaction with cube elements and other interactive objects
-        if ((bodyA.label === 'player' && (bodyB.label === 'interactive_cube' || bodyB.label === 'interactive_object')) || 
-            ((bodyA.label === 'interactive_cube' || bodyA.label === 'interactive_object') && bodyB.label === 'player')) {
-            
-            const object = bodyA.label.includes('interactive') ? bodyA : bodyB;
-            
-            // Apply a force to the object when hit by player
-            const forceDirection = Vector.normalise(
-                Vector.sub(object.position, player.position)
-            );
-            
-            // Adjust force based on velocity
-            const speed = Vector.magnitude(player.velocity);
-            const forceMagnitude = Vector.mult(forceDirection, 0.01 * Math.min(speed, 10));
-            
-            Body.applyForce(object, object.position, forceMagnitude);
-            
-            // Small particle effect on collision
-            if (speed > 5) {
-                for (let i = 0; i < 5; i++) {
-                    const x = object.position.x + (Math.random() - 0.5) * 10;
-                    const y = object.position.y + (Math.random() - 0.5) * 10;
-                    
-                    const particle = Bodies.circle(x, y, 1 + Math.random() * 2, {
-                        isSensor: true,
-                        render: { 
-                            fillStyle: 'rgba(255, 255, 255, 0.7)'
-                        },
-                        label: 'effect'
-                    });
-                    
-                    Body.setVelocity(particle, {
-                        x: (Math.random() - 0.5) * 2,
-                        y: (Math.random() - 0.5) * 2
-                    });
-                    
-                    effectParticles.push(particle);
-                    Composite.add(world, particle);
-                }
-            }
-        }
-    }
-});
-
-// Game loop
-Events.on(engine, 'beforeUpdate', () => {
-    playerOnGround = checkGround(engine.pairs.list.filter(p => p.isActive));
-
-    // Reset double jump when player is on ground
-    if (playerOnGround) {
-        canDoubleJump = true;
-        hasDoubleJumped = false;
-    }
-
-    // Player movement
-    const velocity = player.velocity;
-    let newVelocityX = 0;
-    if (keys.left) newVelocityX = -5;
-    if (keys.right) newVelocityX = 5;
-    
-    // Apply terminal velocity to prevent clipping through floor
-    if (velocity.y > 15) {
-        velocity.y = 15; // Limit maximum falling speed
-    }
-    
-    Body.setVelocity(player, { x: newVelocityX, y: velocity.y });
-
-    // Jump mechanics - First jump on ground, double jump in air
-    if (keys.up && !upPressedLastFrame) {
-        // First jump (on ground)
-        if (playerOnGround) {
-            Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
-        }
-        // Double jump (in air)
-        else if (canDoubleJump && !hasDoubleJumped) {
-            Body.setVelocity(player, { x: player.velocity.x, y: 0 }); // Reset vertical velocity
-            Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
-            hasDoubleJumped = true;
-            canDoubleJump = false;
-            
-            // Double jump effect particles
-            for (let i = 0; i < 10; i++) {
-                const x = player.position.x + (Math.random() - 0.5) * 40;
-                const y = player.position.y + 20;
-                const jumpParticle = Bodies.circle(x, y, 2 + Math.random() * 3, {
-                    isSensor: true,
-                    render: { fillStyle: 'rgba(255, 255, 255, 0.7)' },
-                    label: 'effect'
-                });
-                Body.setVelocity(jumpParticle, { 
-                    x: (Math.random() - 0.5) * 3, 
-                    y: Math.random() * 2 + 2 
-                });
-                effectParticles.push(jumpParticle);
-                Composite.add(world, jumpParticle);
-            }
-        }
+        // Removed cooldown flash feedback
     }
     upPressedLastFrame = keys.up;
 
@@ -1238,33 +948,13 @@ Events.on(engine, 'collisionStart', (event) => {
             // Bounce effect for bouncy platforms
             if (platform.label === 'bouncy_platform' && isPlayerOnTop) {
                 // Extra boost for bouncy platforms
-                const bounceFactor = 0.04;
                 Body.setVelocity(player, {
                     x: player.velocity.x,
                     y: -Math.abs(player.velocity.y) * 1.5
                 });
                 
-                // Bouncy platform effect particles
-                for (let i = 0; i < 15; i++) {
-                    const x = platform.position.x + (Math.random() - 0.5) * platformWidth;
-                    const y = platform.position.y - platformHeight/2;
-                    
-                    const particle = Bodies.circle(x, y, 2 + Math.random() * 3, {
-                        isSensor: true,
-                        render: { 
-                            fillStyle: 'rgba(200, 200, 255, 0.7)',
-                        },
-                        label: 'effect'
-                    });
-                    
-                    Body.setVelocity(particle, {
-                        x: (Math.random() - 0.5) * 3,
-                        y: -Math.random() * 5 - 2
-                    });
-                    
-                    effectParticles.push(particle);
-                    Composite.add(world, particle);
-                }
+                // Removed bouncy platform effect particles as requested
+                // No debris will be created for jump pads
             }
         }
         
@@ -1321,8 +1011,6 @@ Events.on(render, 'afterRender', function() {
     context.save();
     
     // Adjust the context for camera position
-    const viewportCenterX = render.options.width * 0.5;
-    const viewportCenterY = render.options.height * 0.5;
     
     bodies.forEach(body => {
         if (body.render.visualComponent) {
@@ -1341,6 +1029,8 @@ Events.on(render, 'afterRender', function() {
         }
     });
     
+    // Removed cooldown indicator rendering
+    
     context.restore();
 });
 
@@ -1353,5 +1043,29 @@ window.addEventListener('resize', () => {
     
     // Ensure ground follows window width changes
     Body.setPosition(ground, {x: window.innerWidth / 2, y: window.innerHeight + 5});
-    Body.setVertices(ground, Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 5, window.innerWidth, 20).vertices);
+        Body.setVertices(ground, Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 5, window.innerWidth, 20).vertices);
+    });
+
+// Additional check to reset double jump when touching any object
+Events.on(engine, 'collisionActive', (event) => {
+    const pairs = event.pairs;
+    for (const pair of pairs) {
+        const { bodyA, bodyB } = pair;
+        
+        // If player collides with any interactive object or debris from below or sides
+        if ((bodyA.label === 'player' && (bodyB.label === 'interactive_cube' || bodyB.label === 'interactive_object' || bodyB.label === 'effect')) ||
+            ((bodyA.label === 'interactive_cube' || bodyA.label === 'interactive_object' || bodyA.label === 'effect') && bodyB.label === 'player')) {
+            
+            const obj = bodyA.label === 'player' ? bodyB : bodyA;
+            
+            // If player is on top of the object
+            if (player.position.y < obj.position.y) {
+                // Only reset double jump if cooldown has expired
+                if (doubleJumpCooldown <= 0) {
+                    canDoubleJump = true;
+                    hasDoubleJumped = false;
+                }
+            }
+        }
+    }
 });
