@@ -48,14 +48,26 @@ const boostDepletionRate = 1.5;
 const boostForce = 0.2 * 0.1; // 90% slower boost
 const boostMeter = document.getElementById('boost-meter');
 
+// Utility to get a random color
+function getRandomColor() {
+    // Generate a random hex color
+    return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
+}
+
 // Create player
-player = Bodies.rectangle(window.innerWidth / 2, window.innerHeight - 100, 40, 40, {
-    friction: 0.01,
-    restitution: 0,
-    density: 0.005,
-    render: { fillStyle: '#f35' },
-    label: 'player'
-});
+player = Bodies.rectangle(
+    window.innerWidth / 2,
+    window.innerHeight - 100,
+    40,
+    40,
+    {
+        friction: 0.01,
+        restitution: 0,
+        density: 0.005,
+        render: { fillStyle: getRandomColor() }, // Random color each spawn
+        label: 'player'
+    }
+);
 Composite.add(world, player);
 
 // Generate initial platforms
