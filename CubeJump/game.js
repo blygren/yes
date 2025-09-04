@@ -519,7 +519,7 @@ function generatePlatforms(startY, count) {
 const ground = Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 5, window.innerWidth, 20, {
     isStatic: true,
     render: { fillStyle: '#ddd' },
-    label: 'platform'
+    label: 'ground_platform' // Change label to distinguish from regular platforms
 });
 platforms.push(ground);
 Composite.add(world, ground);
@@ -547,7 +547,9 @@ function checkGround(pairs) {
     for (const pair of pairs) {
         const { bodyA, bodyB } = pair;
         if (bodyA.label === 'player' || bodyB.label === 'player') {
-            const platform = bodyA.label === 'platform' ? bodyA : (bodyB.label === 'platform' ? bodyB : null);
+            // Check all platform types, including ground_platform
+            const platform = bodyA.label.includes('platform') ? bodyA : 
+                           (bodyB.label.includes('platform') ? bodyB : null);
             if (platform) {
                 // Check if player is on top of the platform
                 if (Math.abs(player.position.y - platform.position.y) < (40 / 2 + platformHeight / 2 + 5) && player.velocity.y >= 0) {
@@ -701,7 +703,7 @@ Events.on(engine, 'beforeUpdate', () => {
         });
     }
     
-    // Remove interactive elements and platforms that fall off screen
+    // Only remove interactive elements, keep all platforms
     for (let i = interactiveElements.length - 1; i >= 0; i--) {
         if (interactiveElements[i].position.y > player.position.y + window.innerHeight * 1.5) {
             Composite.remove(world, interactiveElements[i]);
@@ -709,18 +711,8 @@ Events.on(engine, 'beforeUpdate', () => {
         }
     }
     
-    for (let i = platforms.length - 1; i >= 0; i--) {
-        if (platforms[i].position.y > player.position.y + window.innerHeight * 1.5) {
-            // Also remove from movingPlatforms if necessary
-            const movingIndex = movingPlatforms.indexOf(platforms[i]);
-            if (movingIndex > -1) {
-                movingPlatforms.splice(movingIndex, 1);
-            }
-            
-            Composite.remove(world, platforms[i]);
-            platforms.splice(i, 1);
-        }
-    }
+    // Platform cleanup code removed to keep all platforms
+    // Platforms will remain in the world even when off-screen
 });
 
 // Collision detection for effects
@@ -1078,5 +1070,8 @@ window.addEventListener('resize', () => {
     render.canvas.height = window.innerHeight;
     render.options.width = window.innerWidth;
     render.options.height = window.innerHeight;
+    
+    // Ensure ground follows window width changes
     Body.setPosition(ground, {x: window.innerWidth / 2, y: window.innerHeight + 5});
+    Body.setVertices(ground, Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 5, window.innerWidth, 20).vertices);
 });
