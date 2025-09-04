@@ -36,16 +36,18 @@ let hasDoubleJumped = false; // Track if player has used double jump
 // Add double jump cooldown variables
 let doubleJumpCooldown = 0; // Cooldown timer in frames
 const doubleJumpCooldownMax = 180; // 3 seconds at 60fps
-// Removed flash effect variable
-let highestY = window.innerHeight;
-let score = 0;
-const scoreElement = document.getElementById('score');
-let highScore = localStorage.getItem('highScore') || 0;
-const highScoreElement = document.getElementById('high-score');
-highScoreElement.innerText = `High Score: ${highScore}`;
-const platformWidth = 120;
-const platformHeight = 20;
-const platformGap = 180;
+
+// Rain system variables
+const raindrops = [];
+let isRaining = true; // Start with rain
+let isInitialRain = true; // Track if we're in the initial rain period
+let isBlockRain = Math.random() < 0.5; // 50% chance for block rain
+let rainTimer = 0;
+const initialRainDuration = 1800; // 30 seconds at 60fps
+const rainOnDuration = 3600; // 60fps × 60 seconds = 1 minute of rain
+const rainOffDuration = 5400; // 60fps × 90 seconds = 1 minute 30 seconds of dry weather
+const rainIntensity = 12; // Raindrops per frame
+const maxRaindrops = 400; // Maximum number of raindrops to prevent performance issues
 
 // Platform types
 const PLATFORM_TYPES = {
@@ -84,6 +86,14 @@ const music1 = document.getElementById('music1');
 const music2 = document.getElementById('music2');
 let currentMusic = music1;
 let musicInitialized = false;
+
+// Add missing score and high score elements and highestY
+const scoreElement = document.getElementById('score');
+let score = 0;
+let highScore = localStorage.getItem('highScore') || 0;
+const highScoreElement = document.getElementById('high-score');
+highScoreElement.innerText = `High Score: ${highScore}`;
+let highestY = window.innerHeight;
 
 // Utility to get a random color - Add this function back in
 function getRandomColor() {
@@ -242,6 +252,11 @@ player = Bodies.rectangle(
     }
 );
 Composite.add(world, player);
+
+// Add missing platform constants
+const platformWidth = 120;
+const platformHeight = 20;
+const platformGap = 180;
 
 // Create a regular platform
 function createRegularPlatform(x, y) {
@@ -645,8 +660,9 @@ Events.on(engine, 'beforeUpdate', () => {
         doubleJumpCooldown--;
     }
     
-    // Removed flash effect update code
-
+    // Update rain system
+    updateRain();
+    
     // Player movement
     const velocity = player.velocity;
     let newVelocityX = 0;
@@ -841,6 +857,32 @@ Events.on(engine, 'collisionStart', (event) => {
     for (const pair of pairs) {
         const { bodyA, bodyB } = pair;
         
+        // Check for raindrop or block rain collisions
+        if (bodyA.label === 'raindrop' || bodyA.label === 'blockrain' || 
+            bodyB.label === 'raindrop' || bodyB.label === 'blockrain') {
+            
+            const raindrop = bodyA.label === 'raindrop' || bodyA.label === 'blockrain' ? bodyA : bodyB;
+            const other = bodyA === raindrop ? bodyB : bodyA;
+            
+            // Create splash effect when raindrop hits platform or player
+            if (other.label.includes('platform') || other.label === 'player') {
+                // Different effects for different rain types
+                if (raindrop.label === 'raindrop') {
+                    createSplash(raindrop.position);
+                } else {
+                    // Block rain creates different impact effects
+                    createBlockImpact(raindrop.position, raindrop.render.fillStyle);
+                }
+                
+                // Remove the raindrop after collision
+                const index = raindrops.indexOf(raindrop);
+                if (index > -1) {
+                    Composite.remove(world, raindrop);
+                    raindrops.splice(index, 1);
+                }
+            }
+        }
+        
         // Check for player and platform collisions
         if ((bodyA.label === 'player' && (bodyB.label === 'platform' || bodyB.label === 'bouncy_platform' || bodyB.label === 'crumbling_platform' || bodyB.label === 'moving_platform')) || 
             ((bodyA.label === 'platform' || bodyA.label === 'bouncy_platform' || bodyA.label === 'crumbling_platform' || bodyA.label === 'moving_platform') && bodyB.label === 'player')) {
@@ -1001,6 +1043,179 @@ Events.on(engine, 'collisionStart', (event) => {
         }
     }
 });
+
+// Create a raindrop
+function createRaindrop() {
+    const x = Math.random() * (window.innerWidth + 400) - 200; // Wider area than screen
+    const y = player.position.y - window.innerHeight / 2 - Math.random() * 100; // Start above screen
+    
+    const raindrop = Bodies.rectangle(x, y, 2, 10, {
+        friction: 0.01,
+        restitution: 0.3,
+        frictionAir: 0.01,
+        angle: Math.PI / 10 * (Math.random() - 0.5), // Slight angle variation
+        render: { 
+            fillStyle: 'rgba(120, 150, 255, 0.7)'
+        },
+        label: 'raindrop',
+        collisionFilter: {
+            group: 0,
+            category: 0x0010,
+            mask: 0x0001 // Only collide with default category (platforms and player)
+        }
+    });
+    
+    // Add initial velocity
+    Body.setVelocity(raindrop, { x: Math.random() - 0.5, y: 5 + Math.random() * 3 });
+    
+    raindrops.push(raindrop);
+    Composite.add(world, raindrop);
+    
+    return raindrop;
+}
+
+// Create a block rain element
+function createBlockRain() {
+    const x = Math.random() * (window.innerWidth + 400) - 200; // Wider area than screen
+    const y = player.position.y - window.innerHeight / 2 - Math.random() * 100; // Start above screen
+    
+    const size = 4 + Math.random() * 8; // Random small block sizes
+    const blockRain = Bodies.rectangle(x, y, size, size, {
+        friction: 0.01,
+        restitution: 0.3,
+        frictionAir: 0.01,
+        angle: Math.PI * Math.random() * 2, // Random rotation
+        render: { 
+            fillStyle: `rgba(${Math.floor(Math.random() * 100 + 100)}, ${Math.floor(Math.random() * 100 + 100)}, ${Math.floor(Math.random() * 155 + 100)}, 0.7)`
+        },
+        label: 'blockrain',
+        collisionFilter: {
+            group: 0,
+            category: 0x0010,
+            mask: 0x0001 // Only collide with default category (platforms and player)
+        }
+    });
+    
+    // Add initial velocity
+    Body.setVelocity(blockRain, { x: Math.random() - 0.5, y: 4 + Math.random() * 2 });
+    // Add some spin
+    Body.setAngularVelocity(blockRain, (Math.random() - 0.5) * 0.1);
+    
+    raindrops.push(blockRain);
+    Composite.add(world, blockRain);
+    
+    return blockRain;
+}
+
+// Create splash effect when raindrop hits something
+function createSplash(position) {
+    for (let i = 0; i < 3; i++) { // Create 3 splash particles
+        const splashParticle = Bodies.circle(
+            position.x + (Math.random() - 0.5) * 5,
+            position.y,
+            1 + Math.random(),
+            {
+                isSensor: true,
+                render: { fillStyle: 'rgba(120, 150, 255, 0.6)' },
+                label: 'effect'
+            }
+        );
+        
+        // Give particles upward velocity
+        Body.setVelocity(splashParticle, {
+            x: (Math.random() - 0.5) * 2,
+            y: -Math.random() * 2
+        });
+        
+        effectParticles.push(splashParticle);
+        Composite.add(world, splashParticle);
+    }
+}
+
+// Create impact effect when block rain hits something
+function createBlockImpact(position, color) {
+    for (let i = 0; i < 5; i++) { // Create 5 block fragments
+        const fragment = Bodies.rectangle(
+            position.x + (Math.random() - 0.5) * 8,
+            position.y + (Math.random() - 0.5) * 8,
+            1 + Math.random() * 3,
+            1 + Math.random() * 3,
+            {
+                isSensor: true,
+                render: { fillStyle: color },
+                label: 'effect'
+            }
+        );
+        
+        // Give fragments scattered velocity
+        Body.setVelocity(fragment, {
+            x: (Math.random() - 0.5) * 3,
+            y: (Math.random() - 0.5) * 3
+        });
+        
+        // Add some spin
+        Body.setAngularVelocity(fragment, (Math.random() - 0.5) * 0.2);
+        
+        effectParticles.push(fragment);
+        Composite.add(world, fragment);
+    }
+}
+
+// Remove all raindrops from the world
+function clearRaindrops() {
+    for (let i = raindrops.length - 1; i >= 0; i--) {
+        Composite.remove(world, raindrops[i]);
+    }
+    raindrops.length = 0;
+}
+
+// Update rain system
+function updateRain() {
+    // Update rain timer
+    rainTimer++;
+    
+    // Handle initial rain period
+    if (isInitialRain) {
+        if (rainTimer >= initialRainDuration) {
+            rainTimer = 0;
+            isRaining = false;
+            isInitialRain = false; // End initial rain period
+            clearRaindrops(); // Remove all raindrops when rain stops
+        }
+    } else {
+        // Normal cycle after initial period
+        if (isRaining && rainTimer >= rainOnDuration) {
+            rainTimer = 0;
+            isRaining = false;
+            clearRaindrops(); // Remove all raindrops when rain stops
+        } else if (!isRaining && rainTimer >= rainOffDuration) {
+            rainTimer = 0;
+            isRaining = true;
+            // 50% chance for block rain each time it starts raining
+            isBlockRain = Math.random() < 0.5;
+        }
+    }
+    
+    // Generate new raindrops if raining
+    if (isRaining && raindrops.length < maxRaindrops) {
+        for (let i = 0; i < rainIntensity; i++) {
+            if (isBlockRain) {
+                createBlockRain();
+            } else {
+                createRaindrop();
+            }
+        }
+    }
+    
+    // Remove raindrops that are too far down
+    for (let i = raindrops.length - 1; i >= 0; i--) {
+        const raindrop = raindrops[i];
+        if (raindrop.position.y > player.position.y + window.innerHeight) {
+            Composite.remove(world, raindrop);
+            raindrops.splice(i, 1);
+        }
+    }
+}
 
 // Override the default render
 // Add this after your existing render setup
