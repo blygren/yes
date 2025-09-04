@@ -168,7 +168,7 @@ Events.on(engine, 'beforeUpdate', () => {
     Body.setVelocity(player, { x: newVelocityX, y: velocity.y });
 
     if (keys.up && playerOnGround) {
-        Body.applyForce(player, player.position, { x: 0, y: -1.1 });
+        Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 }); // Increased jump force by 20%
     }
 
     // Wind effects when falling

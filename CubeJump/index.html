@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Infinite Cube Platformer</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #111;
+        }
+        canvas {
+            display: block;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: sans-serif;
+            font-size: 24px;
+            z-index: 100;
+        }
+        #high-score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-family: sans-serif;
+            font-size: 24px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="high-score">High Score: 0</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
