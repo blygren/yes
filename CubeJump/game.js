@@ -266,52 +266,19 @@ function createMovingPlatform(x, y) {
 function createCrumblingPlatform(x, y) {
     const platform = Bodies.rectangle(x + platformWidth / 2, y, platformWidth, platformHeight, {
         isStatic: true,
-        render: { fillStyle: '#ccc' },
+        render: { 
+            fillStyle: '#e5c07b',  // Changed to a more visible sandy color
+            lineWidth: 2,
+            strokeStyle: '#c0a060'  // Add border for visibility
+        },
         label: 'crumbling_platform',
         isCrumbling: false,
         crumbleTimer: 30 // Frames before platform disappears after landing
     });
     
-    // Add crack pattern
-    const canvas = document.createElement('canvas');
-    canvas.width = platformWidth;
-    canvas.height = platformHeight;
-    const ctx = canvas.getContext('2d');
-    
-    // Base color
-    ctx.fillStyle = '#ddd';
-    ctx.fillRect(0, 0, platformWidth, platformHeight);
-    
-    // Add cracks
-    ctx.strokeStyle = '#999';
-    ctx.lineWidth = 1;
-    
-    const crackCount = 5 + Math.floor(Math.random() * 5);
-    for (let i = 0; i < crackCount; i++) {
-        const startX = Math.random() * platformWidth;
-        const startY = 0;
-        
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        
-        let currentX = startX;
-        let currentY = startY;
-        
-        const segments = 5 + Math.floor(Math.random() * 5);
-        for (let j = 0; j < segments; j++) {
-            currentX += (Math.random() - 0.5) * 15;
-            currentY += platformHeight / segments;
-            ctx.lineTo(currentX, currentY);
-        }
-        
-        ctx.stroke();
-    }
-    
-    platform.render.sprite = {
-        texture: canvas.toDataURL(),
-        xScale: 1,
-        yScale: 1
-    };
+    // Add crack pattern directly instead of using a canvas texture
+    // This ensures the cracks are clearly visible
+    platform.render.sprite = null; // Remove sprite to use direct color
     
     return platform;
 }
@@ -481,23 +448,23 @@ function generatePlatforms(startY, count) {
         const platformTypeRoll = Math.random();
         let platform;
         
-        if (platformTypeRoll < 0.25) {
+        if (platformTypeRoll < 0.20) {
             platform = createRegularPlatform(x, y);
-        } else if (platformTypeRoll < 0.35) {
+        } else if (platformTypeRoll < 0.28) {
             platform = createRampPlatform(x, y, true); // Left-facing ramp
-        } else if (platformTypeRoll < 0.45) {
+        } else if (platformTypeRoll < 0.36) {
             platform = createRampPlatform(x, y, false); // Right-facing ramp
-        } else if (platformTypeRoll < 0.55) {
+        } else if (platformTypeRoll < 0.46) {
             platform = createInteractivePlatform(x, y);
-        } else if (platformTypeRoll < 0.65) {
+        } else if (platformTypeRoll < 0.56) {
             platform = createBouncyPlatform(x, y);
-        } else if (platformTypeRoll < 0.75) {
+        } else if (platformTypeRoll < 0.66) {
             platform = createMovingPlatform(x, y);
-        } else if (platformTypeRoll < 0.82) {
+        } else if (platformTypeRoll < 0.86) {  // Increased probability: now 20% (0.66 to 0.86)
             platform = createCrumblingPlatform(x, y);
-        } else if (platformTypeRoll < 0.89) {
+        } else if (platformTypeRoll < 0.91) {
             platform = createNarrowPlatform(x, y);
-        } else if (platformTypeRoll < 0.95) {
+        } else if (platformTypeRoll < 0.96) {
             platform = createMultiLevelPlatform(x, y);
         } else {
             platform = createFloatingObjectsPlatform(x, y);
@@ -655,7 +622,7 @@ Events.on(engine, 'beforeUpdate', () => {
         if (particle.isSensor) { // Wind/jump particles
             particle.render.opacity -= 0.02;
         } else { // Smash/shatter particles
-            particle.render.opacity -= 0.0003125; // 4x slower fade out (was 0.000625)
+            particle.render.opacity -= 0.000625; // 2x slower fade out (was 0.00125)
         }
 
         if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
@@ -740,11 +707,15 @@ Events.on(engine, 'collisionStart', (event) => {
             if (platform.label === 'crumbling_platform' && isPlayerOnTop && !platform.isCrumbling) {
                 platform.isCrumbling = true;
                 
+                // Change color to indicate crumbling
+                platform.render.fillStyle = '#ff9966';
+                platform.render.strokeStyle = '#cc6633';
+                
                 // Add shake effect
                 const originalPos = { x: platform.position.x, y: platform.position.y };
                 const shakeInterval = setInterval(() => {
-                    const offsetX = (Math.random() - 0.5) * 2;
-                    const offsetY = (Math.random() - 0.5) * 2;
+                    const offsetX = (Math.random() - 0.5) * 3; // Increased shake
+                    const offsetY = (Math.random() - 0.5) * 3;
                     Body.setPosition(platform, {
                         x: originalPos.x + offsetX,
                         y: originalPos.y + offsetY
@@ -756,7 +727,7 @@ Events.on(engine, 'collisionStart', (event) => {
                     clearInterval(shakeInterval);
                     
                     // Create crumbling effect particles
-                    const particleCount = 15;
+                    const particleCount = 20; // More particles for visibility
                     for (let i = 0; i < particleCount; i++) {
                         const x = platform.position.x + (Math.random() - 0.5) * platformWidth;
                         const y = platform.position.y + (Math.random() - 0.5) * platformHeight;
@@ -1004,7 +975,7 @@ Events.on(engine, 'beforeUpdate', () => {
         if (particle.isSensor) { // Wind/jump particles
             particle.render.opacity -= 0.02;
         } else { // Smash/shatter particles
-            particle.render.opacity -= 0.0003125; // 4x slower fade out (was 0.000625)
+            particle.render.opacity -= 0.000625; // 2x slower fade out (was 0.00125)
         }
 
         if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
