@@ -28,6 +28,7 @@ let player;
 const platforms = [];
 const effectParticles = [];
 const keys = { left: false, right: false, up: false, boost: false };
+let upPressedLastFrame = false; // Track up key for jump edge detection
 let playerOnGround = false;
 let highestY = window.innerHeight;
 let score = 0;
@@ -90,14 +91,14 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = true;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = true;
     if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = true;
-    if (e.key === ' ') keys.boost = true;
+    if (e.code === 'Space') keys.boost = true;
 });
 
 window.addEventListener('keyup', (e) => {
     if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = false;
     if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = false;
     if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') keys.up = false;
-    if (e.key === ' ') keys.boost = false;
+    if (e.code === 'Space') keys.boost = false;
 });
 
 // Collision detection for ground status
@@ -177,12 +178,14 @@ Events.on(engine, 'beforeUpdate', () => {
     
     Body.setVelocity(player, { x: newVelocityX, y: velocity.y });
 
-    if (keys.up && playerOnGround) {
-        Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 }); // Increased jump force by 20%
+    // Jump only on up key press (not hold), and not if using boost
+    if (keys.up && playerOnGround && !upPressedLastFrame) {
+        Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
     }
-    
-    // Boost logic
-    if (keys.boost && boostPower > 0) {
+    upPressedLastFrame = keys.up;
+
+    // Boost logic: only boost if not on ground
+    if (keys.boost && boostPower > 0 && !playerOnGround) {
         Body.applyForce(player, player.position, { x: 0, y: -boostForce });
         boostPower -= boostDepletionRate;
         
