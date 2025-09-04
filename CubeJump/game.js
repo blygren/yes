@@ -30,6 +30,18 @@ const namePool = [
     "Morgan", "Blake", "Cameron", "Jesse", "Lucky", "Sam", "John", "Finn"
 ];
 
+// Add milestone message pool
+const milestoneMessagePool = [
+    "_____ still feels lost",
+    "_____ still can't find where to go",
+    "_____ wonders if this journey has an end",
+    "_____ continues jumping without purpose",
+    "_____ searches for meaning in the void",
+    "_____ questions why they keep climbing",
+    "_____ sees no destination ahead",
+    "_____ feels trapped in endless ascent"
+];
+
 // Story intro variables
 let selectedName = namePool[Math.floor(Math.random() * namePool.length)];
 let showStoryIntro = true;
@@ -59,7 +71,7 @@ const doubleJumpCooldownMax = 180; // 3 seconds at 60fps
 const raindrops = [];
 let isRaining = true; // Start with rain
 let isInitialRain = true; // Track if we're in the initial rain period
-let isBlockRain = Math.random() < 0.5; // 50% chance for block rain
+let isBlockRain = Math.random() < 0.2; // 20% chance for block rain
 let rainTimer = 0;
 const initialRainDuration = 1800; // 30 seconds at 60fps
 const rainOnDuration = 3600; // 60fps × 60 seconds = 1 minute of rain
@@ -112,6 +124,9 @@ let highScore = localStorage.getItem('highScore') || 0;
 const highScoreElement = document.getElementById('high-score');
 highScoreElement.innerText = `High Score: ${highScore}`;
 let highestY = window.innerHeight;
+
+// Add milestone tracking variable
+let milestone1000Reached = false;
 
 // Utility to get a random color - Add this function back in
 function getRandomColor() {
@@ -839,6 +854,15 @@ Events.on(engine, 'beforeUpdate', () => {
     if (score < 0) score = 0; // Prevent score from going negative
     scoreElement.innerText = `Score: ${score}`;
 
+    // Check for milestone
+    if (score >= 1000 && !milestone1000Reached) {
+        milestone1000Reached = true;
+        // Select random message from pool and replace placeholder with character name
+        const messageTemplate = milestoneMessagePool[Math.floor(Math.random() * milestoneMessagePool.length)];
+        const message = messageTemplate.replace("_____", selectedName);
+        showMilestoneMessage(message);
+    }
+
     if (score > highScore) {
         highScore = score;
         highScoreElement.innerText = `High Score: ${highScore}`;
@@ -1267,8 +1291,23 @@ function updateRain() {
     }
 }
 
+// Function to show milestone message
+function showMilestoneMessage(message) {
+    const milestoneElement = document.createElement('div');
+    milestoneElement.id = 'milestone-message';
+    milestoneElement.innerText = message;
+    document.body.appendChild(milestoneElement);
+    
+    // Fade out and remove after a few seconds
+    setTimeout(() => {
+        milestoneElement.style.opacity = '0';
+        setTimeout(() => {
+            milestoneElement.remove();
+        }, 1000); // Wait for fade animation
+    }, 3000);
+}
+
 // Override the default render
-// Add this after your existing render setup
 Events.on(render, 'afterRender', function() {
     const bodies = Composite.allBodies(world);
     const context = render.context;
