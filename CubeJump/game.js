@@ -1192,7 +1192,7 @@ function updateRain() {
             rainTimer = 0;
             isRaining = true;
             // 50% chance for block rain each time it starts raining
-            isBlockRain = Math.random() < 0.5;
+            isBlockRain = Math.random() < 0.2;
         }
     }
     
@@ -1284,3 +1284,4 @@ Events.on(engine, 'collisionActive', (event) => {
         }
     }
 });
+
