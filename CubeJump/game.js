@@ -212,7 +212,7 @@ Events.on(engine, 'collisionStart', (event) => {
                 isSquinting = true;
                 squintTimer = squintDuration;
                 
-                const particleCount = 10;
+                const particleCount = 40; // 4x original debris (was 20)
                 for (let i = 0; i < particleCount; i++) {
                     // Player smash particles
                     const x = player.position.x + (Math.random() - 0.5) * 40;
@@ -337,7 +337,7 @@ Events.on(engine, 'beforeUpdate', () => {
         if (particle.isSensor) { // Wind/jump particles
             particle.render.opacity -= 0.02;
         } else { // Smash/shatter particles
-            particle.render.opacity -= 0.01; // Slower fade out
+            particle.render.opacity -= 0.00125; // 8x slower fade out (was 0.0025)
         }
 
         if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
