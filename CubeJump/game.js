@@ -69,7 +69,7 @@ const squintDuration = 20; // Frames to show squint face
 // Boost variables
 let boostPower = 100;
 const maxBoostPower = 100;
-const boostRechargeRate = 0.5;
+const boostRechargeRate = 0.5 / 3; // 3x slower recharge
 const boostDepletionRate = 1.5;
 const boostForce = 0.2 * 0.1; // 90% slower boost
 const boostMeter = document.getElementById('boost-meter');
@@ -647,7 +647,7 @@ Events.on(engine, 'beforeUpdate', () => {
         if (particle.isSensor) { // Wind/jump particles
             particle.render.opacity -= 0.02;
         } else { // Smash/shatter particles
-            particle.render.opacity -= 0.00125; // 8x slower fade out (was 0.0025)
+            particle.render.opacity -= 0.000625; // 2x slower fade out (was 0.00125)
         }
 
         if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
@@ -785,7 +785,7 @@ Events.on(engine, 'collisionStart', (event) => {
                 isSquinting = true;
                 squintTimer = squintDuration;
                 
-                const particleCount = 40;
+                const particleCount = 20; // 2x less debris (was 40)
                 for (let i = 0; i < particleCount; i++) {
                     // Player smash particles
                     const x = player.position.x + (Math.random() - 0.5) * 40;
@@ -984,7 +984,7 @@ Events.on(engine, 'beforeUpdate', () => {
         if (particle.isSensor) { // Wind/jump particles
             particle.render.opacity -= 0.02;
         } else { // Smash/shatter particles
-            particle.render.opacity -= 0.00125; // 8x slower fade out (was 0.0025)
+            particle.render.opacity -= 0.000625; // 2x slower fade out (was 0.00125)
         }
 
         if (particle.render.opacity <= 0 || particle.position.y > player.position.y + window.innerHeight) {
