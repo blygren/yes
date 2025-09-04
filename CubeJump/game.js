@@ -69,9 +69,6 @@ function renderPlayer(body, ctx) {
     ctx.beginPath();
     ctx.rect(-(width / 2), -(height / 2), width, height);
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#000';
-    ctx.stroke();
     
     // Draw face
     const eyeSize = 6;
