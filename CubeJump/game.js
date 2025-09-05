@@ -63,9 +63,13 @@ let upPressedLastFrame = false; // Track up key for jump edge detection
 let playerOnGround = false;
 let canDoubleJump = false; // Track if player can double jump
 let hasDoubleJumped = false; // Track if player has used double jump
-// Add double jump cooldown variables
+// Add jump cooldown variables
+let jumpCooldown = 0; // Regular jump cooldown timer in frames
+const jumpCooldownMax = 120; // 2 seconds at 60fps
+// Modify double jump cooldown variables
 let doubleJumpCooldown = 0; // Cooldown timer in frames
-const doubleJumpCooldownMax = 180; // 3 seconds at 60fps
+const doubleJumpCooldownMax = 300; // 5 seconds at 60fps (increased from 3s)
+let doubleJumpPerformed = false; // Flag to track if a double jump was recently performed
 
 // Rain system variables
 const raindrops = [];
@@ -701,7 +705,11 @@ Events.on(engine, 'beforeUpdate', () => {
         hasDoubleJumped = false;
     }
     
-    // Update double jump cooldown
+    // Update cooldown timers
+    if (jumpCooldown > 0) {
+        jumpCooldown--;
+    }
+    
     if (doubleJumpCooldown > 0) {
         doubleJumpCooldown--;
     }
@@ -724,20 +732,22 @@ Events.on(engine, 'beforeUpdate', () => {
 
     // Jump mechanics - First jump on ground, double jump in air
     if (keys.up && !upPressedLastFrame) {
-        // First jump (on ground)
-        if (playerOnGround) {
+        // First jump (on ground) - now with cooldown check
+        if (playerOnGround && jumpCooldown <= 0) {
             Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
+            // Set regular jump cooldown
+            jumpCooldown = jumpCooldownMax;
         }
-        // Double jump (in air)
+        // Double jump (in air) - with existing cooldown check
         else if (canDoubleJump && !hasDoubleJumped && doubleJumpCooldown <= 0) {
             Body.setVelocity(player, { x: player.velocity.x, y: 0 }); // Reset vertical velocity
             Body.applyForce(player, player.position, { x: 0, y: -1.1 * 0.4 * 1.2 });
             hasDoubleJumped = true;
             canDoubleJump = false;
+            doubleJumpPerformed = true; // Set flag that we just performed a double jump
             
             // Set cooldown
             doubleJumpCooldown = doubleJumpCooldownMax;
-            // Removed flash effect code
             
             // Double jump effect particles
             for (let i = 0; i < 10; i++) {
@@ -756,7 +766,6 @@ Events.on(engine, 'beforeUpdate', () => {
                 Composite.add(world, jumpParticle);
             }
         }
-        // Removed cooldown flash feedback
     }
     upPressedLastFrame = keys.up;
 
@@ -1136,7 +1145,8 @@ function createRaindrop() {
             group: 0,
             category: 0x0010,
             mask: 0x0001 // Only collide with default category (platforms and player)
-        }
+        },
+        isRainEffect: true // Mark as rain effect to prevent jump reset
     });
     
     // Add initial velocity
@@ -1167,7 +1177,8 @@ function createBlockRain() {
             group: 0,
             category: 0x0010,
             mask: 0x0001 // Only collide with default category (platforms and player)
-        }
+        },
+        isRainEffect: true // Mark as rain effect to prevent jump reset
     });
     
     // Add initial velocity
@@ -1353,18 +1364,37 @@ window.addEventListener('resize', () => {
 // Additional check to reset double jump when touching any object
 Events.on(engine, 'collisionActive', (event) => {
     const pairs = event.pairs;
+    
+    // If we've performed a double jump recently and cooldown is active, don't allow reset
+    if (doubleJumpPerformed && doubleJumpCooldown > 0) {
+        return;
+    }
+    
+    // Reset flag when cooldown expires
+    if (doubleJumpCooldown <= 0) {
+        doubleJumpPerformed = false;
+    }
+    
     for (const pair of pairs) {
         const { bodyA, bodyB } = pair;
         
-        // If player collides with any interactive object or debris from below or sides
-        if ((bodyA.label === 'player' && (bodyB.label === 'interactive_cube' || bodyB.label === 'interactive_object' || bodyB.label === 'effect')) ||
-            ((bodyA.label === 'interactive_cube' || bodyA.label === 'interactive_object' || bodyA.label === 'effect') && bodyB.label === 'player')) {
+        // Skip if either object is a raindrop or block rain - these should never reset double jump
+        if (bodyA.label === 'raindrop' || bodyA.label === 'blockrain' || 
+            bodyB.label === 'raindrop' || bodyB.label === 'blockrain') {
+            continue;
+        }
+        
+        // If player collides with any interactive object or solid platform (not effects/particles)
+        if ((bodyA.label === 'player' && (bodyB.label === 'interactive_cube' || bodyB.label === 'interactive_object' || 
+                                         bodyB.label.includes('platform'))) ||
+            ((bodyA.label === 'interactive_cube' || bodyA.label === 'interactive_object' || 
+             bodyA.label.includes('platform')) && bodyB.label === 'player')) {
             
             const obj = bodyA.label === 'player' ? bodyB : bodyA;
             
-            // If player is on top of the object
-            if (player.position.y < obj.position.y) {
-                // Only reset double jump if cooldown has expired
+            // Only reset if player is clearly on top of the object (stricter check)
+            if (player.position.y < obj.position.y - 10) {
+                // Double check we're not in cooldown
                 if (doubleJumpCooldown <= 0) {
                     canDoubleJump = true;
                     hasDoubleJumped = false;
