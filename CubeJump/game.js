@@ -80,8 +80,8 @@ let rainTimer = 0;
 const initialRainDuration = 1800; // 30 seconds at 60fps
 const rainOnDuration = 3600; // 60fps × 60 seconds = 1 minute of rain
 const rainOffDuration = 14400; // 60fps × 240 seconds = 4 minutes minus 1 minute of rain = 3 minutes of dry weather
-const rainIntensity = 12; // Raindrops per frame
-const maxRaindrops = 400; // Maximum number of raindrops to prevent performance issues
+const rainIntensity = 5; // Raindrops per frame
+const maxRaindrops = 300; // Maximum number of raindrops to prevent performance issues
 
 // Platform types
 const PLATFORM_TYPES = {
@@ -1403,5 +1403,6 @@ Events.on(engine, 'collisionActive', (event) => {
         }
     }
 });
+
 
 
