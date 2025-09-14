@@ -1242,7 +1242,16 @@ function showInspectionPanel(body) {
     
     // Add face-specific information if the body has a face
     if (body.hasFace) {
-        const maxHealth = 7.2; // Updated death threshold from collision system (28% weaker)
+        // Determine health threshold based on shape
+        const baseHealthThreshold = 7.2;
+        let maxHealth = baseHealthThreshold;
+        
+        // Apply 30% less health for cubes/boxes/rectangles
+        const isCube = (shapeType === 'Square' || shapeType === 'Rectangle');
+        if (isCube) {
+            maxHealth = baseHealthThreshold * 0.7; // 30% less health for cubes
+        }
+        
         const currentHealth = Math.max(0, maxHealth - (body.damage || 0));
         const healthPercentage = Math.round((currentHealth / maxHealth) * 100);
         
@@ -1259,6 +1268,7 @@ function showInspectionPanel(body) {
         `;
         
         html = addInfoRow(html, 'Health', `${healthBar} ${body.isDead ? 'DEAD' : `${healthPercentage}%`}`);
+        html = addInfoRow(html, 'Max Health', isCube ? `${maxHealth.toFixed(1)} (30% less)` : maxHealth.toFixed(1));
         html = addInfoRow(html, 'Damage Taken', (body.damage || 0).toFixed(1));
         html = addInfoRow(html, 'Status', body.isDead ? '💀 Dead' : body.isSad ? '😢 Sad' : body.isBeingDragged ? '😨 Scared' : '😊 Happy');
         html = addInfoRow(html, 'Invincible', body.isInvincible ? 'Yes' : 'No');
@@ -2208,7 +2218,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Check if damage threshold for death is reached
                     // Current threshold is 10, making them 28% weaker means threshold is 7.2
-                    const deathThreshold = 7.2; // Decreased from 10 (28% less damage needed to die)
+                    const baseDeathThreshold = 7.2; // Base death threshold
+                    
+                    // Apply 30% less health for cubes/boxes/rectangles
+                    let deathThreshold = baseDeathThreshold;
+                    if (body.label === 'Rectangle Body' || 
+                        (body.vertices && body.vertices.length === 4 && !body.circleRadius)) {
+                        // This is a cube/rectangle - reduce health by 30%
+                        deathThreshold = baseDeathThreshold * 0.7; // 30% less health
+                        console.log(`Cube detected! Using reduced threshold: ${deathThreshold.toFixed(2)}`);
+                    }
+                    
                     const wasDead = body.isDead;
                     body.isDead = body.damage > deathThreshold;
                     
