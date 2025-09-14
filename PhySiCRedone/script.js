@@ -5,6 +5,225 @@ const { Engine, Render, Runner, World, Bodies, Composite, Events, Body, Mouse, M
 const engine = Engine.create();
 const world = engine.world;
 
+// Audio handling variables
+const deathSounds = [];
+const scaredSounds = [];
+const uiSounds = [];
+const toolSounds = {};
+const MAX_DEATH_SOUNDS = 20; // Increased from 10 to 20
+const MAX_SCARED_SOUNDS = 5; // Up to scared5.mp3
+const MAX_UI_SOUNDS = 5; // Up to uisound5.mp3
+const DEATH_SOUND_FOLDER = 'deathsounds/'; // Store death sounds in a dedicated folder
+const SCARED_SOUND_FOLDER = 'scaredsounds/'; // Store scared sounds in a dedicated folder
+const UI_SOUND_FOLDER = 'uisounds/'; // Store UI interaction sounds in a dedicated folder
+const TOOL_SOUND_FOLDER = 'toolsounds/'; // Store tool-specific sounds in a dedicated folder
+let audioContext;
+let audioInitialized = false;
+let attractSoundInstance = null; // To keep track of the attract sound for stopping it
+
+// Function to initialize audio
+function initializeAudio() {
+    if (audioInitialized) return;
+    
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Clear existing sounds if any
+        deathSounds.length = 0;
+        scaredSounds.length = 0;
+        
+        // Preload death sounds from the deathsounds folder
+        for (let i = 0; i <= MAX_DEATH_SOUNDS; i++) {
+            const fileName = i === 0 ? 'death.mp3' : `death${i}.mp3`;
+            const soundFile = DEATH_SOUND_FOLDER + fileName;
+            const audio = new Audio(soundFile);
+            
+            // Preload by setting these properties
+            audio.preload = 'auto';
+            
+            // Make sure audio can play as soon as possible
+            audio.load();
+            
+            // Add to death sounds collection
+            deathSounds.push(audio);
+            
+            console.log(`Loaded death sound: ${soundFile}`);
+        }
+        
+        // Preload scared sounds from the scaredsounds folder
+        for (let i = 1; i <= MAX_SCARED_SOUNDS; i++) {
+            const soundFile = SCARED_SOUND_FOLDER + `scared${i}.mp3`;
+            const audio = new Audio(soundFile);
+            
+            // Preload by setting these properties
+            audio.preload = 'auto';
+            
+            // Make sure audio can play as soon as possible
+            audio.load();
+            
+            // Add to scared sounds collection
+            scaredSounds.push(audio);
+            
+            console.log(`Loaded scared sound: ${soundFile}`);
+        }
+        
+        // Preload UI sounds from the uisounds folder
+        for (let i = 1; i <= MAX_UI_SOUNDS; i++) {
+            const soundFile = UI_SOUND_FOLDER + `uisound${i}.mp3`;
+            const audio = new Audio(soundFile);
+            
+            // Preload by setting these properties
+            audio.preload = 'auto';
+            
+            // Make sure audio can play as soon as possible
+            audio.load();
+            
+            // Add to UI sounds collection
+            uiSounds.push(audio);
+            
+            console.log(`Loaded UI sound: ${soundFile}`);
+        }
+        
+        // Load tool-specific sounds
+        const toolSoundFiles = {
+            'explosion': TOOL_SOUND_FOLDER + 'explosion.mp3',
+            'delete': TOOL_SOUND_FOLDER + 'delete.mp3',
+            'attract': TOOL_SOUND_FOLDER + 'attract.mp3'
+        };
+        
+        // Load each tool sound
+        for (const [toolName, soundFile] of Object.entries(toolSoundFiles)) {
+            const audio = new Audio(soundFile);
+            audio.preload = 'auto';
+            audio.load();
+            
+            // Store in the toolSounds object
+            toolSounds[toolName] = audio;
+            
+            console.log(`Loaded tool sound: ${soundFile}`);
+        }
+        
+        audioInitialized = true;
+        console.log(`Audio initialized successfully with ${deathSounds.length} death sounds, ${scaredSounds.length} scared sounds, ${uiSounds.length} UI sounds, and ${Object.keys(toolSounds).length} tool sounds`);
+    } catch (e) {
+        console.error("Failed to initialize audio:", e);
+    }
+}
+
+// Function to play death sound
+function playDeathSound() {
+    if (!audioInitialized) {
+        // Initialize on demand if not already done
+        initializeAudio();
+    }
+    
+    // Select random death sound
+    const randomIndex = Math.floor(Math.random() * deathSounds.length);
+    const sound = deathSounds[randomIndex];
+    
+    // Create a new audio element to allow multiple sounds simultaneously
+    const soundClone = new Audio(sound.src);
+    
+    // Set volume (optional)
+    soundClone.volume = 0.7;
+    
+    // Play immediately without waiting for any other sounds
+    setTimeout(() => {
+        soundClone.play().catch(err => console.error("Error playing death sound:", err));
+    }, 0);
+    
+    // Clean up the audio element when it's done playing
+    soundClone.onended = () => {
+        soundClone.remove();
+    };
+}
+
+// Track last time a scared sound was played to prevent overlapping
+let lastScaredSoundTime = 0;
+const SCARED_SOUND_COOLDOWN = 1000; // 1 second cooldown between scared sounds
+
+// Track last time a UI sound was played to prevent overlapping
+let lastUiSoundTime = 0;
+const UI_SOUND_COOLDOWN = 100; // 100ms cooldown between UI sounds
+
+// Function to play scared sound
+function playScaredSound() {
+    // Check cooldown to prevent multiple sounds playing at once
+    const now = Date.now();
+    if (now - lastScaredSoundTime < SCARED_SOUND_COOLDOWN) {
+        return; // Still in cooldown period, don't play another sound
+    }
+    
+    if (!audioInitialized || scaredSounds.length === 0) {
+        // Initialize on demand if not already done
+        initializeAudio();
+        
+        // If still no sounds available, return
+        if (scaredSounds.length === 0) return;
+    }
+    
+    // Update the last played time
+    lastScaredSoundTime = now;
+    
+    // Select random scared sound
+    const randomIndex = Math.floor(Math.random() * scaredSounds.length);
+    const sound = scaredSounds[randomIndex];
+    
+    // Create a new audio element
+    const soundClone = new Audio(sound.src);
+    
+    // Set volume (optional) - doubled
+    soundClone.volume = Math.min(1.0, 0.6 * 2); // Double the previous value (1.2, capped at 1.0)
+    
+    // Play the sound
+    soundClone.play().catch(err => console.error("Error playing scared sound:", err));
+    
+    // Clean up the audio element when it's done playing
+    soundClone.onended = () => {
+        soundClone.remove();
+    };
+}
+
+// Function to play UI sound, with optional soundIndex to specify which sound to play
+function playUiSound(soundIndex) {
+    // Check cooldown to prevent multiple sounds playing at once
+    const now = Date.now();
+    if (now - lastUiSoundTime < UI_SOUND_COOLDOWN) {
+        return; // Still in cooldown period, don't play another sound
+    }
+    
+    if (!audioInitialized || uiSounds.length === 0) {
+        // Initialize on demand if not already done
+        initializeAudio();
+        
+        // If still no sounds available, return
+        if (uiSounds.length === 0) return;
+    }
+    
+    // Update the last played time
+    lastUiSoundTime = now;
+    
+    // Use specified sound index if provided and valid, otherwise random
+    let index = (soundIndex !== undefined && soundIndex >= 0 && soundIndex < uiSounds.length) ? 
+                soundIndex : Math.floor(Math.random() * uiSounds.length);
+    
+    const sound = uiSounds[index];
+    
+    // Create a new audio element
+    const soundClone = new Audio(sound.src);
+    
+    // Set volume (optional) - doubled from previous value
+    soundClone.volume = Math.min(1.0, 0.4 * 1.4 * 2); // Double the previous value (0.56 * 2 = 1.12, capped at 1.0)
+    
+    // Play the sound
+    soundClone.play().catch(err => console.error("Error playing UI sound:", err));
+    
+    // Clean up the audio element when it's done playing
+    soundClone.onended = () => {
+        soundClone.remove();
+    };
+}
+
 // Play time tracking variables
 let totalPlayTimeSeconds = 0;
 let lastSaveTime = Date.now();
@@ -786,6 +1005,8 @@ function spawnBall(x, y) {
         ball.sadTimer = 0; // Timer for sadness duration
         // Add asymmetric eyes with 1/20 probability
         ball.hasAsymmetricEyes = Math.random() < 0.05;
+        // Log this creation for debugging
+        console.log(`Created face with invincible=${ball.isInvincible}`);
         stats.facesCreated++;
         saveStats();
     }
@@ -833,6 +1054,10 @@ function handleInteractionStart(e) {
                 Body.applyForce(body, body.position, force);
             }
         });
+        
+        // Play explosion sound
+        playToolSound('explosion');
+        
         stats.explosionsTriggered++;
         saveStats();
         return;
@@ -910,6 +1135,9 @@ function handleInteractionStart(e) {
         const bodyToDelete = foundBodies.find(body => !boundaries.includes(body));
         if (bodyToDelete) {
             deleteBodyAndConstraints(bodyToDelete);
+            
+            // Play delete sound
+            playToolSound('delete');
         }
     } else if (currentMode === 'spawn') {
         spawnBall(clientX, clientY); // Spawn one ball on initial click
@@ -1014,7 +1242,7 @@ function showInspectionPanel(body) {
     
     // Add face-specific information if the body has a face
     if (body.hasFace) {
-        const maxHealth = 13; // Death threshold from collision system
+        const maxHealth = 7.2; // Updated death threshold from collision system (28% weaker)
         const currentHealth = Math.max(0, maxHealth - (body.damage || 0));
         const healthPercentage = Math.round((currentHealth / maxHealth) * 100);
         
@@ -1220,15 +1448,107 @@ document.addEventListener('DOMContentLoaded', () => {
     populateTemplatesLibrary();
     populateShapesLibrary();
     
+    // Add search functionality to the templates library
+    const templateSearch = document.getElementById('template-search');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    
+    templateSearch.addEventListener('input', filterTemplates);
+    clearSearchBtn.addEventListener('click', () => {
+        templateSearch.value = '';
+        filterTemplates();
+    });
+    
+    function filterTemplates() {
+        const searchTerm = templateSearch.value.toLowerCase().trim();
+        const templateItems = document.querySelectorAll('.template-item');
+        const categoryHeaders = document.querySelectorAll('.template-category-header');
+        
+        // Reset visibility
+        categoryHeaders.forEach(header => header.style.display = '');
+        
+        // Track which categories have visible items
+        const visibleCategories = new Set();
+        
+        // Filter template items
+        templateItems.forEach(item => {
+            const templateName = item.querySelector('h4').textContent.toLowerCase();
+            const visible = templateName.includes(searchTerm);
+            item.style.display = visible ? '' : 'none';
+            
+            // Track category for this template
+            if (visible) {
+                let category = item.previousElementSibling;
+                while (category && !category.classList.contains('template-category-header')) {
+                    category = category.previousElementSibling;
+                }
+                if (category) {
+                    visibleCategories.add(category);
+                }
+            }
+        });
+        
+        // Hide categories with no visible templates
+        categoryHeaders.forEach(header => {
+            if (!visibleCategories.has(header)) {
+                header.style.display = 'none';
+            }
+        });
+    }
+    
     // Load and start tracking play time
     loadPlayTime();
     startPlayTimeTracking();
     
     // Load statistics
     loadStats();
+    
+    // Initialize audio when user interacts with the page
+    document.addEventListener('click', function() {
+        if (!audioInitialized) {
+            initializeAudio();
+        }
+    }, { once: true });
+    
+    // Add UI sounds to all buttons and interactive elements
+    document.addEventListener('click', function(e) {
+        // Sound 1 for toggle switches (checkboxes)
+        if (e.target.matches('input[type="checkbox"]')) {
+            playUiSound(0); // Sound 1 (index 0) for toggle switches
+            return;
+        }
+        
+        // Sound 3 for toolbar buttons
+        if (e.target.matches('#spawn-mode-btn, #drag-mode-btn, #delete-mode-btn, #explode-mode-btn, #attract-mode-btn, #weld-mode-btn, #inspect-mode-btn')) {
+            playUiSound(2); // Sound 3 (index 2) for toolbar buttons
+            return;
+        }
+        
+        // Other interactive elements get random sounds or sounds 2, 4, 5
+        const isOtherInteractive = e.target.matches('button, input[type="button"], input[type="submit"], input[type="radio"], .apply-template-btn, .delete-template-btn, .shape-item');
+        
+        if (isOtherInteractive) {
+            // Use a random sound index except 0 and 2 (which are reserved)
+            const availableIndices = [1, 3, 4]; // Sounds 2, 4, 5 (indices 1, 3, 4)
+            const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            playUiSound(randomIndex);
+        }
+    });
 
     // Add event listener to save play time when page is about to unload
     window.addEventListener('beforeunload', savePlayTime);
+    
+    // Add UI sounds to range sliders (but less frequently to avoid sound spam)
+    let lastSliderSoundTime = 0;
+    const sliderSoundCooldown = 250; // 250ms cooldown for slider sounds
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('input[type="range"]')) {
+            const now = Date.now();
+            if (now - lastSliderSoundTime > sliderSoundCooldown) {
+                playUiSound(1); // Use Sound 2 (index 1) for sliders
+                lastSliderSoundTime = now;
+            }
+        }
+    });
 
     const spawnBtn = document.getElementById('spawn-mode-btn');
     const dragBtn = document.getElementById('drag-mode-btn'); // Fix this line - was incorrectly referencing delete-mode-btn
@@ -1504,6 +1824,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('invincible-faces-toggle').addEventListener('change', (e) => {
         invincibleFacesEnabled = e.target.checked;
+        console.log(`Invincible faces set to: ${invincibleFacesEnabled}`);
     });
 
     document.getElementById('names-toggle').addEventListener('change', (e) => {
@@ -1785,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     context.beginPath();
                     context.arc(0, mouthOffsetY, mouthWidth * 0.3, 0, 2 * Math.PI);
                     context.stroke();
-                } else if (body.isSad) {
+                } else if ( body.isSad) {
                     // Draw sad mouth (upside down smile)
                     context.beginPath();
                     context.arc(0, mouthOffsetY + mouthWidth * 0.3, mouthWidth, 1.2 * Math.PI, 1.8 * Math.PI);
@@ -1868,39 +2189,63 @@ document.addEventListener('DOMContentLoaded', () => {
         pairs.forEach(pair => {
             const { bodyA, bodyB } = pair;
             
-            // Only process bodies with faces that aren't already dead and aren't invincible
+            // Calculate collision force
+            const force = pair.collision.depth * (
+                pair.collision.normal.x * pair.collision.normal.x + 
+                pair.collision.normal.y * pair.collision.normal.y
+            );
+            
+            // Process bodies with faces that aren't already dead and aren't invincible
             [bodyA, bodyB].forEach(body => {
-                if (body.hasFace && !body.isDead && !boundaries.includes(body) && !body.isInvincible) {
-                    // Calculate impact force based on velocity
-                    const speed = Matter.Vector.magnitude(body.velocity);
-                    const damage = Math.max(0, speed - 4.8); // Damage threshold increased from 3 to 4.8 (60% higher velocity tolerance)
+                if (body.hasFace && !body.isDead && !body.isInvincible) {
+                    // Log collision details for debugging
+                    console.log(`Collision detected: force=${force.toFixed(3)}, current damage=${body.damage || 0}`);
                     
-                    if (damage > 0) {
-                        body.damage += damage * 0.5; // Scale damage
+                    // Add damage based on collision force - adjusted to make shapes more resilient
+                    // Divide by 3 to make them 3x stronger against damage (need 3x more force to die)
+                    const damageAmount = force * 0.05 / 3; // Reduced damage from collisions by 3x
+                    body.damage = (body.damage || 0) + damageAmount;
+                    
+                    // Check if damage threshold for death is reached
+                    // Current threshold is 10, making them 28% weaker means threshold is 7.2
+                    const deathThreshold = 7.2; // Decreased from 10 (28% less damage needed to die)
+                    const wasDead = body.isDead;
+                    body.isDead = body.damage > deathThreshold;
+                    
+                    console.log(`After collision: damage=${body.damage.toFixed(3)}, isDead=${body.isDead}, threshold=${deathThreshold}`);
+                    
+                    // If just died, trigger death sound
+                    if (!wasDead && body.isDead) {
+                        console.log("Body died! Playing sound...");
                         
-                        // Check if body should die
-                        if (body.damage > 13) { // Death threshold
-                            body.isDead = true;
-                            body.isBlinking = false;
-                            // Make dead bodies less bouncy
-                            body.restitution *= 0.3;
-                            
-                            // Make nearby faces sad
-                            const sadnessRadius = 150; // Range to detect death
-                            const bodies = Composite.allBodies(world);
-                            bodies.forEach(nearbyBody => {
-                                if (nearbyBody.hasFace && !nearbyBody.isDead && nearbyBody !== body) {
-                                    const distance = Matter.Vector.magnitude(
-                                        Matter.Vector.sub(body.position, nearbyBody.position)
-                                    );
-                                    
-                                    if (distance < sadnessRadius) {
-                                        nearbyBody.isSad = true;
-                                        nearbyBody.sadTimer = 600; // 10 seconds (60 frames per second)
-                                    }
+                        // Play death sound immediately - the playDeathSound function handles initialization
+                        playDeathSound();
+                        
+                        // Add a visual indicator of death for debugging (console message won't show in production)
+                        const pos = body.position;
+                        console.log(`Death at position: x=${pos.x.toFixed(1)}, y=${pos.y.toFixed(1)}`);
+                        
+                        // Set sad face for nearby objects
+                        const nearbyBodies = Composite.allBodies(world);
+                        nearbyBodies.forEach(nearbyBody => {
+                            if (nearbyBody.hasFace && !nearbyBody.isDead && nearbyBody !== body) {
+                                const dx = nearbyBody.position.x - body.position.x;
+                                const dy = nearbyBody.position.y - body.position.y;
+                                const distance = Math.sqrt(dx*dx + dy*dy);
+                                
+                                // Make nearby faces sad if they're close enough
+                                if (distance < 200) {
+                                    nearbyBody.isSad = true;
+                                    nearbyBody.sadTimer = 300; // Sad for 5 seconds (60 frames per second)
                                 }
-                            });
-                        }
+                            }
+                        });
+                    }
+                    
+                    // Make bodies look sadder as they get more damaged
+                    if (!body.isDead && body.damage > 5) {
+                        body.isSad = true;
+                        body.sadTimer = 60; // Brief sadness after collision when damaged
                     }
                 }
             });
@@ -1916,27 +2261,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wasBeingDragged = body.isBeingDragged;
                 body.isBeingDragged = (mouseConstraint && mouseConstraint.body === body);
                 
-                // If just started being dragged, set emotion timer
+                // If just started being dragged, set emotion timer and play scared sound
                 if (body.isBeingDragged && !wasBeingDragged) {
-                    body.emotionTimer = 60; // Show scared face for 1 second (60 frames)
+                    body.emotionTimer = 180; // Show scared face for 3 seconds (3x longer than before)
+                    body.lastScaredSoundTime = Date.now(); // Track when this body last made a sound
+                    playScaredSound(); // Play a scared sound
+                }
+                
+                // If currently being dragged and emotion is active, play scared sound occasionally
+                if (body.isBeingDragged && body.emotionTimer > 0) {
+                    // Play additional scared sounds less frequently (about every 2-3 seconds)
+                    const now = Date.now();
+                    // Reduce chance to 0.005 (0.5%) for less frequent sounds
+                    // Only if at least 2 seconds have passed since this body's last sound
+                    if (Math.random() < 0.005 && (!body.lastScaredSoundTime || now - body.lastScaredSoundTime > 2000)) {
+                        body.lastScaredSoundTime = now;
+                        playScaredSound();
+                    }
                 }
             }
         });
 
-        if (currentMode === 'attract' && isMouseDown && mouse && mouse.position && mouse.position.x) {
-            const bodies = Composite.allBodies(world);
-            const basePullForce = 0.0005;
-            const pullForce = basePullForce * attractionStrength;
-            bodies.forEach(body => {
-                if (body.isStatic) return;
-                const distanceVector = Matter.Vector.sub(mouse.position, body.position);
-                const distance = Matter.Vector.magnitude(distanceVector);
-                if (distance < attractionRadius) {
-                    const forceMagnitude = pullForce * (1 - distance / attractionRadius) * body.mass;
-                    const force = Matter.Vector.mult(Matter.Vector.normalise(distanceVector), forceMagnitude);
-                    Body.applyForce(body, body.position, force);
+        if (currentMode === 'attract' && mouse && mouse.position && mouse.position.x) {
+            // Play or stop attract sound based on mouse state
+            if (isMouseDown) {
+                // Start the attract sound if it's not already playing
+                if (!attractSoundInstance) {
+                    playToolSound('attract', true); // Loop the sound while attracting
                 }
-            });
+                
+                // Apply attraction forces
+                const bodies = Composite.allBodies(world);
+                const basePullForce = 0.0005;
+                const pullForce = basePullForce * attractionStrength;
+                bodies.forEach(body => {
+                    if (body.isStatic) return;
+                    const distanceVector = Matter.Vector.sub(mouse.position, body.position);
+                    const distance = Matter.Vector.magnitude(distanceVector);
+                    if (distance < attractionRadius) {
+                        const forceMagnitude = pullForce * (1 - distance / attractionRadius) * body.mass;
+                        const force = Matter.Vector.mult(Matter.Vector.normalise(distanceVector), forceMagnitude);
+                        Body.applyForce(body, body.position, force);
+                    }
+                });
+            } else {
+                // Stop the attract sound when mouse is released
+                stopToolSound('attract');
+            }
+        } else {
+            // Make sure attract sound is stopped if we switch away from attract mode
+            stopToolSound('attract');
         }
     });
 
@@ -2030,6 +2404,94 @@ document.addEventListener('DOMContentLoaded', () => {
             shapesLibrary.classList.add('hidden');
         }
     });
+});
+
+// Add particles array and particle properties
+let particles = [];
+const MAX_PARTICLES = 40;
+const PARTICLE_COLORS = ['#4a69bd', '#9b59b6', '#1e90ff', '#00bfff', '#87cefa'];
+
+// Add particle creation function
+function createParticle(x, y) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 2 + 1;
+    const size = Math.random() * 4 + 2;
+    const color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
+    
+    particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size,
+        color,
+        alpha: 1,
+        life: Math.random() * 20 + 20
+    });
+    
+    // Limit particle count
+    if (particles.length > MAX_PARTICLES) {
+        particles.shift();
+    }
+}
+
+// Update render event to draw particles
+Events.on(render, 'afterRender', (event) => {
+    // Existing shockwaves drawing code...
+    const context = render.context;
+    
+    if (currentMode === 'attract' && mouseConstraint && mouseConstraint.mouse) {
+        // Create particles around mouse position when in attract mode
+        if (Math.random() < 0.3) {
+            const mousePosition = mouseConstraint.mouse.position;
+            if (mousePosition) {
+                createParticle(mousePosition.x, mousePosition.y);
+            }
+        }
+    }
+    
+    // Update and draw particles
+    context.save();
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        
+        // Update position
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        // Update life and alpha
+        p.life--;
+        p.alpha = p.life / 40;
+        
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+        }
+        
+        // Draw particle
+        context.globalAlpha = p.alpha;
+        context.fillStyle = p.color;
+        context.beginPath();
+        context.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        context.fill();
+    }
+    context.globalAlpha = 1;
+    context.restore();
+    
+    // Draw visual indicator for attraction radius when in attract mode
+    if (currentMode === 'attract' && mouseConstraint && mouseConstraint.mouse) {
+        const mousePosition = mouseConstraint.mouse.position;
+        if (mousePosition) {
+            context.save();
+            context.strokeStyle = 'rgba(155, 89, 182, 0.3)';
+            context.lineWidth = 2;
+            context.setLineDash([5, 5]);
+            context.beginPath();
+            context.arc(mousePosition.x, mousePosition.y, attractionRadius, 0, Math.PI * 2);
+            context.stroke();
+            context.restore();
+        }
+    }
 });
 
 function deleteBodyAndConstraints(body) {
@@ -2173,3 +2635,48 @@ Events.on(engine, 'afterUpdate', () => {
         }
     }
 });
+
+// Function to play tool sound
+function playToolSound(toolName, loop = false) {
+    if (!audioInitialized) {
+        initializeAudio();
+    }
+    
+    // Check if the tool sound exists
+    if (toolSounds[toolName]) {
+        // Create a new instance to allow overlapping sounds if needed
+        const soundClone = new Audio(toolSounds[toolName].src);
+        
+        // Double the volume for all tools except explosion
+        if (toolName === 'explosion') {
+            soundClone.volume = 0.5; // Keep explosion sound at original volume
+        } else {
+            soundClone.volume = Math.min(1.0, 0.5 * 1.4 * 2); // Double the previous value (0.7 * 2 = 1.4, capped at 1.0)
+        }
+        
+        soundClone.loop = loop;
+        
+        // If this is the attract tool and we want it to loop, save the instance
+        if (toolName === 'attract' && loop) {
+            // Stop any existing attract sound first
+            stopToolSound('attract');
+            attractSoundInstance = soundClone;
+        }
+        
+        soundClone.play().catch(err => console.error(`Error playing ${toolName} sound:`, err));
+        
+        return soundClone;
+    } else {
+        console.warn(`Tool sound "${toolName}" not found`);
+        return null;
+    }
+}
+
+// Function to stop a tool sound (currently just used for attract)
+function stopToolSound(toolName) {
+    if (toolName === 'attract' && attractSoundInstance) {
+        attractSoundInstance.pause();
+        attractSoundInstance.currentTime = 0;
+        attractSoundInstance = null;
+    }
+}
