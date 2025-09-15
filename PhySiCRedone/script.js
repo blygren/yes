@@ -724,6 +724,15 @@ function saveState() {
                 customName: body.customName,
                 isRainbowName: body.isRainbowName,
                 isGlitchName: body.isGlitchName,
+                isFieryName: body.isFieryName, // Add fiery
+                isSpookyName: body.isSpookyName, // Add spooky
+                isGhostlyName: body.isGhostlyName,
+                isElectricName: body.isElectricName,
+                isFrozenName: body.isFrozenName,
+                isCosmicName: body.isCosmicName,
+                isBubbleName: body.isBubbleName,
+                isGoldenName: body.isGoldenName,
+                isCursedName: body.isCursedName,
                 // Make sure we save the hasAsymmetricEyes property
                 hasAsymmetricEyes: body.hasAsymmetricEyes || false,
                 // Also save circleRadius for circles to maintain consistent face sizing
@@ -843,6 +852,15 @@ function loadState(state) {
         body.customName = obj.customName;
         body.isRainbowName = obj.isRainbowName || false;
         body.isGlitchName = obj.isGlitchName || false;
+        body.isFieryName = obj.isFieryName || false; // Restore fiery
+        body.isSpookyName = obj.isSpookyName || false; // Restore spooky
+        body.isGhostlyName = obj.isGhostlyName || false;
+        body.isElectricName = obj.isElectricName || false;
+        body.isFrozenName = obj.isFrozenName || false;
+        body.isCosmicName = obj.isCosmicName || false;
+        body.isBubbleName = obj.isBubbleName || false;
+        body.isGoldenName = obj.isGoldenName || false;
+        body.isCursedName = obj.isCursedName || false;
         return body;
     });
     
@@ -991,9 +1009,31 @@ function spawnBall(x, y) {
         } else {
             ball.customName = namePool[Math.floor(Math.random() * namePool.length)];
         }
-        // Glitch 1/40, else Rainbow 1/50 (exclusive)
-        ball.isGlitchName = Math.random() < (1 / 40);
-        ball.isRainbowName = !ball.isGlitchName && (Math.random() < (1 / 50)); // updated from 1/30
+        
+        // Reset all special names first
+        ball.isGlitchName = false;
+        ball.isRainbowName = false;
+        ball.isFieryName = false;
+        ball.isSpookyName = false;
+        ball.isGhostlyName = false;
+        ball.isElectricName = false;
+        ball.isFrozenName = false;
+        ball.isCosmicName = false;
+        ball.isBubbleName = false;
+        ball.isGoldenName = false;
+        ball.isCursedName = false;
+
+        // 1/20 chance to get a special name
+        if (Math.random() < (1 / 20)) {
+            const specialNameTypes = [
+                'isGlitchName', 'isRainbowName', 'isFieryName', 'isSpookyName', 
+                'isGhostlyName', 'isElectricName', 'isFrozenName', 'isCosmicName',
+                'isBubbleName', 'isGoldenName', 'isCursedName'
+            ];
+            const chosenType = specialNameTypes[Math.floor(Math.random() * specialNameTypes.length)];
+            ball[chosenType] = true;
+        }
+
         stats.namesGiven++;
         saveStats();
     }
@@ -1757,11 +1797,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('gravity-y-slider').addEventListener('input', (e) => {
-        engine.world.gravity.y = parseFloat(e.target.value);
+        if (!accelerometerEnabled) {
+            engine.world.gravity.y = parseFloat(e.target.value);
+        }
     });
 
     document.getElementById('gravity-x-slider').addEventListener('input', (e) => {
-        engine.world.gravity.x = parseFloat(e.target.value);
+        if (!accelerometerEnabled) {
+            engine.world.gravity.x = parseFloat(e.target.value);
+        }
     });
 
     const gravityYSlider = document.getElementById('gravity-y-slider');
@@ -1770,11 +1814,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleOrientation(event) {
         if (!accelerometerEnabled) return;
+        
         // Beta = front-to-back tilt, Gamma = left-to-right tilt
         const { beta, gamma } = event;
-        // Normalize and scale gravity
-        engine.world.gravity.y = beta / 90;
-        engine.world.gravity.x = gamma / 90;
+        
+        if (beta === null || gamma === null) return;
+        
+        // Normalize and scale gravity, clamping the values
+        const gravityY = Math.max(-1, Math.min(2, beta / 90));
+        const gravityX = Math.max(-1, Math.min(1, gamma / 90));
+
+        engine.world.gravity.y = gravityY;
+        engine.world.gravity.x = gravityX;
+
+        // Update sliders to reflect accelerometer values
+        gravityYSlider.value = gravityY;
+        gravityXSlider.value = gravityX;
     }
 
     document.getElementById('accelerometer-toggle').addEventListener('change', (e) => {
@@ -2178,6 +2233,109 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     context.fillStyle = gradient;
                     context.fillText(body.customName, 0, -radius - 5);
+                } else if (body.isFieryName) {
+                    const baseY = -radius - 5;
+                    const t = Date.now() * 0.005;
+                    const flicker = Math.sin(t * 5) * 2;
+                    context.shadowColor = 'red';
+                    context.shadowBlur = 10 + flicker;
+                    context.fillStyle = 'orange';
+                    context.fillText(body.customName, 0, baseY);
+                    context.shadowBlur = 5 + flicker / 2;
+                    context.fillStyle = 'yellow';
+                    context.fillText(body.customName, 0, baseY);
+                    context.shadowBlur = 0; // Reset shadow
+                } else if (body.isSpookyName) {
+                    const baseY = -radius - 5;
+                    const t = Date.now();
+                    // Flicker between red and green every 150ms
+                    context.fillStyle = (Math.floor(t / 150) % 2 === 0) ? '#ff0000' : '#00ff00';
+                    context.shadowColor = context.fillStyle;
+                    context.shadowBlur = 10;
+                    context.fillText(body.customName, 0, baseY);
+                    context.shadowBlur = 0; // Reset shadow
+                } else if (body.isGhostlyName) {
+                    const baseY = -radius - 5;
+                    const t = Date.now() * 0.001;
+                    const alpha = 0.6 + Math.sin(t * 3) * 0.4; // Fade between 0.2 and 1.0
+                    context.fillStyle = `rgba(200, 225, 255, ${alpha})`;
+                    context.fillText(body.customName, 0, baseY);
+                } else if (body.isElectricName) {
+                    const baseY = -radius - 5;
+                    const t = Date.now() * 0.01;
+                    const xShift = (Math.random() - 0.5) * 1.5;
+                    const yShift = (Math.random() - 0.5) * 1.5;
+                    context.shadowColor = 'yellow';
+                    context.shadowBlur = 15;
+                    context.fillStyle = '#87CEFA'; // Light blue
+                    context.fillText(body.customName, xShift, baseY + yShift);
+                    context.shadowBlur = 0;
+                } else if (body.isFrozenName) {
+                    const baseY = -radius - 5;
+                    context.fillStyle = '#b0e0e6'; // Powder blue
+                    context.shadowColor = 'white';
+                    context.shadowBlur = 4;
+                    context.shadowOffsetX = 1;
+                    context.shadowOffsetY = 1;
+                    context.fillText(body.customName, 0, baseY);
+                    context.shadowBlur = 0;
+                    context.shadowOffsetX = 0;
+                    context.shadowOffsetY = 0;
+                } else if (body.isCosmicName) {
+                    const baseY = -radius - 5;
+                    const t = Date.now() * 0.0005;
+                    const gradient = context.createLinearGradient(-radius, 0, radius, 0);
+                    gradient.addColorStop(0, `hsl(${(t * 20 + 240) % 360}, 100%, 70%)`);
+                    gradient.addColorStop(1, `hsl(${(t * 20 + 300) % 360}, 100%, 70%)`);
+                    context.fillStyle = gradient;
+                    context.fillText(body.customName, 0, baseY);
+                    // Draw stars
+                    for (let i = 0; i < 3; i++) {
+                        const starX = (Math.random() - 0.5) * radius * 2;
+                        const starY = baseY + (Math.random() - 0.5) * 10 - 5;
+                        const starAlpha = Math.random() * 0.5 + 0.5;
+                        context.fillStyle = `rgba(255, 255, 255, ${starAlpha})`;
+                        context.fillText('·', starX, starY);
+                    }
+                } else if (body.isBubbleName) {
+                    const baseY = -radius - 5;
+                    context.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                    context.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    context.lineWidth = 0.5;
+                    context.strokeText(body.customName, 0, baseY);
+                    context.fillText(body.customName, 0, baseY);
+                } else if (body.isGoldenName) {
+                    const baseY = -radius - 5;
+                    const t = Date.now() * 0.002;
+                    const gradient = context.createLinearGradient(-radius, 0, radius, 0);
+                    const sheenPos = (Math.sin(t) + 1) / 2;
+                    gradient.addColorStop(0, '#FFD700');
+                    gradient.addColorStop(Math.max(0, sheenPos - 0.1), '#FFFFE0');
+                    gradient.addColorStop(sheenPos, '#FFFFFF');
+                    gradient.addColorStop(Math.min(1, sheenPos + 0.1), '#FFFFE0');
+                    gradient.addColorStop(1, '#FFD700');
+                    context.fillStyle = gradient;
+                    context.shadowColor = 'yellow';
+                    context.shadowBlur = 8;
+                    context.fillText(body.customName, 0, baseY);
+                    context.shadowBlur = 0;
+                } else if (body.isCursedName) {
+                    const baseY = -radius - 5;
+                    const t = Date.now();
+                    let cursedText = '';
+                    for (let i = 0; i < body.customName.length; i++) {
+                        if (Math.random() < 0.1) {
+                            cursedText += String.fromCharCode(Math.random() * (90 - 65) + 65);
+                        } else {
+                            cursedText += body.customName[i];
+                        }
+                    }
+                    context.fillStyle = 'black';
+                    context.strokeStyle = 'red';
+                    context.lineWidth = 0.5;
+                    const xShift = (Math.random() - 0.5) * 2;
+                    context.strokeText(cursedText, xShift, baseY);
+                    context.fillText(cursedText, xShift, baseY);
                 } else {
                     context.fillStyle = 'white';
                     context.fillText(body.customName, 0, -radius - 5);
@@ -2225,7 +2383,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`Collision detected: force=${force.toFixed(3)}, current damage=${body.damage || 0}`);
                     
                     // Add damage based on collision force - adjusted to make shapes more resilient
-                    // Apply 25% increased damage (multiply by 1.25)
+                    // Apply 25% increased damage from collisions (multiply by 1.25)
                     // Divide by 3 to make them 3x stronger against damage (need 3x more force to die)
                     const damageAmount = force * 0.05 / 3 * 1.25; // 25% more damage from collisions
                     body.damage = (body.damage || 0) + damageAmount;
