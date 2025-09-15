@@ -125,64 +125,77 @@ const COLOR_TEMPLATES = {
     "Cosmic Latte": ["#fffcf2", "#ccc5b9", "#a5a58d", "#6b705c", "#403d39"],
     "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"],
     "Festive": ["#CC0000", "#006400", "#FFFFFF", "#FFD700", "#C0C0C0"],
-    
-    // New templates for various categories
-    
-    // Colors & Effects
-    "Holographic": ["#83eaf1", "#63a4ff", "#b721ff", "#ffafbd", "#c9ffbf"],
-    "Vaporwave": ["#ff71ce", "#01cdfe", "#05ffa1", "#b967ff", "#fffb96"],
-    "Northern Lights": ["#00a8ff", "#0097e6", "#8c7ae6", "#9c88ff", "#12CBC4"],
-    "Blacklight Glow": ["#fc00ff", "#43ff00", "#00fff3", "#8000ff", "#ffff00"],
-    
-    // Minerals & Metals
-    "Copper Patina": ["#8D6E63", "#A1887F", "#43A047", "#26A69A", "#00ACC1"],
-    "Gemstone": ["#E91E63", "#880E4F", "#1A237E", "#01579B", "#33691E"],
-    "Bismuth Crystal": ["#ffcab1", "#facbea", "#abf8f7", "#8ef6e4", "#d8b5ff"],
-    
-    // Nature & Landscapes
-    "Tropical Rainforest": ["#38A3A5", "#57CC99", "#80ED99", "#22577A", "#C7F9CC"],
-    "Northern Tundra": ["#CAF0F8", "#90E0EF", "#48CAE4", "#00B4D8", "#0077B6"],
-    "Savanna Sunset": ["#FFC300", "#FF5733", "#C70039", "#900C3F", "#581845"],
-    
-    // Sky & Space
-    "Interstellar": ["#0B0C10", "#1F2833", "#C5C6C7", "#66FCF1", "#45A29E"],
-    "Supernova": ["#9D50BB", "#6E48AA", "#B8D8D8", "#4B4453", "#EF6C57"],
-    "Aurora Borealis": ["#A9DEF9", "#D0F4DE", "#E4C1F9", "#FF99C8", "#FCF6BD"],
-    
-    // Food & Drink
-    "Berry Smoothie": ["#FF0A54", "#FF477E", "#FF5C8A", "#FF7096", "#FF85A1"],
-    "Citrus Grove": ["#FF9F1C", "#FFBF69", "#CBF3F0", "#2EC4B6", "#FDFFFC"],
-    "Dark Chocolate": ["#7B3F00", "#552A00", "#3D1F00", "#2E1700", "#1A0D00"],
-    
-    // Themes & Styles
-    "Brutalist": ["#E6E6E6", "#CCCCCC", "#808080", "#333333", "#000000"],
-    "Bauhaus": ["#ED2B33", "#0433FF", "#FFD013", "#000000", "#F2F2F2"],
-    "Art Deco": ["#EAC696", "#C8AE7D", "#765827", "#65451F", "#3F2305"],
-    
-    // Seasons & Weather
-    "Stormy Sky": ["#2C3E50", "#34495E", "#7F8C8D", "#95A5A6", "#BDC3C7"],
-    "Foggy Morning": ["#D3D3D3", "#C0C0C0", "#A9A9A9", "#808080", "#DCDCDC"],
-    "Heat Wave": ["#D63031", "#E84393", "#FD79A8", "#F53B57", "#FF9FF3"],
-    
-    // Fantasy & Magic
-    "Wizard's Potion": ["#6157FF", "#EE49FD", "#FF8484", "#FFDF40", "#24D05B"],
-    "Dragon's Hoard": ["#E6AF2E", "#BE8C2C", "#957F2A", "#6C7327", "#436325"],
-    "Celestial": ["#001F3F", "#083358", "#0A4B85", "#476D87", "#EBEBD3"],
-    
-    // Fire & Heat
-    "Phoenix": ["#FF6B35", "#F7C59F", "#EFEFD0", "#004E89", "#1A659E"],
-    "Lava Flow": ["#4C0027", "#800039", "#BF0049", "#FF4057", "#FF9E58"],
-    "Ember": ["#FFD166", "#FF6B6B", "#CB2D3E", "#7A0000", "#370000"],
-    
-    // Places & Locations
-    "Tokyo Nights": ["#FC466B", "#3F5EFB", "#FFFFFF", "#6DECFF", "#00FFAD"],
-    "Ancient Ruins": ["#E6D690", "#B8A369", "#8A7B47", "#5C5326", "#2E2A04"],
-    "Underwater Cave": ["#00458B", "#003C76", "#002F60", "#00234A", "#001733"],
-    
-    // Misc
-    "Space Nebula": ["#4B0082", "#800080", "#9932CC", "#BA55D3", "#DA70D6"],
-    "Digital Dream": ["#00F5FF", "#00BFFF", "#1E90FF", "#4169E1", "#0000FF"],
-    "Starlight": ["#F8F9FA", "#E9ECEF", "#DEE2E6", "#CED4DA", "#ADB5BD"]
+
+    // New cool templates with varying numbers of colors
+
+    // Colors & Effects - new templates
+    "Neon Cyberpunk": ["#00FFFF", "#FF00FF", "#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF8000"],
+    "Retrowave": ["#FE4164", "#FFD300", "#24D5FF", "#792BFF", "#FF00D4", "#111111", "#8265FF"],
+    "Glitch Art": ["#00FF00", "#FF00FF", "#0000FF", "#FF0000", "#000000"],
+    "Prismatic": ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF1493", "#FFD700"],
+    "Monochromatic Blue": ["#E6F3FF", "#CCE7FF", "#99CFFF", "#66B3FF", "#0073E6", "#005CB3", "#003D73"],
+
+    // Minerals & Metals - new templates
+    "Precious Metals": ["#FFD700", "#C0C0C0", "#B87333", "#E5E4E2", "#B9F2FF", "#DCDCDC", "#D4AF37"],
+    "Geode": ["#614051", "#5F6CAF", "#9C87C1", "#B19CD9", "#D0BFFF", "#F7F5FF", "#FFFFFF"],
+    "Crystal Cave": ["#4C4C99", "#644D9E", "#8B65A0", "#B280A0", "#D99AA0", "#FBB5A0", "#FFDDA0"],
+
+    // Nature & Landscapes - new templates
+    "Aurora Night": ["#011526", "#012340", "#025959", "#02735E", "#038C65", "#0CF574", "#8DF7B2"],
+    "Redwood Forest": ["#210F04", "#492615", "#7F5539", "#A4784B", "#E9B872", "#F6E7D3"],
+    "Waterfall": ["#2191FB", "#0F71CE", "#073B90", "#05204A", "#010B19", "#E1F2F7", "#FFFFFF"],
+    "Bamboo Grove": ["#F5F5DC", "#D8E4BC", "#AAD576", "#73A942", "#538D22", "#245501", "#103A01"],
+
+    // Sky & Space - new templates
+    "Milky Way": ["#0B0A10", "#232654", "#4B4973", "#7D72A8", "#B69AC9", "#FFFFFF", "#8AAEE0", "#4A7FC0"],
+    "Celestial Bodies": ["#001F54", "#034078", "#1282A2", "#FEFCFB", "#F95738"],
+    "Solar Flare": ["#0A0908", "#F71735", "#FF9F1C", "#FDFFFC", "#2EC4B6", "#E71D36", "#FF9F1C"],
+    "Galactic Core": ["#2D00F7", "#6A00F4", "#8900F2", "#A100F2", "#B100E8", "#BC00DD", "#D100D1", "#DB00B6", "#E500A4"],
+
+    // Food & Drink - new templates
+    "Rainbow Sorbet": ["#FF9AA2", "#FFB7B2", "#FFDAC1", "#E2F0CB", "#B5EAD7", "#C7CEEA", "#F5B0CB", "#A0E4F1"],
+    "Spicy Palette": ["#E61C26", "#F39425", "#FFCF00", "#BF1F2C", "#751013", "#F9A602", "#590202"],
+    "Fruit Basket": ["#FF5733", "#FFC300", "#DAF7A6", "#9CFFB3", "#6200EE", "#FF2E63", "#FF729F", "#FC9776"],
+
+    // Themes & Styles - new templates
+    "Minimalist": ["#F8F9FA", "#CED4DA", "#6C757D", "#343A40"],
+    "Futuristic": ["#05386B", "#379683", "#5CDB95", "#8EE4AF", "#EDF5E1", "#00FFFF", "#FF00FF"],
+    "Neo Tokyo": ["#301934", "#591D77", "#8246AF", "#A45EE5", "#E6C1FF", "#FF10F0", "#FF00D0", "#9C27B0"],
+    "Film Noir": ["#000000", "#1A1A1A", "#333333", "#4D4D4D", "#666666", "#E0E0E0", "#FFFFFF"],
+
+    // Seasons & Weather - new templates
+    "Lightning Storm": ["#0A0A0A", "#232B37", "#2F4562", "#5F788C", "#FFFFFF", "#9BBDF9", "#4B8DF9"],
+    "Autumn Forest": ["#42240C", "#763626", "#C15627", "#E48F45", "#F2C078", "#F9E0BB", "#FBF2DD"],
+    "Four Seasons": ["#2A9D8F", "#E9C46A", "#F4A261", "#E76F51", "#264653", "#8AB17D", "#D96459", "#624CAB"],
+
+    // Fantasy & Magic - new templates
+    "Arcane Magic": ["#240046", "#3C096C", "#5A189A", "#7B2CBF", "#9D4EDD", "#C77DFF", "#E0AAFF"],
+    "Potion Bottles": ["#7400B8", "#6930C3", "#5E60CE", "#5390D9", "#4EA8DE", "#48BFE3", "#56CFE1", "#64DFDF", "#72EFDD", "#80FFDB"],
+    "Dragon Scales": ["#03071E", "#370617", "#6A040F", "#9D0208", "#D00000", "#DC2F02", "#E85D04", "#F48C06", "#FAA307", "#FFBA08"],
+
+    // Fire & Heat - new templates
+    "Flame Spectrum": ["#FFFF00", "#FFDD00", "#FFBB00", "#FF9900", "#FF7700", "#FF5500", "#FF3300", "#FF1100", "#FF0000"],
+    "Molten Core": ["#03071E", "#370617", "#6A040F", "#9D0208", "#D00000", "#E85D04", "#FFBA08"],
+    "Burning Ember": ["#000000", "#240A03", "#521B0B", "#8A3324", "#BD4631", "#E86A3A", "#FFAC63", "#FFD29A"],
+
+    // Places & Locations - new templates
+    "Northern Fjords": ["#CAF0F8", "#ADE8F4", "#90E0EF", "#48CAE4", "#00B4D8", "#0096C7", "#0077B6", "#023E8A", "#03045E"],
+    "Kyoto Garden": ["#B56B45", "#EEAA7B", "#F9DCC4", "#739E82", "#518270", "#27474E", "#1A3344"],
+    "Morocco Spice Market": ["#FFB400", "#FFFBE0", "#FFCC00", "#FF9700", "#FF5700", "#F21B3F", "#9C0D38"],
+    "Grand Canyon Sunset": ["#472D2D", "#553939", "#704F4F", "#A77979", "#F15A59", "#FFC26F", "#FFECD6", "#4D4C7D"],
+
+    // Unique conceptual palettes
+    "Binary Code": ["#000000", "#FFFFFF"],
+    "RGB": ["#FF0000", "#00FF00", "#0000FF"],
+    "CMYK": ["#00FFFF", "#FF00FF", "#FFFF00", "#000000"],
+    "Gradient": ["#FFFFFF", "#CCCCCC", "#999999", "#666666", "#333333", "#000000"],
+
+    // Special themes with unusual color counts
+    "Three Primary": ["#FF0000", "#0000FF", "#FFFF00"],
+    "Dual Tone": ["#F72585", "#4361EE"],
+    "Color Wheel": ["#FF0000", "#FF8000", "#FFFF00", "#80FF00", "#00FF00", "#00FF80", "#00FFFF", "#0080FF", "#0000FF", "#8000FF", "#FF00FF", "#FF0080"],
+    "Rainbow Plus": ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF1493", "#FFFFFF", "#000000"],
+    "Grayscale": ["#FFFFFF", "#EEEEEE", "#CCCCCC", "#AAAAAA", "#888888", "#666666", "#444444", "#222222", "#000000"],
 };
 
 // Friends of PhySiC templates
