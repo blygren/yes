@@ -801,6 +801,10 @@ function loadState(state) {
     customName = s.customName || ""; // Restore custom name
 
     engine.world.gravity = { ...s.engine.gravity };
+    
+    // Force the engine to acknowledge the gravity change
+    Matter.Engine.update(engine, 0);
+    
     engine.airFriction = s.engine.airFriction;
     engine.timing.timeScale = s.engine.timing.timeScale;
     boundaries.forEach(wall => wall.restitution = s.world.wallBounciness);
@@ -1459,10 +1463,10 @@ function resetAllSettings() {
 
     engine.world.gravity.y = 1;
     engine.world.gravity.x = 0;
-    engine.airFriction = 0.01;
-    engine.timing.timeScale = 1;
-    boundaries.forEach(wall => wall.restitution = 1);
-
+    
+    // Force the engine to acknowledge the gravity change
+    Matter.Engine.update(engine, 0);
+    
     // Reset UI that isn't covered by updateUIFromState
     document.getElementById('toolbar-toggle').checked = true;
     document.getElementById('bottom-toolbar').classList.remove('hidden');
@@ -1798,13 +1802,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('gravity-y-slider').addEventListener('input', (e) => {
         if (!accelerometerEnabled) {
-            engine.world.gravity.y = parseFloat(e.target.value);
+            const value = parseFloat(e.target.value);
+            engine.world.gravity.y = value;
+            
+            // Force the engine to acknowledge the gravity change
+            Matter.Engine.update(engine, 0);
         }
     });
 
     document.getElementById('gravity-x-slider').addEventListener('input', (e) => {
         if (!accelerometerEnabled) {
-            engine.world.gravity.x = parseFloat(e.target.value);
+            const value = parseFloat(e.target.value);
+            engine.world.gravity.x = value;
+            
+            // Force the engine to acknowledge the gravity change
+            Matter.Engine.update(engine, 0);
         }
     });
 
@@ -1826,6 +1838,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         engine.world.gravity.y = gravityY;
         engine.world.gravity.x = gravityX;
+        
+        // Force the engine to acknowledge the gravity change
+        Matter.Engine.update(engine, 0);
 
         // Update sliders to reflect accelerometer values
         gravityYSlider.value = gravityY;
