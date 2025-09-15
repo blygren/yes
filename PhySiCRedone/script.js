@@ -723,7 +723,11 @@ function saveState() {
                 id: body.id, // Save the body ID for constraint references
                 customName: body.customName,
                 isRainbowName: body.isRainbowName,
-                isGlitchName: body.isGlitchName // removed isGoldName / isShadowName
+                isGlitchName: body.isGlitchName,
+                // Make sure we save the hasAsymmetricEyes property
+                hasAsymmetricEyes: body.hasAsymmetricEyes || false,
+                // Also save circleRadius for circles to maintain consistent face sizing
+                circleRadius: body.circleRadius
             };
         });
         
@@ -824,14 +828,21 @@ function loadState(state) {
             body.lookDuration = obj.lookDuration || 0;
             body.isSad = obj.isSad || false;
             body.sadTimer = obj.sadTimer || 0;
-            body.hasAsymmetricEyes = obj.hasAsymmetricEyes || false; // Restore this property
+            // Fix: Properly restore the asymmetric eyes property with fallback
+            body.hasAsymmetricEyes = obj.hasAsymmetricEyes === true;
+            
+            // If the object is a circle, also preserve its circle radius for consistent face sizing
+            if (obj.circleRadius) {
+                body.circleRadius = obj.circleRadius;
+            }
         }
+        
         Body.setVelocity(body, obj.velocity);
         Body.setAngularVelocity(body, obj.angularVelocity);
         Body.setAngle(body, obj.angle); // Set angle after creation
         body.customName = obj.customName;
         body.isRainbowName = obj.isRainbowName || false;
-        body.isGlitchName = obj.isGlitchName || false; // removed isGoldName / isShadowName
+        body.isGlitchName = obj.isGlitchName || false;
         return body;
     });
     
@@ -1243,7 +1254,7 @@ function showInspectionPanel(body) {
     // Add face-specific information if the body has a face
     if (body.hasFace) {
         // Determine health threshold based on shape
-        const baseHealthThreshold = 7.2;
+        const baseHealthThreshold = 6.48; // 10% less health (from 7.2)
         let maxHealth = baseHealthThreshold;
         
         // Apply 30% less health for cubes/boxes/rectangles
@@ -2055,9 +2066,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     let leftEyeRadius = eyeRadius;
                     let rightEyeRadius = eyeRadius;
                     
-                    if (body.hasAsymmetricEyes) {
+                    if (body.hasAsymmetricEyes === true) {
                         // Make left eye 50% larger
                         leftEyeRadius = eyeRadius * 1.5;
+                        // Log this for debugging
+                        // console.log("Drawing asymmetric eyes");
                     }
                     
                     // Left eye
@@ -2212,13 +2225,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`Collision detected: force=${force.toFixed(3)}, current damage=${body.damage || 0}`);
                     
                     // Add damage based on collision force - adjusted to make shapes more resilient
+                    // Apply 25% increased damage (multiply by 1.25)
                     // Divide by 3 to make them 3x stronger against damage (need 3x more force to die)
-                    const damageAmount = force * 0.05 / 3; // Reduced damage from collisions by 3x
+                    const damageAmount = force * 0.05 / 3 * 1.25; // 25% more damage from collisions
                     body.damage = (body.damage || 0) + damageAmount;
                     
                     // Check if damage threshold for death is reached
-                    // Current threshold is 10, making them 28% weaker means threshold is 7.2
-                    const baseDeathThreshold = 7.2; // Base death threshold
+                    // 10% less health (from 7.2 to 6.48)
+                    const baseDeathThreshold = 6.48; // Base death threshold reduced by 10% (from 7.2)
                     
                     // Apply 30% less health for cubes/boxes/rectangles
                     let deathThreshold = baseDeathThreshold;
