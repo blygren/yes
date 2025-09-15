@@ -126,12 +126,31 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="setting" id="invincible-faces-container" style="display: none;">
+                <label for="invincible-faces-toggle">Invincible Faces</label>
+                <label class="switch">
+                    <input type="checkbox" id="invincible-faces-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
             <div class="setting">
                 <label for="names-toggle">Show Names</label>
                 <label class="switch">
                     <input type="checkbox" id="names-toggle">
                     <span class="slider"></span>
                 </label>
+            </div>
+            <div id="manual-name-container" style="display: none;">
+                <div class="setting">
+                    <label for="manual-name-toggle">Manual Name</label>
+                    <label class="switch">
+                        <input type="checkbox" id="manual-name-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-group" id="custom-name-input-container" style="display: none;">
+                    <input type="text" id="custom-name-input" placeholder="Enter name" style="width: calc(100% - 12px); padding: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 4px;">
+                </div>
             </div>
             <div class="setting-group">
                 <label for="rotation-speed-slider">Rotation Speed</label>
@@ -235,6 +254,56 @@
             </div>
             <hr>
             <div class="setting-group">
+                <h4>Statistics</h4>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <span>Total Objects:</span>
+                        <span id="total-spawned" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Circles:</span>
+                        <span id="circles-spawned" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Polygons:</span>
+                        <span id="polygons-spawned" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Rectangles:</span>
+                        <span id="rectangles-spawned" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Explosions:</span>
+                        <span id="explosions-triggered" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Objects Deleted:</span>
+                        <span id="objects-deleted" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Objects Cleared:</span>
+                        <span id="objects-cleared" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Welds Created:</span>
+                        <span id="welds-created" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Names Given:</span>
+                        <span id="names-given" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Faces Created:</span>
+                        <span id="faces-created" class="stat-value">0</span>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <button id="reset-stats-btn" class="control-btn" style="background-color: #c0392b; margin-top: 10px;">Reset Statistics</button>
+                </div>
+            </div>
+            
+            <hr>
+            <div class="setting-group">
                 <h4>Play Statistics</h4>
                 <div id="play-time-container" class="setting">
                     <span>Total Play Time:</span>
@@ -262,6 +331,10 @@
                 <h3>Color Templates</h3>
                 <button id="close-library-btn">&times;</button>
             </div>
+            <div class="search-container">
+                <input type="text" id="template-search" placeholder="Search templates...">
+                <button id="clear-search-btn">&times;</button>
+            </div>
             <div id="templates-container">
                 <!-- Templates will be dynamically added here -->
             </div>
@@ -275,6 +348,36 @@
         <button id="weld-mode-btn" class="toolbar-btn">Weld</button>
         <button id="delete-mode-btn" class="toolbar-btn">Delete</button>
         <button id="explode-mode-btn" class="toolbar-btn">Explode</button>
+        <button id="inspect-mode-btn" class="toolbar-btn">Inspect</button>
+    </div>
+
+    <div id="inspection-panel" class="hidden">
+        <div class="panel-header">
+            <h3>Object Inspector</h3>
+            <button id="close-inspection-btn">&times;</button>
+        </div>
+        <div class="panel-body">
+            <div id="inspection-content"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+        <button id="explode-mode-btn" class="toolbar-btn">Explode</button>
+        <button id="inspect-mode-btn" class="toolbar-btn">Inspect</button>
+    </div>
+
+    <div id="inspection-panel" class="hidden">
+        <div class="panel-header">
+            <h3>Object Inspector</h3>
+            <button id="close-inspection-btn">&times;</button>
+        </div>
+        <div class="panel-body">
+            <div id="inspection-content"></div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>

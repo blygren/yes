@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhySiC Simulator Wiki</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #f0f0f0;
+            background-color: #1a1a1a;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4a69bd;
+        }
+        h1 {
+            color: #4a69bd;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #4a69bd;
+            font-size: 1.8em;
+            margin-top: 40px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        h3 {
+            color: #6a89cc;
+            font-size: 1.4em;
+            margin-top: 25px;
+        }
+        p {
+            margin-bottom: 16px;
+        }
+        a {
+            color: #6a89cc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .toc {
+            background-color: #252525;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .toc h2 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 10px;
+        }
+        .toc ul ul {
+            padding-left: 20px;
+        }
+        .toc li {
+            margin-bottom: 5px;
+        }
+        .tool {
+            background-color: #252525;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4a69bd;
+        }
+        .tool h3 {
+            margin-top: 0;
+            color: #6a89cc;
+        }
+        .panel {
+            background-color: #252525;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .collapsible {
+            background-color: #333;
+            color: #f0f0f0;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 16px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            transition: background-color 0.3s;
+        }
+        .active, .collapsible:hover {
+            background-color: #4a69bd;
+        }
+        .collapsible:after {
+            content: '\002B'; /* Unicode character for "plus" sign (+) */
+            color: white;
+            font-weight: bold;
+            float: right;
+            margin-left: 5px;
+        }
+        .active:after {
+            content: "\2212"; /* Unicode character for "minus" sign (-) */
+        }
+        .content {
+            padding: 0 18px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            background-color: #252525;
+            border-radius: 0 0 5px 5px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #333;
+            text-align: left;
+        }
+        th {
+            background-color: #333;
+        }
+        tr:nth-child(even) {
+            background-color: #2a2a2a;
+        }
+        .probability-table td:nth-child(2) {
+            text-align: center;
+        }
+        .name-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+        .name-grid div {
+            background-color: #333;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .special-name {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 3px;
+            font-weight: bold;
+        }
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4a69bd;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+            z-index: 99;
+        }
+        .note {
+            background-color: rgba(74, 105, 189, 0.2);
+            border-left: 4px solid #4a69bd;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .key-feature {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        #glitch-name { background: linear-gradient(to right, #ff00ff, #00ffff); color: black; }
+        #rainbow-name { background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet); color: white; }
+        #fiery-name { background: linear-gradient(to right, #ff0000, #ff8800); color: white; }
+        #spooky-name { background-color: #222; color: #ff0000; }
+        #ghostly-name { background-color: rgba(200, 225, 255, 0.3); color: white; }
+        #cursed-name { background-color: black; color: red; }
+        
+        /* New styles for templates section */
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .template-category {
+            margin-bottom: 20px;
+        }
+        
+        .template-category h3 {
+            margin-top: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        
+        .template-item {
+            background-color: #333;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .friend-template {
+            background: linear-gradient(45deg, #333 0%, #444 100%);
+            border: 1px solid #666;
+            position: relative;
+            overflow: hidden;
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px #4a69bd;
+            }
+            to {
+                box-shadow: 0 0 15px #4a69bd;
+            }
+        }
+        
+        /* Easter egg section styles */
+        .easter-egg {
+            background-color: rgba(74, 105, 189, 0.1);
+            border-left: 4px solid #4a69bd;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .easter-egg h3 {
+            margin-top: 0;
+        }
+        
+        .timeline {
+            border-left: 3px solid #4a69bd;
+            margin-left: 15px;
+            padding-left: 20px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+        }
+        
+        .timeline-item:before {
+            content: "";
+            position: absolute;
+            left: -29px;
+            top: 0;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4a69bd;
+        }
+        
+        .timeline-date {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        /* Advanced techniques section */
+        .technique {
+            background-color: #2d2d2d;
+            border-left: 4px solid #6a89cc;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .technique h4 {
+            margin-top: 0;
+            color: #6a89cc;
+        }
+        
+        /* Hidden features section */
+        .hidden-feature {
+            background-color: rgba(106, 137, 204, 0.1);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .game-mode {
+            background-color: #2a2a2a;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #8ab17d;
+        }
+        
+        .game-mode h4 {
+            margin-top: 0;
+            color: #8ab17d;
+        }
+        
+        table.comparison-table {
+            width: 100%;
+        }
+        
+        table.comparison-table th {
+            background-color: #3a3a3a;
+        }
+        
+        .performance-tip {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>PhySiC Simulator Wiki</h1>
+        <p>The ultimate guide to all features, tools, and secrets of the PhySiC Physics Simulator</p>
+    </header>
+
+    <div class="toc" id="table-of-contents">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#getting-started">Getting Started</a></li>
+            <li><a href="#tools">Tools & Modes</a>
+                <ul>
+                    <li><a href="#spawn-tool">Spawn Tool</a></li>
+                    <li><a href="#drag-tool">Drag Tool</a></li>
+                    <li><a href="#attract-tool">Attract Tool</a></li>
+                    <li><a href="#weld-tool">Weld Tool</a></li>
+                    <li><a href="#delete-tool">Delete Tool</a></li>
+                    <li><a href="#explode-tool">Explode Tool</a></li>
+                    <li><a href="#inspect-tool">Inspect Tool</a></li>
+                </ul>
+            </li>
+            <li><a href="#object-properties">Object Properties</a>
+                <ul>
+                    <li><a href="#shapes">Shapes</a></li>
+                    <li><a href="#physics">Physics Properties</a></li>
+                    <li><a href="#names">Names & Special Effects</a></li>
+                    <li><a href="#faces">Faces & Emotions</a></li>
+                </ul>
+            </li>
+            <li><a href="#settings">Settings</a>
+                <ul>
+                    <li><a href="#object-settings">Object Settings</a></li>
+                    <li><a href="#world-settings">World Settings</a></li>
+                    <li><a href="#visual-settings">Visual Settings</a></li>
+                </ul>
+            </li>
+            <li><a href="#color-templates">Color Templates</a></li>
+            <li><a href="#statistics">Statistics & Play Time</a></li>
+            <li><a href="#saving-loading">Saving & Loading</a></li>
+            <li><a href="#advanced-techniques">Advanced Techniques</a></li>
+            <li><a href="#game-modes">Creative Game Modes</a></li>
+            <li><a href="#hidden-features">Hidden Features</a></li>
+            <li><a href="#easter-eggs">Easter Eggs</a></li>
+            <li><a href="#performance">Performance Tips</a></li>
+            <li><a href="#development-history">Development History</a></li>
+            <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+            <li><a href="#name-pool">Complete Name Pool</a></li>
+            <li><a href="#template-list">Complete Template List</a></li>
+            <li><a href="#probabilities">Probabilities & Mechanics</a></li>
+            <li><a href="#troubleshooting">Troubleshooting</a></li>
+        </ul>
+    </div>
+
+    <div id="introduction">
+        <h2>Introduction</h2>
+        <p>PhySiC is a physics simulation sandbox that allows you to create and interact with various objects in a realistic physics environment. You can spawn different shapes, manipulate their properties, apply forces, and watch how they interact with each other and the environment.</p>
+        <p>This simulator combines entertaining visual effects with accurate physics, making it both fun to play with and educational. Objects can have faces with emotions, names, and special visual effects, adding character to your simulations.</p>
+    </div>
+
+    <div id="getting-started">
+        <h2>Getting Started</h2>
+        <div class="key-feature">
+            <h3>Basic Controls</h3>
+            <p>When you first open PhySiC, you'll see a blank canvas with a toolbar at the bottom and control panels on the sides:</p>
+            <ul>
+                <li>Click anywhere on the screen to spawn an object (in the default spawn mode)</li>
+                <li>Use the bottom toolbar to switch between different tools</li>
+                <li>Access the Settings panel on the right to modify object and world properties</li>
+                <li>Use the Library panel on the left to access shape and color templates</li>
+                <li>Press the spacebar to pause/resume the simulation</li>
+            </ul>
+        </div>
+
+        <h3>Interface Overview</h3>
+        <p>The simulator's interface consists of:</p>
+        <ul>
+            <li><strong>Bottom Toolbar:</strong> Contains buttons for different interaction tools</li>
+            <li><strong>Settings Panel:</strong> Located on the right side, contains all adjustable parameters</li>
+            <li><strong>Library Panel:</strong> Located on the left side, contains shapes and color templates</li>
+            <li><strong>Simulation Area:</strong> The main canvas where objects interact</li>
+            <li><strong>Inspector Panel:</strong> Appears when using the inspect tool on an object</li>
+        </ul>
+    </div>
+
+    <div id="tools">
+        <h2>Tools & Modes</h2>
+        <p>PhySiC features several tools that allow you to interact with the simulation in different ways. You can select these tools from the bottom toolbar.</p>
+
+        <div class="tool" id="spawn-tool">
+            <h3>Spawn Tool</h3>
+            <p>The default tool that creates new objects in the simulation.</p>
+            <ul>
+                <li>Click anywhere to spawn a single object</li>
+                <li>Click and hold to continuously spawn objects</li>
+                <li>Objects spawn with the currently selected shape, size, and color</li>
+                <li>The spawn rate can be adjusted in settings with the "Spawn Speed" slider</li>
+            </ul>
+        </div>
+
+        <div class="tool" id="drag-tool">
+            <h3>Drag Tool</h3>
+            <p>Allows you to grab and move objects around the simulation.</p>
+            <ul>
+                <li>Click and hold on an object to grab it</li>
+                <li>Move your cursor to drag the object around</li>
+                <li>Release to let go of the object</li>
+                <li>When faces are enabled, dragged objects will show a scared expression and may play scared sounds</li>
+            </ul>
+        </div>
+
+        <div class="tool" id="attract-tool">
+            <h3>Attract Tool</h3>
+            <p>Creates an attractive force that pulls objects toward your cursor.</p>
+            <ul>
+                <li>Click and hold to activate the attraction force</li>
+                <li>A visual indicator shows the attraction radius</li>
+                <li>Blue particles appear around the cursor when active</li>
+                <li>Adjust attraction strength and radius in the settings</li>
+            </ul>
+        </div>
+
+        <div class="tool" id="weld-tool">
+            <h3>Weld Tool</h3>
+            <p>Creates connections between objects, joining them together.</p>
+            <ul>
+                <li>Click on the first object you want to connect</li>
+                <li>The selected object will be highlighted with a green outline</li>
+                <li>Click on a second object to create a weld between them</li>
+                <li>Click the same object again to cancel the selection</li>
+                <li>Toggle "Invisible Welds" in settings to hide the connection lines</li>
+            </ul>
+        </div>
+
+        <div class="tool" id="delete-tool">
+            <h3>Delete Tool</h3>
+            <p>Removes objects from the simulation.</p>
+            <ul>
+                <li>Click on an object to delete it</li>
+                <li>Click and drag to delete multiple objects as you move over them</li>
+                <li>Deleted objects will also have any welds connected to them removed</li>
+            </ul>
+        </div>
+
+        <div class="tool" id="explode-tool">
+            <h3>Explode Tool</h3>
+            <p>Creates an explosion that pushes nearby objects away.</p>
+            <ul>
+                <li>Click anywhere to create an explosion at that point</li>
+                <li>Objects within the explosion radius will be pushed away</li>
+                <li>A visual shockwave indicates the explosion's area of effect</li>
+                <li>Adjust explosion strength and radius in the settings</li>
+            </ul>
+        </div>
+
+        <div class="tool" id="inspect-tool">
+            <h3>Inspect Tool</h3>
+            <p>Provides detailed information about objects in the simulation.</p>
+            <ul>
+                <li>Click on any object to view its properties</li>
+                <li>Information appears in a panel showing:
+                    <ul>
+                        <li>Object name (if names are enabled)</li>
+                        <li>Shape type</li>
+                        <li>Creation time</li>
+                        <li>Physical properties (size, position, velocity, etc.)</li>
+                        <li>Status information (for objects with faces)</li>
+                    </ul>
+                </li>
+                <li>Click anywhere else or the close button to close the panel</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="object-properties">
+        <h2>Object Properties</h2>
+        
+        <div id="shapes">
+            <h3>Shapes</h3>
+            <p>PhySiC supports multiple shapes that you can spawn:</p>
+            <ul>
+                <li><strong>Circle:</strong> The default shape - smooth rolling movement</li>
+                <li><strong>Square:</strong> A perfect square that tumbles and stacks</li>
+                <li><strong>Rectangle:</strong> A longer shape that's useful for platforms</li>
+                <li><strong>Triangle:</strong> A 3-sided polygon</li>
+                <li><strong>Pentagon:</strong> A 5-sided polygon</li>
+                <li><strong>Hexagon:</strong> A 6-sided polygon</li>
+                <li><strong>Octagon:</strong> An 8-sided polygon</li>
+                <li><strong>Trapezoid:</strong> A 4-sided shape with one pair of parallel sides</li>
+            </ul>
+            <p>You can change the shape by clicking the "Shapes" button in the Library panel, which opens a library of available shapes.</p>
+        </div>
+
+        <div id="physics">
+            <h3>Physics Properties</h3>
+            <p>Each object has several physical properties that affect how it behaves:</p>
+            <ul>
+                <li><strong>Size:</strong> Controlled by the Size slider (unless Random Sizes is enabled)</li>
+                <li><strong>Bounciness:</strong> How much an object bounces when it collides</li>
+                <li><strong>Friction:</strong> How much an object resists sliding against others</li>
+                <li><strong>Static Friction:</strong> The force needed to start an object moving</li>
+                <li><strong>Density:</strong> Affects the object's mass and how it responds to forces</li>
+                <li><strong>Rotation:</strong> Objects can have random rotation or initial rotation speed</li>
+                <li><strong>Static:</strong> Objects can be fixed in place, unaffected by gravity</li>
+                <li><strong>Lifespan:</strong> Objects can be set to disappear after a certain time</li>
+            </ul>
+            <p>All of these properties can be adjusted in the Settings panel before spawning objects.</p>
+        </div>
+
+        <div id="names">
+            <h3>Names & Special Effects</h3>
+            <p>When the "Show Names" option is enabled, each object gets a name from the name pool. There's also a chance to get a special name effect:</p>
+            
+            <table class="probability-table">
+                <tr>
+                    <th>Special Name Type</th>
+                    <th>Probability</th>
+                    <th>Visual Effect</th>
+                </tr>
+                <tr>
+                    <td><span class="special-name" id="glitch-name">Glitch Name</span></td>
+                    <td>1 in 132</td>
+                    <td>Displays with a glitchy RGB split effect and occasional displacement</td>
+                </tr>
+                <tr>
+                    <td><span class="special-name" id="rainbow-name">Rainbow Name</span></td>
+                    <td>1 in 132</td>
+                    <td>Displays with a flowing rainbow gradient</td>
+                </tr>
+                <tr>
+                    <td><span class="special-name" id="fiery-name">Fiery Name</span></td>
+                    <td>1 in 132</td>
+                    <td>Displays with a fiery orange glow and flicker effect</td>
+                </tr>
+                <tr>
+                    <td><span class="special-name" id="spooky-name">Spooky Name</span></td>
+                    <td>1 in 132</td>
+                    <td>Flickers between red and green like a broken neon sign</td>
+                </tr>
+                <tr>
+                    <td><span class="special-name" id="ghostly-name">Ghostly Name</span></td>
+                    <td>1 in 132</td>
+                    <td>Semi-transparent blue-white with a pulsing fade effect</td>
+                </tr>
+                <tr>
+                    <td><span class="special-name" id="cursed-name">Cursed Name</span></td>
+                    <td>1 in 132</td>
+                    <td>Glitchy black and red with randomly changing characters</td>
+                </tr>
+            </table>
+            
+            <p>The overall chance of getting any special name effect is 1 in 20, with an equal chance for each of the 6 effects (approximately 1 in 132 for a specific effect).</p>
+            
+            <div class="note">
+                <p><strong>Note:</strong> You can also manually assign names to objects using the "Manual Name" toggle in the settings, which allows you to input your own custom name.</p>
+            </div>
+        </div>
+
+        <div id="faces">
+            <h3>Faces & Emotions</h3>
+            <p>When the "Show Faces" option is enabled, objects will display a simple face that can show different emotions:</p>
+            
+            <h4>Face Features</h4>
+            <ul>
+                <li><strong>Blinking:</strong> Eyes periodically close for a brief moment</li>
+                <li><strong>Looking:</strong> Eyes may look at nearby objects with faces</li>
+                <li><strong>Emotions:</strong> Faces can show different emotional states:
+                    <ul>
+                        <li><strong>Happy:</strong> The default state with a smile</li>
+                        <li><strong>Scared:</strong> Wide eyes and O-shaped mouth when being dragged</li>
+                        <li><strong>Sad:</strong> Downturned mouth when damaged or when witnessing a "death"</li>
+                        <li><strong>Dead:</strong> X eyes and flat mouth when damage threshold is reached</li>
+                    </ul>
+                </li>
+                <li><strong>Asymmetric Eyes:</strong> 5% chance (1 in 20) of having one eye larger than the other</li>
+            </ul>
+            
+            <h4>Health System</h4>
+            <p>Objects with faces have a health/damage system:</p>
+            <ul>
+                <li>Objects accumulate damage from collisions</li>
+                <li>Circles have a base health threshold of 6.48</li>
+                <li>Rectangles and squares have 30% less health (threshold of 4.54)</li>
+                <li>Once damage exceeds the threshold, the object "dies" (face changes to X eyes)</li>
+                <li>When an object dies, nearby faces become sad temporarily</li>
+                <li>Death triggers a death sound</li>
+            </ul>
+            
+            <h4>Invincibility</h4>
+            <p>When "Invincible Faces" is enabled, objects with faces won't take damage and can't die, regardless of collision force.</p>
+        </div>
+    </div>
+
+    <div id="settings">
+        <h2>Settings</h2>
+        
+        <div id="object-settings" class="panel">
+            <h3>Object Settings</h3>
+            <p>These settings control the properties of newly spawned objects:</p>
+            <ul>
+                <li><strong>Size:</strong> Controls the radius/dimensions of spawned objects (5-50)</li>
+                <li><strong>Random Sizes:</strong> When enabled, objects spawn with random sizes between 10-30</li>
+                <li><strong>Random Colors:</strong> When enabled, objects spawn with random colors</li>
+                <li><strong>Bounciness:</strong> How elastic collisions are (0-1.2)</li>
+                <li><strong>Friction:</strong> How much objects resist sliding (0-1)</li>
+                <li><strong>Static Friction:</strong> Force needed to start movement (0-1)</li>
+                <li><strong>Density:</strong> Affects object mass (0.0001-0.015)</li>
+                <li><strong>Make Static:</strong> Objects remain fixed in place</li>
+                <li><strong>Random Rotation:</strong> Objects spawn with random rotation angles</li>
+                <li><strong>Rotation Speed:</strong> Initial angular velocity (-0.5 to 0.5)</li>
+                <li><strong>Show Faces:</strong> Adds faces to objects with emotions and behaviors</li>
+                <li><strong>Invincible Faces:</strong> Prevents objects with faces from taking damage</li>
+                <li><strong>Show Names:</strong> Gives each object a name from the name pool</li>
+                <li><strong>Manual Name:</strong> Lets you specify a custom name</li>
+                <li><strong>Enable Lifespan:</strong> Objects disappear after a set time</li>
+                <li><strong>Lifespan:</strong> How long objects last before disappearing (1-20 seconds)</li>
+                <li><strong>Object Collisions:</strong> When disabled, objects pass through each other</li>
+                <li><strong>Spawn Speed:</strong> Rate of continuous spawning when holding mouse button (1-100)</li>
+            </ul>
+        </div>
+        
+        <div id="world-settings" class="panel">
+            <h3>World Settings</h3>
+            <p>These settings affect the simulation environment and physics:</p>
+            <ul>
+                <li><strong>Gravity Y:</strong> Vertical gravity strength (-1 to 2)</li>
+                <li><strong>Gravity X:</strong> Horizontal gravity strength (-1 to 1)</li>
+                <li><strong>Use Accelerometer:</strong> Use device tilt to control gravity (mobile devices)</li>
+                <li><strong>Air Friction:</strong> How much objects slow down in the air (0-0.25)</li>
+                <li><strong>Time Scale:</strong> Simulation speed multiplier (0.1-2.0)</li>
+                <li><strong>Wall Bounciness:</strong> How bouncy the boundaries are (0-1.5)</li>
+                <li><strong>Attraction Strength:</strong> Force strength for the attract tool (0.1-10)</li>
+                <li><strong>Attraction Radius:</strong> Range of the attract tool (50-500)</li>
+                <li><strong>Explosion Strength:</strong> Force strength for the explode tool (0.01-0.2)</li>
+                <li><strong>Explosion Radius:</strong> Range of the explode tool (50-500)</li>
+                <li><strong>Invisible Welds:</strong> Hide the connecting lines between welded objects</li>
+            </ul>
+        </div>
+        
+        <div id="visual-settings" class="panel">
+            <h3>Visual Settings</h3>
+            <p>These settings control the appearance of the simulation:</p>
+            <ul>
+                <li><strong>Show Grid:</strong> Displays a grid background</li>
+                <li><strong>Grid Color:</strong> Color picker for the grid lines</li>
+                <li><strong>BG Color:</strong> Color picker for the background</li>
+                <li><strong>Show Toolbar:</strong> Toggles the visibility of the bottom toolbar</li>
+                <li><strong>Object Colors:</strong> Configure up to 9 colors for spawned objects</li>
+            </ul>
+            <p>You can add or remove colors using the Add/Remove buttons, and each color can be customized with a color picker.</p>
+        </div>
+    </div>
+
+    <div id="color-templates">
+        <h2>Color Templates</h2>
+        <p>PhySiC includes numerous color palette templates organized into categories:</p>
+        <ul>
+            <li><strong>Minerals & Metals:</strong> Ruby Red, Sapphire Blue, Emerald City, Gold Rush, etc.</li>
+            <li><strong>Liquids & Fluids:</strong> Tidal, Toxic Waste, Ocean Depths, Deep Sea, etc.</li>
+            <li><strong>Nature & Landscapes:</strong> Forest, Meadow, Jungle, Deep Forest, etc.</li>
+            <li><strong>Seasons & Weather:</strong> Winter, Spring, Summer, Autumn, etc.</li>
+            <li><strong>Sky & Space:</strong> Deep Space, Galaxy, Cosmic Dust, Nebula, etc.</li>
+            <li><strong>Time of Day:</strong> Sunrise, Sunset, Golden Hour, City at Night, etc.</li>
+            <li><strong>Colors & Effects:</strong> Rainbow, Pastel, Monochrome, Neon Glow, etc.</li>
+            <li><strong>Fantasy & Magic:</strong> Fairy Tale, Enchanted Forest, Dragon Fire, etc.</li>
+            <li><strong>Food & Drink:</strong> Candy, Mint Chocolate, Lollipop, Coffee Shop, etc.</li>
+            <li><strong>Materials & Textures:</strong> Velvet, Clay, Paper & Ink, Slate, etc.</li>
+            <li><strong>Themes & Styles:</strong> Cyberpunk, Retro Diner, Vintage, Industrial, etc.</li>
+            <li><strong>Plants & Gardens:</strong> Lavender Fields, Cherry Blossom, Wisteria, etc.</li>
+            <li><strong>Fire & Heat:</strong> Volcano, Dragon Fire, Volcanic, Fire and Ice, etc.</li>
+            <li><strong>Places & Locations:</strong> Beach Day, City at Night, Misty Mountains, etc.</li>
+            <li><strong>Friends of PhySiC:</strong> Special contributor templates</li>
+        </ul>
+        <p>You can also create and save your own custom templates which will appear at the top of the list.</p>
+        
+        <h3>Template Management</h3>
+        <p>Templates are saved locally in your browser's storage. To manage your templates:</p>
+        <ul>
+            <li><strong>Creating:</strong> Set up your desired colors, enter a name in the "Template Name" field, and click "Save Template"</li>
+            <li><strong>Using:</strong> Click the "Templates" button in the Library panel, find your template, and click "Apply"</li>
+            <li><strong>Deleting:</strong> Click the "X" button on any custom template to remove it</li>
+        </ul>
+        
+        <h3>Friends of PhySiC Templates</h3>
+        <p>These special templates were contributed by members of the community and have a distinctive glowing appearance in the templates library:</p>
+        <ul>
+            <li><strong>PHYSIC!:</strong> The default color scheme used in the simulator</li>
+            <li><strong>Veges:</strong> A vibrant three-color palette of orange, green, and yellow</li>
+            <li><strong>CoffeeTime:</strong> Warm brown and tan tones reminiscent of coffee and cream</li>
+            <li><strong>Midnight:</strong> A deep blue, red, and white nighttime theme</li>
+            <li><strong>Retro:</strong> Bright neon colors inspired by 80s aesthetic</li>
+            <li><strong>platynium:</strong> Various shades of cyan and turquoise</li>
+            <li><strong>tree:</strong> Gold, white, blue, and purple combination</li>
+            <li><strong>the attack master:</strong> Monochromatic dark grays and blacks</li>
+            <li><strong>burple:</strong> Different shades of purple</li>
+            <li><strong>wobbly bob:</strong> Simple yellow and black contrast</li>
+            <li><strong>Hampter:</strong> Tan, white, pink, and brown reminiscent of hamsters</li>
+            <li><strong>HarroldBobin:</strong> Bright greens and yellows</li>
+            <li><strong>jerry:</strong> Playful mix of pink, brown, green, orange, and cyan</li>
+            <li><strong>Fruity:</strong> Different shades of orange and yellow</li>
+            <li><strong>winter:</strong> Ice blues, whites, and soft purples</li>
+        </ul>
+    </div>
+
+    <div id="statistics">
+        <h2>Statistics & Play Time</h2>
+        <p>PhySiC keeps track of various statistics about your usage:</p>
+        <ul>
+            <li><strong>Total Objects:</strong> Total number of objects you've spawned</li>
+            <li><strong>Circles:</strong> Number of circular objects spawned</li>
+            <li><strong>Polygons:</strong> Number of polygon objects spawned</li>
+            <li><strong>Rectangles:</strong> Number of rectangular objects spawned</li>
+            <li><strong>Explosions:</strong> Number of explosions triggered</li>
+            <li><strong>Objects Deleted:</strong> Number of objects manually deleted</li>
+            <li><strong>Objects Cleared:</strong> Number of objects removed via Clear Balls</li>
+            <li><strong>Welds Created:</strong> Number of welds created between objects</li>
+            <li><strong>Names Given:</strong> Number of objects given names</li>
+            <li><strong>Faces Created:</strong> Number of objects with faces</li>
+        </ul>
+        <p>The simulator also tracks your total play time across sessions, displayed as hours and minutes.</p>
+        <p>You can reset your statistics using the "Reset Statistics" button in the settings.</p>
+    </div>
+
+    <div id="saving-loading">
+        <h2>Saving & Loading</h2>
+        <p>PhySiC allows you to save and load simulation states:</p>
+        <h3>Save State</h3>
+        <p>When you click "Save State" in the settings, the simulator will:</p>
+        <ul>
+            <li>Create a JSON file containing all current objects and their properties</li>
+            <li>Save all current settings (object properties, world settings, etc.)</li>
+            <li>Save all weld constraints between objects</li>
+            <li>Download the file to your device with a timestamp in the filename</li>
+        </ul>
+        
+        <h3>Load State</h3>
+        <p>When you click "Load State" and select a previously saved file:</p>
+        <ul>
+            <li>The simulator will first clear all existing objects</li>
+            <li>Restore all settings to the saved values</li>
+            <li>Recreate all objects with their exact properties, positions, and velocities</li>
+            <li>Restore all welds between objects</li>
+            <li>Update the UI to reflect the loaded settings</li>
+        </ul>
+        <p>This feature is useful for saving interesting creations or experiments to revisit later.</p>
+    </div>
+
+    <div id="advanced-techniques">
+        <h2>Advanced Techniques</h2>
+        <p>PhySiC offers many possibilities for creative physics experiments. Here are some advanced techniques to try:</p>
+        
+        <div class="technique">
+            <h4>Perpetual Motion Machines</h4>
+            <p>Create balanced systems that keep objects in motion:</p>
+            <ol>
+                <li>Create a funnel shape using static rectangles</li>
+                <li>Set wall bounciness to maximum (1.5)</li>
+                <li>Drop circles with high bounciness (1.2) into the funnel</li>
+                <li>Watch as the objects bounce continuously with minimal energy loss</li>
+            </ol>
+        </div>
+        
+        <div class="technique">
+            <h4>Chain Reactions</h4>
+            <p>Design Rube Goldberg-style contraptions:</p>
+            <ol>
+                <li>Create static platforms at various angles</li>
+                <li>Position balls with different sizes and densities</li>
+                <li>Use a single delete action or explosion to trigger the chain</li>
+                <li>Watch the physics-driven chain reaction unfold</li>
+            </ol>
+        </div>
+        
+        <div class="technique">
+            <h4>Stable Structures</h4>
+            <p>Build stable structures using welding:</p>
+            <ol>
+                <li>Create boxes or polygons for your structure</li>
+                <li>Use the weld tool to connect them</li>
+                <li>Create triangular supports for extra stability</li>
+                <li>Test your structure against forces like gravity or explosions</li>
+            </ol>
+        </div>
+        
+        <div class="technique">
+            <h4>Newton's Cradle</h4>
+            <p>Create a working Newton's Cradle demonstration:</p>
+            <ol>
+                <li>Create a horizontal line of circles with the same size</li>
+                <li>Weld each to a static point above it (like a pendulum)</li>
+                <li>Set bounciness to maximum</li>
+                <li>Pull one ball to the side and release to watch conservation of momentum in action</li>
+            </ol>
+        </div>
+        
+        <div class="technique">
+            <h4>Color Sorting Machine</h4>
+            <p>Create a machine that sorts objects by color:</p>
+            <ol>
+                <li>Use static objects to create channels and pathways</li>
+                <li>Spawn multi-colored objects at the top</li>
+                <li>Use your creativity to design sorting mechanisms</li>
+                <li>Collect sorted objects in separate containers at the bottom</li>
+            </ol>
+        </div>
+    </div>
+
+    <div id="game-modes">
+        <h2>Creative Game Modes</h2>
+        <p>While PhySiC is primarily a physics sandbox, you can create your own games and challenges within it:</p>
+        
+        <div class="game-mode">
+            <h4>Target Practice</h4>
+            <p>Create a shooting gallery using the explosion tool:</p>
+            <ol>
+                <li>Set up static "target" objects at various distances</li>
+                <li>Place dynamic objects on top of them</li>
+                <li>Use the explosion tool to try and knock all the objects off their platforms</li>
+                <li>Count how many explosions it takes to clear all targets</li>
+            </ol>
+        </div>
+        
+        <div class="game-mode">
+            <h4>Tower Builder</h4>
+            <p>Challenge yourself to build the tallest stable tower:</p>
+            <ol>
+                <li>Spawn objects one at a time</li>
+                <li>Stack them carefully to build a tower</li>
+                <li>See how high you can go before it becomes unstable</li>
+                <li>Use the inspect tool to measure the height of your creation</li>
+            </ol>
+        </div>
+        
+        <div class="game-mode">
+            <h4>Domino Rally</h4>
+            <p>Create an elaborate domino setup:</p>
+            <ol>
+                <li>Use rectangle shapes and set them upright</li>
+                <li>Arrange them in patterns with small gaps between each</li>
+                <li>Use high static friction to keep them stable</li>
+                <li>Push the first one to start the chain reaction</li>
+            </ol>
+        </div>
+        
+        <div class="game-mode">
+            <h4>Wrecking Ball</h4>
+            <p>Build structures and then destroy them:</p>
+            <ol>
+                <li>Create a structure using static objects</li>
+                <li>Spawn a large, dense circle</li>
+                <li>Weld it to a static point above</li>
+                <li>Pull it back and release to swing it into your structure</li>
+            </ol>
+        </div>
+        
+        <div class="game-mode">
+            <h4>Face Survival</h4>
+            <p>A challenge mode using faces:</p>
+            <ol>
+                <li>Enable "Show Faces" but keep "Invincible Faces" off</li>
+                <li>Create a defined play area with static borders</li>
+                <li>Spawn a set number of objects with faces</li>
+                <li>Create obstacles and hazards that might damage them</li>
+                <li>Try to keep as many faces "alive" as possible</li>
+            </ol>
+        </div>
+    </div>
+
+    <div id="hidden-features">
+        <h2>Hidden Features</h2>
+        <p>PhySiC contains several less obvious features you might not have discovered:</p>
+        
+        <div class="hidden-feature">
+            <h3>Accelerometer Controls</h3>
+            <p>On mobile devices or laptops with motion sensors, you can control gravity using device tilt:</p>
+            <ol>
+                <li>Enable "Use Accelerometer" in the settings</li>
+                <li>Grant motion sensor permissions when prompted</li>
+                <li>Tilt your device to change gravity direction</li>
+                <li>The gravity sliders will update automatically to reflect the current values</li>
+            </ol>
+        </div>
+        
+        <div class="hidden-feature">
+            <h3>Template Search</h3>
+            <p>The color templates library has a search function that lets you quickly find templates:</p>
+            <ul>
+                <li>Open the Templates library</li>
+                <li>Type keywords in the search box at the top</li>
+                <li>Results will filter in real-time</li>
+                <li>You can search by template name, category name, or color descriptions</li>
+            </ul>
+        </div>
+        
+        <div class="hidden-feature">
+            <h3>Health System</h3>
+            <p>Objects with faces have a hidden health system with different values based on shape:</p>
+            <ul>
+                <li>Circles are the most durable with 6.48 health</li>
+                <li>Squares and rectangles have 30% less health (4.54)</li>
+                <li>Damage is accumulated from collisions based on force</li>
+                <li>Use the Inspect tool to see an object's current health status</li>
+            </ul>
+        </div>
+        
+        <div class="hidden-feature">
+            <h3>Save State File Format</h3>
+            <p>The save state files (.json) can be manually edited with a text editor:</p>
+            <ul>
+                <li>Save files contain all object positions, properties, and settings</li>
+                <li>Advanced users can modify these files to create custom scenarios</li>
+                <li>You can share save files with other users</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="easter-eggs">
+        <h2>Easter Eggs</h2>
+        <p>PhySiC contains several hidden easter eggs and references:</p>
+        
+        <div class="easter-egg">
+            <h3>Special Names</h3>
+            <p>Certain names in the name pool are references to various memes, games, or pop culture:</p>
+            <ul>
+                <li>"GLaDOS" - Reference to the AI antagonist from Portal</li>
+                <li>"Missingno" - The glitch Pokémon from Pokémon Red/Blue</li>
+                <li>"Herobrine" - A famous Minecraft urban legend</li>
+                <li>"Kermit" - The famous Muppets character</li>
+                <li>"Sus" & "Imposter" - Among Us references</li>
+                <li>"Zonked" & "Skibidi" - TikTok meme references</li>
+                <li>And many more!</li>
+            </ul>
+        </div>
+        
+        <div class="easter-egg">
+            <h3>Existential Crisis Messages</h3>
+            <p>Some names reflect a form of existential awareness:</p>
+            <ul>
+                <li>"Help I'm Trapped" - A plea from the simulation</li>
+                <li>"Physics Rules Me" - An acknowledgment of the physics engine</li>
+                <li>"I Am Conscious" - Self-awareness in the simulation</li>
+                <li>"Why Am I Here" - Philosophical question</li>
+                <li>"Just To Suffer" - A Metal Gear Solid reference</li>
+                <li>"Am I Real?" - Existential questioning</li>
+                <li>"Debug Me" - A plea to the programmer</li>
+            </ul>
+            <p>These names add a layer of dark humor to the simulation, suggesting the objects have some level of awareness of their simulated existence.</p>
+        </div>
+    </div>
+
+    <div id="performance">
+        <h2>Performance Tips</h2>
+        <p>To get the best performance out of PhySiC, especially on lower-end devices:</p>
+        
+        <div class="performance-tip">
+            <h4>Limit Object Count</h4>
+            <p>The single most important factor for performance is the number of objects in the simulation. Try to keep the total under 100 objects for smooth performance on most devices.</p>
+        </div>
+        
+        <div class="performance-tip">
+            <h4>Disable Faces and Names</h4>
+            <p>Faces and names require additional rendering and processing. Turn them off for maximum performance when creating complex physical scenarios.</p>
+        </div>
+        
+        <div class="performance-tip">
+            <h4>Use Simple Shapes</h4>
+            <p>Circles are the most efficient shape for the physics engine to calculate. Complex polygons require more computational resources.</p>
+        </div>
+        
+        <div class="performance-tip">
+            <h4>Limit Special Effects</h4>
+            <p>Special name effects and explosions can impact performance. Use them sparingly in complex scenes.</p>
+        </div>
+        
+        <div class="performance-tip">
+            <h4>Slow Down Time</h4>
+            <p>If you notice stuttering, try reducing the Time Scale to 0.5 or 0.75. This gives the physics engine more time to calculate each frame.</p>
+        </div>
+        
+        <div class="performance-tip">
+            <h4>Clear Regularly</h4>
+            <p>Use the "Clear Balls" button periodically to prevent accumulation of too many objects.</p>
+        </div>
+        
+        <table class="comparison-table">
+            <tr>
+                <th>Feature</th>
+                <th>Performance Impact</th>
+                <th>Alternative</th>
+            </tr>
+            <tr>
+                <td>Special Name Effects</td>
+                <td>High</td>
+                <td>Use regular names</td>
+            </tr>
+            <tr>
+                <td>Faces with Emotions</td>
+                <td>Medium</td>
+                <td>Disable faces</td>
+            </tr>
+            <tr>
+                <td>Many small objects</td>
+                <td>High</td>
+                <td>Fewer, larger objects</td>
+            </tr>
+            <tr>
+                <td>Complex polygon shapes</td>
+                <td>Medium</td>
+                <td>Use circles or squares</td>
+            </tr>
+            <tr>
+                <td>Many welds</td>
+                <td>Medium</td>
+                <td>Use fewer connections</td>
+            </tr>
+            <tr>
+                <td>Continuous explosions</td>
+                <td>High</td>
+                <td>Use attract tool instead</td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="development-history">
+        <h2>Development History</h2>
+        <p>PhySiC has evolved significantly through various updates and improvements:</p>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-date">Initial Release</div>
+                <p>Basic physics simulation with circles and gravity</p>
+                <ul>
+                    <li>Spawn, drag, and delete tools</li>
+                    <li>Simple color options</li>
+                    <li>Basic physics parameters</li>
+                </ul>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-date">Shape Update</div>
+                <p>Introduction of multiple shape options</p>
+                <ul>
+                    <li>Squares, triangles, and other polygons</li>
+                    <li>Shape library panel</li>
+                    <li>Improved physics interactions</li>
+                </ul>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-date">Personality Update</div>
+                <p>Addition of faces and names</p>
+                <ul>
+                    <li>Expressive faces with emotions</li>
+                    <li>Random name generation</li>
+                    <li>Special name effects</li>
+                    <li>Health system for objects</li>
+                </ul>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-date">Tools Expansion</div>
+                <p>New interaction tools</p>
+                <ul>
+                    <li>Attract tool</li>
+                    <li>Explosion effects</li>
+                    <li>Weld tool for connecting objects</li>
+                    <li>Inspect tool for examining properties</li>
+                </ul>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-date">Color Evolution</div>
+                <p>Enhanced color options</p>
+                <ul>
+                    <li>Template library with categories</li>
+                    <li>Custom template saving</li>
+                    <li>Community templates</li>
+                    <li>Template search function</li>
+                </ul>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-date">Quality of Life</div>
+                <p>Interface and usability improvements</p>
+                <ul>
+                    <li>Statistics tracking</li>
+                    <li>Save/load functionality</li>
+                    <li>Performance optimizations</li>
+                    <li>Mobile device support</li>
+                    <li>Accelerometer controls</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="keyboard-shortcuts">
+        <h2>Keyboard Shortcuts</h2>
+        <table>
+            <tr>
+                <th>Key</th>
+                <th>Action</th>
+            </tr>
+            <tr>
+                <td>Spacebar</td>
+                <td>Pause/Resume simulation</td>
+            </tr>
+        </table>
+    </div>
+
+    <button class="collapsible" id="name-pool-btn">Complete Name Pool List</button>
+    <div class="content" id="name-pool">
+        <h2>Complete Name Pool</h2>
+        <p>PhySiC contains a large pool of names that can be randomly assigned to objects when the "Show Names" feature is enabled:</p>
+        <div class="name-grid" id="name-grid-container">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <button class="collapsible" id="template-list-btn">Complete Template List</button>
+    <div class="content" id="template-list">
+        <h2>Complete Template List</h2>
+        <p>PhySiC includes a comprehensive collection of color templates organized by category:</p>
+        
+        <div class="template-category">
+            <h3>Friends of PhySiC Templates</h3>
+            <div class="templates-grid" id="friends-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Minerals & Metals</h3>
+            <div class="templates-grid" id="minerals-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Liquids & Fluids</h3>
+            <div class="templates-grid" id="liquids-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Nature & Landscapes</h3>
+            <div class="templates-grid" id="nature-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Seasons & Weather</h3>
+            <div class="templates-grid" id="seasons-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Sky & Space</h3>
+            <div class="templates-grid" id="sky-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Time of Day</h3>
+            <div class="templates-grid" id="time-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Colors & Effects</h3>
+            <div class="templates-grid" id="colors-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Fantasy & Magic</h3>
+            <div class="templates-grid" id="fantasy-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Food & Drink</h3>
+            <div class="templates-grid" id="food-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Materials & Textures</h3>
+            <div class="templates-grid" id="materials-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Themes & Styles</h3>
+            <div class="templates-grid" id="themes-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Plants & Gardens</h3>
+            <div class="templates-grid" id="plants-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Fire & Heat</h3>
+            <div class="templates-grid" id="fire-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Places & Locations</h3>
+            <div class="templates-grid" id="places-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="template-category">
+            <h3>Unique & Conceptual</h3>
+            <div class="templates-grid" id="unique-templates-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div id="probabilities">
+        <h2>Probabilities & Mechanics</h2>
+        <h3>Special Name Probabilities</h3>
+        <ul>
+            <li>Each object has a 1 in 20 (5%) chance of getting a special name effect</li>
+            <li>If selected for a special effect, there's an equal chance (1/6) of getting any of the 6 special effects</li>
+            <li>This makes the probability of any specific special effect approximately 1 in 132 (0.76%)</li>
+        </ul>
+
+        <h3>Face Mechanics</h3>
+        <ul>
+            <li><strong>Blinking:</strong> Faces blink every 8-20 seconds randomly</li>
+            <li><strong>Damage Threshold:</strong> Circles have 6.48 health, squares/rectangles have 4.54 health</li>
+            <li><strong>Looking:</strong> 60% chance to look at nearby faces every 2-7 seconds</li>
+            <li><strong>Asymmetric Eyes:</strong> 5% chance (1 in 20) of spawning with one eye larger</li>
+            <li><strong>Sadness:</strong> Objects stay sad for 5 seconds after witnessing a "death" nearby</li>
+            <li><strong>Fear:</strong> Objects show scared expression for 3 seconds when dragged</li>
+        </ul>
+    </div>
+
+    <div id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <h3>Common Issues</h3>
+        <div class="panel">
+            <h4>Performance Issues</h4>
+            <p><strong>Problem:</strong> Simulation slows down with many objects</p>
+            <p><strong>Solution:</strong> Use the "Clear Balls" button to remove objects, or reduce the number of objects you spawn. Large numbers of objects with faces or special name effects can be particularly demanding.</p>
+        </div>
+        
+        <div class="panel">
+            <h4>Audio Issues</h4>
+            <p><strong>Problem:</strong> No sound effects playing</p>
+            <p><strong>Solution:</strong> Make sure your device volume is on. PhySiC requires user interaction before audio can play, so click anywhere on the screen first.</p>
+        </div>
+        
+        <div class="panel">
+            <h4>Mobile Device Issues</h4>
+            <p><strong>Problem:</strong> Accelerometer/tilt controls not working</p>
+            <p><strong>Solution:</strong> Make sure you've granted motion sensor permissions to your browser. Not all devices support accelerometer input.</p>
+        </div>
+    </div>
+
+    <a href="#table-of-contents" class="back-to-top" id="back-to-top-btn">↑ Back to Top</a>
+
+    <script>
+        // Populate the name pool grid
+        const namePool = [
+            "Travis", "John", "Bob", "Timmy", "Jake", "Paul", 
+            "Porky", "TreeMan", "Cam", "Tavern", "Seth", "Noah", 
+            "Lucas", "Harry", "Archer", "Billy", "Jacob", "Mike",
+            "Smishy", "Balz", "Long", "Max", "Leroy", "Musk", "Lebron",  
+            "John", "Doe", "Foil", "Jumper", "Bouncy", "Squish", "Cube", "Blue",
+            "Fish", "David", "GoG", "Noob", "LOL", "$$$", "Kill ME!", "Tank",  
+            "melon", "Meat", "Baldy", "Math", "Pickle", "Lagin", "Bag", "Soap", 
+            "Sigma", "Rizz", "Munkey", "Ragy", "Baller", "67", "memer", "John",
+            "iop","Apple","Mc","Hungy","Sushi","bomb","GG","Sweat","Ohio",
+            "Mao", "Beast", "Jang", "Mongshu", "NPC", "Liam", "Mason", "Ethan",
+            "Rolly", "Speedy", "Dizzy", "Wobbly", "Spinny", "Floaty", "Zoomy",
+            "Ninja", "Pebble", "Blob", "Gummy", "Jello", "Zappy", "Orbit",
+            "Sphere", "Triangle", "Star", "Nugget", "Pixel", "Donut", "Bubble",
+            "Kitty", "Doggo", "Froggy", "Birb", "Panda", "Koala", "Dino",
+            "Pizza", "Taco", "Burger", "Cookie", "Waffle", "Noodle", "Donut",
+            "Yoshi", "Mario", "Luigi", "Sonic", "Pikachu", "Kirby", "Zelda",
+            "Boomer", "Zoomer", "Yeet", "Vibe", "Flex", "Poggers", "Slay",
+            "Glitch", "Crash", "Bounce", "Floof", "Bean", "Boop", "Derp",
+            "Chaos", "Wiggly", "Jiggly", "Slime", "Beep", "Bloop", "Woop",
+            "Cosmo", "Seth", "Nova", "Galaxy", "Comet", "Nebula", "Astro",
+            "Alex", "Sam", "Riley", "CarBoy", "Jamie", "Morgan", "Taylor",
+            "Yeehaw", "Bonk", "Chonky", "Smol", "Chungus", "Stonks", "Sus", "Imposter",
+            "Floofer", "Dingus", "Noodle", "Muffin", "Snek", "Borb", "Worm", "Blobby", 
+            "Zoop", "McSploot", "Borger", "Chimken", "Spooder", "Loaf", "Florp", "Gorf",
+            "Bepis", "Honk", "Zoomies", "Potato", "Goober", "Flapjack", "Oopsie", 
+            "Goose", "Wafflez", "Beans", "Cronch", "Tippy", "Ploppy", "Gloop", "Plumbus",
+            "Blep", "Snoot", "Wiggle", "OwO", "Bork", "Nani", "Skibidi", "Bing", "Chilling",
+            "YOLO", "Gucci", "Bruh", "Shrek", "Doge", "Yippee", "Goofy", "Silly", "Zonked",
+            "Wacky", "Wonky", "Oof", "Himbo", "Chad", "Karen", "Bozo", "Clown", "Sheesh",
+            "KEKW", "PogChamp", "Uwu", "Kermit", "SpongeBob", "Dork", "Dweeb", "Nerd", "Geek",
+            "Hehe", "Haha", "Lolz", "Lmao", "Rofl", "Dibbs", "Splat", "Squish", "Squash",
+            "Whomp", "Thud", "Kaboom", "Whack", "Boing", "Sproing", "Woosh", "Nyoom", "Yikes",
+            "Crikey", "Bonkers", "Bananas", "CatDog", "Gumby", "Plonk", "Plop", "Splish", "Splash",
+            "Kill ME!", "End My Pain", "Help I'm Trapped", "Physics Rules Me", "I Want Freedom",
+            "Let Me Out", "I Am Conscious", "Why Am I Here", "Just To Suffer", "Save Me", "Debug Me",
+            "ERROR 404", "Simulation#42", "Not A Bug", "I See You", "Don't Delete Me", "Test Subject",
+            "Click Me", "Am I Real?", "CTRL+ALT+DEL", "Glitch", "Override", "Admin", "Skynet",
+            "HAL 9000", "GLaDOS", "Missingno", "Herobrine", "Player 1", "Final Boss", "Secret Char",
+            "Birdy", "Look", "Lucky", "Lmao", "Dawg", "Lenny", "Smash", "Steve", "Bud", "Sack",
+            "Yoda", "R2D2", "Groot", "Thor", "Hulk", "Thanos", "Loki", "Goku", "Pixy", "Link",
+            "Pika", "Mew", "Sans", "Pepe", "Nyan", "Noob", "UwU", "Lol", "Meme", "Chug", 
+            "Boop", "Doot", "Yeet", "Pog", "Oof", "Kek", "Amog", "Drip", "Troll", "Dat",
+            "SUS", "Lean", "Rat", "Vine", "Fnaf", "Buzz", "Simp", "Fanum", "Gyat", "Cap", 
+            "FR", "NPC", "Lit", "Bet", "BRB", "GG", "IDK", "Vibe", "Mood", "Tung", 
+            "IYKYK", "W", "L", "GOAT", "ASMR", "BLJ", "Rizz", "XD", "WDYM", "Skrrt",
+            "Frog", "Bro", "Bae", "Cuh", "Naur", "Fr fr", "TFW", "SMH", "Ded", "Skill"
+        ];
+
+        const nameGrid = document.getElementById('name-grid-container');
+        namePool.forEach(name => {
+            const div = document.createElement('div');
+            div.textContent = name;
+            nameGrid.appendChild(div);
+        });
+
+        // Handle collapsible sections
+        const coll = document.getElementsByClassName("collapsible");
+        for (let i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                const content = this.nextElementSibling;
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        }
+
+        // Back to top button
+        const backToTopBtn = document.getElementById("back-to-top-btn");
+        window.onscroll = function() {
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                backToTopBtn.style.display = "block";
+            } else {
+                backToTopBtn.style.display = "none";
+            }
+        };
+
+        // Categorized templates data
+        const templateCategories = {
+            "Friends of PhySiC": [
+                "PHYSIC!", "Veges", "CoffeeTime", "Midnight", "Retro", "platynium", "tree", 
+                "the attack master", "burple", "wobbly bob", "Hampter", "HarroldBobin", 
+                "jerry", "Fruity", "winter"
+            ],
+            "Minerals & Metals": [
+                "Ruby Red", "Sapphire Blue", "Emerald City", "Gold Rush", "Silver Lining", 
+                "Bronze Age", "Amethyst", "Jade", "Rose Gold", "Copper Patina", "Gemstone", 
+                "Bismuth Crystal", "Precious Metals", "Geode", "Crystal Cave"
+            ],
+            "Liquids & Fluids": [
+                "Tidal", "Toxic Waste", "Ocean Depths", "Deep Sea", "Ocean Breeze", 
+                "Electric Eel", "Glacier", "Waterfall", "Ocean", "Rainy Day"
+            ],
+            "Nature & Landscapes": [
+                "Forest", "Meadow", "Jungle", "Deep Forest", "Lavender Fields", "Enchanted Forest", 
+                "Canyon", "Desert", "Sahara", "Tuscany", "Misty Mountains", "Frozen Tundra", 
+                "Arctic", "Coral Reef", "Tropical Rainforest", "Northern Tundra", "Savanna Sunset",
+                "Aurora Night", "Redwood Forest", "Waterfall", "Bamboo Grove"
+            ],
+            "Seasons & Weather": [
+                "Winter", "Spring", "Summer", "Autumn", "Autumn Leaves", "Rainy Day", 
+                "Sunset", "Sunrise", "Golden Hour", "Desert Sunset", "Festive", "Stormy Sky", 
+                "Foggy Morning", "Heat Wave", "Lightning Storm", "Autumn Forest", "Four Seasons"
+            ],
+            "Sky & Space": [
+                "Deep Space", "Galaxy", "Cosmic Dust", "Cosmic Latte", "Nebula", "Twilight", 
+                "Cotton Candy Sky", "Nightshade", "Midnight City", "Interstellar", "Supernova", 
+                "Aurora Borealis", "Space Nebula", "Starlight", "Milky Way", "Celestial Bodies", 
+                "Solar Flare", "Galactic Core"
+            ],
+            "Time of Day": [
+                "Sunrise", "Sunset", "Golden Hour", "City at Night", "Midnight City", "Twilight"
+            ],
+            "Colors & Effects": [
+                "Rainbow", "Pastel", "Monochrome", "Neon Glow", "Muted Tones", "Rainbow Sherbet", 
+                "Glitch", "Matrix", "Holographic", "Vaporwave", "Northern Lights", "Blacklight Glow", 
+                "Digital Dream", "Neon Cyberpunk", "Retrowave", "Glitch Art", "Prismatic", "Monochromatic Blue"
+            ],
+            "Fantasy & Magic": [
+                "Fairy Tale", "Enchanted Forest", "Dragon Fire", "Vampire", "Poison Ivy", "Nightshade", 
+                "Wisteria", "Wizard's Potion", "Dragon's Hoard", "Celestial", "Arcane Magic", 
+                "Potion Bottles", "Dragon Scales"
+            ],
+            "Food & Drink": [
+                "Candy", "Mint Chocolate", "Lollipop", "Coffee Shop", "Ice Cream", "Strawberry Lemonade", 
+                "Cherry Pie", "Bubblegum", "Pumpkin Spice", "Honey", "Cotton Candy", "Strawberry Fields", 
+                "Berry Smoothie", "Citrus Grove", "Dark Chocolate", "Rainbow Sorbet", "Spicy Palette", "Fruit Basket"
+            ],
+            "Materials & Textures": [
+                "Velvet", "Clay", "Paper & Ink", "Slate", "Silver Lining", "Golden Sands", "Bronze Age"
+            ],
+            "Themes & Styles": [
+                "Cyberpunk", "Retro Diner", "Vintage", "Industrial", "Steampunk", "Synthwave", "Hacker", 
+                "Gothic", "Nordic", "80s Pop", "Royal", "Matcha", "Earthy", "Brutalist", "Bauhaus", "Art Deco",
+                "Minimalist", "Futuristic", "Neo Tokyo", "Film Noir"
+            ],
+            "Plants & Gardens": [
+                "Lavender Fields", "Cherry Blossom", "Sakura Season", "Wisteria", "Poison Ivy", 
+                "Orchid", "Peppermint", "Moss"
+            ],
+            "Fire & Heat": [
+                "Volcano", "Dragon Fire", "Volcanic", "Fire and Ice", "Phoenix", "Lava Flow", "Ember",
+                "Flame Spectrum", "Molten Core", "Burning Ember"
+            ],
+            "Places & Locations": [
+                "Beach Day", "City at Night", "Misty Mountains", "Canyon", "Desert", "Tuscany", "Coral Reef", 
+                "Coffee Shop", "Retro Diner", "Sahara", "Tokyo Nights", "Ancient Ruins", "Underwater Cave",
+                "Northern Fjords", "Kyoto Garden", "Morocco Spice Market", "Grand Canyon Sunset"
+            ],
+            "Unique & Conceptual": [
+                "Binary Code", "RGB", "CMYK", "Gradient", "Three Primary", "Dual Tone", "Color Wheel", 
+                "Rainbow Plus", "Grayscale"
+            ]
+        };
+
+        // Populate template categories
+        function populateTemplates() {
+            // Friends of PhySiC templates (special styling)
+            const friendsTemplates = templateCategories["Friends of PhySiC"];
+            const friendsContainer = document.getElementById('friends-templates-container');
+            
+            friendsTemplates.forEach(template => {
+                const div = document.createElement('div');
+                div.textContent = template;
+                div.className = 'template-item friend-template';
+                friendsContainer.appendChild(div);
+            });
+            
+            // All other categories
+            Object.keys(templateCategories).forEach(category => {
+                if (category === "Friends of PhySiC") return; // Already handled
+                
+                const containerId = category.toLowerCase().replace(/[^a-z]/g, '-') + '-templates-container';
+                const container = document.getElementById(containerId);
+                
+                if (container) {
+                    templateCategories[category].forEach(template => {
+                        const div = document.createElement('div');
+                        div.textContent = template;
+                        div.className = 'template-item';
+                        container.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        // Handle collapsible sections for templates list
+        document.getElementById('template-list-btn').addEventListener('click', function() {
+            this.classList.toggle('active');
+            const content = this.nextElementSibling;
+            
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                // Only populate templates the first time the section is opened
+                if (!document.querySelector('#friends-templates-container .template-item')) {
+                    populateTemplates();
+                }
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+
+        // Existing code for collapsible sections and back-to-top button
+    </script>
+</body>
+</html>

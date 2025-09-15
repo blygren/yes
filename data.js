@@ -27,7 +27,7 @@ const COLOR_TEMPLATES = {
     "Neon Glow": ["#39ff14", "#ff14bd", "#14f1ff", "#faff00", "#ff5500"],
     "80s Pop": ["#f94144", "#f3722c", "#f8961e", "#f9c74f", "#90be6d"],
     "Royal": ["#4a148c", "#7b1fa2", "#9c27b0", "#ba68c8", "#e1bee7"],
-    "Autumn": ["#a44a3f", "#d36135", "#f4a261", "#e76f51", "#2a9d8f"],
+    "Autumn": ["#a44a3f", "#d36135", "#f4a261", "#e76f51", "#b86c15ff"],
     "Winter": ["#f0f8ff", "#e6e6fa", "#b0c4de", "#778899", "#4682b4"],
     "Spring": ["#ffb3ba", "#ffdfba", "#ffffba", "#baffc9", "#bae1ff"],
     "Summer": ["#ff6b6b", "#ffd166", "#06d6a0", "#118ab2", "#073b4c"],
@@ -123,13 +123,91 @@ const COLOR_TEMPLATES = {
     "Misty Mountains": ["#6c757d", "#adb5bd", "#dee2e6", "#f8f9fa", "#495057"],
     "Rainbow Sherbet": ["#fca311", "#e5e5e5", "#90be6d", "#ff006e", "#fb5607"],
     "Cosmic Latte": ["#fffcf2", "#ccc5b9", "#a5a58d", "#6b705c", "#403d39"],
-    "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"]
+    "Wisteria": ["#c9a0dc", "#ab87c5", "#8d6eaf", "#6f5598", "#513c81"],
+    "Festive": ["#CC0000", "#006400", "#FFFFFF", "#FFD700", "#C0C0C0"],
+
+    // New cool templates with varying numbers of colors
+
+    // Colors & Effects - new templates
+    "Neon Cyberpunk": ["#00FFFF", "#FF00FF", "#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF8000"],
+    "Retrowave": ["#FE4164", "#FFD300", "#24D5FF", "#792BFF", "#FF00D4", "#111111", "#8265FF"],
+    "Glitch Art": ["#00FF00", "#FF00FF", "#0000FF", "#FF0000", "#000000"],
+    "Prismatic": ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF1493", "#FFD700"],
+    "Monochromatic Blue": ["#E6F3FF", "#CCE7FF", "#99CFFF", "#66B3FF", "#0073E6", "#005CB3", "#003D73"],
+
+    // Minerals & Metals - new templates
+    "Precious Metals": ["#FFD700", "#C0C0C0", "#B87333", "#E5E4E2", "#B9F2FF", "#DCDCDC", "#D4AF37"],
+    "Geode": ["#614051", "#5F6CAF", "#9C87C1", "#B19CD9", "#D0BFFF", "#F7F5FF", "#FFFFFF"],
+    "Crystal Cave": ["#4C4C99", "#644D9E", "#8B65A0", "#B280A0", "#D99AA0", "#FBB5A0", "#FFDDA0"],
+
+    // Nature & Landscapes - new templates
+    "Aurora Night": ["#011526", "#012340", "#025959", "#02735E", "#038C65", "#0CF574", "#8DF7B2"],
+    "Redwood Forest": ["#210F04", "#492615", "#7F5539", "#A4784B", "#E9B872", "#F6E7D3"],
+    "Waterfall": ["#2191FB", "#0F71CE", "#073B90", "#05204A", "#010B19", "#E1F2F7", "#FFFFFF"],
+    "Bamboo Grove": ["#F5F5DC", "#D8E4BC", "#AAD576", "#73A942", "#538D22", "#245501", "#103A01"],
+
+    // Sky & Space - new templates
+    "Milky Way": ["#0B0A10", "#232654", "#4B4973", "#7D72A8", "#B69AC9", "#FFFFFF", "#8AAEE0", "#4A7FC0"],
+    "Celestial Bodies": ["#001F54", "#034078", "#1282A2", "#FEFCFB", "#F95738"],
+    "Solar Flare": ["#0A0908", "#F71735", "#FF9F1C", "#FDFFFC", "#2EC4B6", "#E71D36", "#FF9F1C"],
+    "Galactic Core": ["#2D00F7", "#6A00F4", "#8900F2", "#A100F2", "#B100E8", "#BC00DD", "#D100D1", "#DB00B6", "#E500A4"],
+
+    // Food & Drink - new templates
+    "Rainbow Sorbet": ["#FF9AA2", "#FFB7B2", "#FFDAC1", "#E2F0CB", "#B5EAD7", "#C7CEEA", "#F5B0CB", "#A0E4F1"],
+    "Spicy Palette": ["#E61C26", "#F39425", "#FFCF00", "#BF1F2C", "#751013", "#F9A602", "#590202"],
+    "Fruit Basket": ["#FF5733", "#FFC300", "#DAF7A6", "#9CFFB3", "#6200EE", "#FF2E63", "#FF729F", "#FC9776"],
+
+    // Themes & Styles - new templates
+    "Minimalist": ["#F8F9FA", "#CED4DA", "#6C757D", "#343A40"],
+    "Futuristic": ["#05386B", "#379683", "#5CDB95", "#8EE4AF", "#EDF5E1", "#00FFFF", "#FF00FF"],
+    "Neo Tokyo": ["#301934", "#591D77", "#8246AF", "#A45EE5", "#E6C1FF", "#FF10F0", "#FF00D0", "#9C27B0"],
+    "Film Noir": ["#000000", "#1A1A1A", "#333333", "#4D4D4D", "#666666", "#E0E0E0", "#FFFFFF"],
+
+    // Seasons & Weather - new templates
+    "Lightning Storm": ["#0A0A0A", "#232B37", "#2F4562", "#5F788C", "#FFFFFF", "#9BBDF9", "#4B8DF9"],
+    "Autumn Forest": ["#42240C", "#763626", "#C15627", "#E48F45", "#F2C078", "#F9E0BB", "#FBF2DD"],
+    "Four Seasons": ["#2A9D8F", "#E9C46A", "#F4A261", "#E76F51", "#264653", "#8AB17D", "#D96459", "#624CAB"],
+
+    // Fantasy & Magic - new templates
+    "Arcane Magic": ["#240046", "#3C096C", "#5A189A", "#7B2CBF", "#9D4EDD", "#C77DFF", "#E0AAFF"],
+    "Potion Bottles": ["#7400B8", "#6930C3", "#5E60CE", "#5390D9", "#4EA8DE", "#48BFE3", "#56CFE1", "#64DFDF", "#72EFDD", "#80FFDB"],
+    "Dragon Scales": ["#03071E", "#370617", "#6A040F", "#9D0208", "#D00000", "#DC2F02", "#E85D04", "#F48C06", "#FAA307", "#FFBA08"],
+
+    // Fire & Heat - new templates
+    "Flame Spectrum": ["#FFFF00", "#FFDD00", "#FFBB00", "#FF9900", "#FF7700", "#FF5500", "#FF3300", "#FF1100", "#FF0000"],
+    "Molten Core": ["#03071E", "#370617", "#6A040F", "#9D0208", "#D00000", "#E85D04", "#FFBA08"],
+    "Burning Ember": ["#000000", "#240A03", "#521B0B", "#8A3324", "#BD4631", "#E86A3A", "#FFAC63", "#FFD29A"],
+
+    // Places & Locations - new templates
+    "Northern Fjords": ["#CAF0F8", "#ADE8F4", "#90E0EF", "#48CAE4", "#00B4D8", "#0096C7", "#0077B6", "#023E8A", "#03045E"],
+    "Kyoto Garden": ["#B56B45", "#EEAA7B", "#F9DCC4", "#739E82", "#518270", "#27474E", "#1A3344"],
+    "Morocco Spice Market": ["#FFB400", "#FFFBE0", "#FFCC00", "#FF9700", "#FF5700", "#F21B3F", "#9C0D38"],
+    "Grand Canyon Sunset": ["#472D2D", "#553939", "#704F4F", "#A77979", "#F15A59", "#FFC26F", "#FFECD6", "#4D4C7D"],
+
+    // Unique conceptual palettes
+    "Binary Code": ["#000000", "#FFFFFF"],
+    "RGB": ["#FF0000", "#00FF00", "#0000FF"],
+    "CMYK": ["#00FFFF", "#FF00FF", "#FFFF00", "#000000"],
+    "Gradient": ["#FFFFFF", "#CCCCCC", "#999999", "#666666", "#333333", "#000000"],
+
+    // Special themes with unusual color counts
+    "Three Primary": ["#FF0000", "#0000FF", "#FFFF00"],
+    "Dual Tone": ["#F72585", "#4361EE"],
+    "Color Wheel": ["#FF0000", "#FF8000", "#FFFF00", "#80FF00", "#00FF00", "#00FF80", "#00FFFF", "#0080FF", "#0000FF", "#8000FF", "#FF00FF", "#FF0080"],
+    "Rainbow Plus": ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF1493", "#FFFFFF", "#000000"],
+    "Grayscale": ["#FFFFFF", "#EEEEEE", "#CCCCCC", "#AAAAAA", "#888888", "#666666", "#444444", "#222222", "#000000"],
 };
 
 // Friends of PhySiC templates
 const FRIENDS_TEMPLATES = {
+    "PHYSIC!": ["#C44569", "#D6A2E8", "#786FA6", "#596275", "#2C3A47"], // Default colors
+    "Veges": ["#FFA500", "#33CC33", "#FFFF00"], // Just 3 colors as requested
+    // New friends templates
+    "CoffeeTime": ["#6F4E37", "#B87333", "#FFEBCD", "#FFF8DC", "#F5DEB3"],
+    "Midnight": ["#2C3E50", "#E74C3C", "#ECF0F1", "#3498DB", "#2980B9"],
+    "Retro": ["#FF8E00", "#00A3FF", "#FF5F5F", "#42FF00", "#FFEA00"],
     "platynium": ["#00FFFF", "#40E0D0", "#48D1CC", "#20B2AA", "#00CED1"],
-    "treeMaine": ["#FFD700", "#FFFFFF", "#4169E1", "#C8A2C8", "#B19CD9"],
+    "tree": ["#FFD700", "#FFFFFF", "#4169E1", "#C8A2C8", "#B19CD9"],
     "the attack master": ["#000000", "#1C1C1C", "#282828", "#363636", "#424242"],
     "burple": ["#8A2BE2", "#9400D3", "#9932CC", "#4B0082", "#6A5ACD"],
     "wobbly bob": ["#FFFF00", "#000000"],
@@ -180,5 +258,17 @@ const NAME_POOL = [
     "Let Me Out", "I Am Conscious", "Why Am I Here", "Just To Suffer", "Save Me", "Debug Me",
     "ERROR 404", "Simulation#42", "Not A Bug", "I See You", "Don't Delete Me", "Test Subject",
     "Click Me", "Am I Real?", "CTRL+ALT+DEL", "Glitch", "Override", "Admin", "Skynet",
-    "HAL 9000", "GLaDOS", "Missingno", "Herobrine", "Player 1", "Final Boss", "Secret Char"
+    "HAL 9000", "GLaDOS", "Missingno", "Herobrine", "Player 1", "Final Boss", "Secret Char",
+    // Additional goofy names
+    "Birdy", "Look", "Lucky", "Lmao", "Dawg", "Lenny", "Smash", "Steve", "Bud", "Sack",
+    // Short funny/pop culture names (under 6 letters)
+    "Yoda", "R2D2", "Groot", "Thor", "Hulk", "Thanos", "Loki", "Goku", "Pixy", "Link",
+    "Pika", "Mew", "Sans", "Pepe", "Nyan", "Noob", "UwU", "Lol", "Meme", "Chug", 
+    "Boop", "Doot", "Yeet", "Pog", "Oof", "Kek", "Amog", "Drip", "Troll", "Dat",
+    // New short brainrot/meme names (no duplicates)
+    "SUS", "Lean", "Rat", "Vine", "Fnaf", "Buzz", "Simp", "Fanum", "Gyat", "Cap", 
+    "FR", "NPC", "Lit", "Bet", "BRB", "GG", "IDK", "Vibe", "Mood", "Tung", 
+    "IYKYK", "W", "L", "GOAT", "ASMR", "BLJ", "Rizz", "XD", "WDYM", "Skrrt",
+    "Frog", "Bro", "Bae", "Cuh", "Naur", "Fr fr", "TFW", "SMH", "Ded", "Skill"
 ];
+
