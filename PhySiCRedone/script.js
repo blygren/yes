@@ -2564,6 +2564,10 @@ document.addEventListener('DOMContentLoaded', () => {
         templatesLibrary.classList.remove('hidden');
     });
 
+    document.getElementById('open-wiki-btn').addEventListener('click', () => {
+        window.open('https://blygren.github.io/yes/Wiki.html', '_blank');
+    });
+
     document.getElementById('close-library-btn').addEventListener('click', () => {
         templatesLibrary.classList.add('hidden');
     });

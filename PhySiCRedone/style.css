@@ -242,6 +242,19 @@ hr {
     background-color: #5c7edc;
 }
 
+#open-wiki-btn {
+    background: linear-gradient(145deg, #ffd700, #f0c400);
+    color: #333;
+    font-weight: bold;
+    border: 1px solid #daa520;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+}
+
+#open-wiki-btn:hover {
+    background: linear-gradient(145deg, #ffe033, #f0c400);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
 #open-shapes-library-btn {
     width: 100%;
     /* margin-top: 10px; */ /* Removed */
