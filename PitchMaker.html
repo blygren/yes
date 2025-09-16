@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Frequency Sound Maker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 8px 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        #playButton {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #playButton:hover {
+            background-color: #45a049;
+        }
+        #stopButton {
+            background-color: #f44336;
+            color: white;
+        }
+        #stopButton:hover {
+            background-color: #d32f2f;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .slider-container {
+            margin: 18px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        .value-display {
+            display: inline-block;
+            width: 60px;
+            text-align: right;
+            font-weight: normal;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 100%;
+        }
+        #statusMessage {
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+        .success {
+            color: #4CAF50;
+            background-color: #e8f5e9;
+        }
+        .warning {
+            color: #ff9800;
+            background-color: #fff3e0;
+        }
+        .error {
+            color: #f44336;
+            background-color: #ffebee;
+        }
+        .info {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .preset-button {
+            background-color: #2196F3;
+            color: white;
+            font-size: 13px;
+            padding: 6px 12px;
+        }
+        .preset-button:hover {
+            background-color: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <h1>High Frequency Sound Generator</h1>
+    <p>Use the controls below to generate high frequency sounds. Be careful with volume levels!</p>
+    
+    <div class="controls">
+        <div class="preset-buttons">
+            <button class="preset-button" data-freq="8000">Dog Whistle (8kHz)</button>
+            <button class="preset-button" data-freq="12000">Teen Deterrent (12kHz)</button>
+            <button class="preset-button" data-freq="17000">High Test (17kHz)</button>
+            <button class="preset-button" data-freq="440">A4 Note (440Hz)</button>
+        </div>
+
+        <div class="slider-container">
+            <label for="frequency">Frequency: <span id="frequencyValue" class="value-display">10000</span> Hz</label>
+            <input type="range" id="frequency" min="20" max="20000" step="10" value="10000">
+        </div>
+        
+        <div class="slider-container">
+            <label for="volume">Volume: <span id="volumeValue" class="value-display">0.3</span></label>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.3">
+        </div>
+        
+        <div class="slider-container">
+            <label for="waveform">Waveform:</label>
+            <select id="waveform">
+                <option value="sine">Sine (purest tone)</option>
+                <option value="square">Square (harsh, buzzy)</option>
+                <option value="sawtooth">Sawtooth (sharp, bright)</option>
+                <option value="triangle">Triangle (softer than square)</option>
+            </select>
+        </div>
+        
+        <button id="playButton">Play Sound</button>
+        <button id="stopButton" disabled>Stop Sound</button>
+        
+        <div id="statusMessage"></div>
+    </div>
+    
+    
+        </ul>
+    </div>
+
+    <script>
+        // Audio context and oscillator variables
+        let audioContext = null;
+        let oscillator = null;
+        let gainNode = null;
+        
+        // DOM elements
+        const playButton = document.getElementById('playButton');
+        const stopButton = document.getElementById('stopButton');
+        const frequencySlider = document.getElementById('frequency');
+        const volumeSlider = document.getElementById('volume');
+        const waveformSelector = document.getElementById('waveform');
+        const frequencyValue = document.getElementById('frequencyValue');
+        const volumeValue = document.getElementById('volumeValue');
+        const statusMessage = document.getElementById('statusMessage');
+        const presetButtons = document.querySelectorAll('.preset-button');
+        
+        // Set status message with appropriate styling
+        function setStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = '';
+            statusMessage.classList.add(type);
+        }
+        
+        // Initialize Audio Context safely
+        function initAudio() {
+            if (audioContext) return;
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create gain node
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = Number(volumeSlider.value);
+                gainNode.connect(audioContext.destination);
+                
+            } catch (error) {
+                console.error("Failed to initialize audio:", error);
+                setStatus("Failed to initialize audio: " + error.message, "error");
+            }
+        }
+        
+        // Update display values
+        frequencySlider.addEventListener('input', () => {
+            frequencyValue.textContent = frequencySlider.value;
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(
+                    Number(frequencySlider.value), 
+                    audioContext.currentTime
+                );
+            }
+        });
+        
+        volumeSlider.addEventListener('input', () => {
+            volumeValue.textContent = volumeSlider.value;
+            if (gainNode) {
+                gainNode.gain.setValueAtTime(
+                    Number(volumeSlider.value), 
+                    audioContext.currentTime
+                );
+            }
+        });
+        
+        // Play sound
+        playButton.addEventListener('click', () => {
+            try {
+                setStatus("Starting audio...", "info");
+                
+                // Initialize audio context
+                initAudio();
+                
+                // Resume audio context if suspended
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                // Create a new oscillator
+                oscillator = audioContext.createOscillator();
+                oscillator.type = waveformSelector.value;
+                
+                // Set frequency
+                const freqValue = Number(frequencySlider.value);
+                oscillator.frequency.setValueAtTime(freqValue, audioContext.currentTime);
+                
+                // Connect and start
+                oscillator.connect(gainNode);
+                oscillator.start();
+                
+                // Update UI
+                playButton.disabled = true;
+                stopButton.disabled = false;
+                
+                // Set appropriate status message
+                if (freqValue > 15000) {
+                    setStatus("Playing " + freqValue + "Hz - Note: frequencies above 15kHz may not be audible to everyone.", "warning");
+                } else if (freqValue > 10000) {
+                    setStatus("Playing " + freqValue + "Hz - Using headphones is recommended for these frequencies.", "warning");
+                } else {
+                    setStatus("Playing " + freqValue + "Hz", "success");
+                }
+                
+            } catch (error) {
+                setStatus("Error starting audio: " + error.message, "error");
+                console.error("Audio error:", error);
+            }
+        });
+        
+        // Stop sound
+        stopButton.addEventListener('click', () => {
+            try {
+                if (oscillator) {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                    oscillator = null;
+                }
+                
+                playButton.disabled = false;
+                stopButton.disabled = true;
+                setStatus("Sound stopped.", "info");
+            } catch (error) {
+                setStatus("Error stopping audio: " + error.message, "error");
+                console.error("Audio error:", error);
+            }
+        });
+        
+        // Update waveform when selected
+        waveformSelector.addEventListener('change', () => {
+            if (oscillator) {
+                oscillator.type = waveformSelector.value;
+                setStatus(`Changed waveform to ${waveformSelector.value}`, "info");
+            }
+        });
+        
+        // Preset frequency buttons
+        presetButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const freqValue = button.getAttribute('data-freq');
+                frequencySlider.value = freqValue;
+                frequencyValue.textContent = freqValue;
+                
+                // Update oscillator if playing
+                if (oscillator) {
+                    oscillator.frequency.setValueAtTime(
+                        Number(freqValue),
+                        audioContext.currentTime
+                    );
+                    setStatus(`Changed to ${button.textContent} (${freqValue}Hz)`, "info");
+                }
+            });
+        });
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            setStatus("Ready to play sound. Click Play to start.", "info");
+            
+            // Prevent accidental high volume
+            volumeSlider.value = "0.3";
+            volumeValue.textContent = "0.3";
+            
+            // Start with a moderate frequency
+            frequencySlider.value = "10000";
+            frequencyValue.textContent = "10000";
+        });
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator.disconnect();
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+        });
+    </script>
+</body>
+</html>
