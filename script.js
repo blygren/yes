@@ -372,6 +372,7 @@ let invisibleWeldsEnabled = false;
 let namesEnabled = false;
 let manualNameEnabled = false; // New variable for manual naming
 let customName = ""; // New variable to store custom name
+let showSpawnIndicator = true; // New variable to control spawn indicator visibility
 
 // Add missing variables
 let currentMode = 'spawn'; // Define the current mode variable
@@ -686,6 +687,8 @@ function saveState() {
         constraints: [] // New array to store weld constraints
     };
 
+    state.settings.showSpawnIndicator = showSpawnIndicator; // Save spawn indicator state
+
     const allBodies = Composite.allBodies(world);
     state.objects = allBodies
         .filter(body => !boundaries.includes(body))
@@ -799,8 +802,13 @@ function loadState(state) {
     namesEnabled = s.namesEnabled || false;
     manualNameEnabled = s.manualNameEnabled || false; // Restore manual naming state
     customName = s.customName || ""; // Restore custom name
+    showSpawnIndicator = s.showSpawnIndicator !== undefined ? s.showSpawnIndicator : true; // Restore spawn indicator state, default to true
 
     engine.world.gravity = { ...s.engine.gravity };
+    
+    // Force the engine to acknowledge the gravity change
+    Matter.Engine.update(engine, 0);
+    
     engine.airFriction = s.engine.airFriction;
     engine.timing.timeScale = s.engine.timing.timeScale;
     boundaries.forEach(wall => wall.restitution = s.world.wallBounciness);
@@ -938,12 +946,12 @@ function updateUIFromState() {
         }
     }
     
-    updateBackground();
     document.getElementById('gravity-y-slider').value = engine.world.gravity.y;
     document.getElementById('gravity-x-slider').value = engine.world.gravity.x;
     document.getElementById('air-friction-slider').value = engine.airFriction;
     document.getElementById('time-scale-slider').value = engine.timing.timeScale;
     document.getElementById('wall-bounciness-slider').value = boundaries[0].restitution;
+    document.getElementById('spawn-indicator-toggle').checked = showSpawnIndicator; // Update the UI toggle
 }
 
 function spawnBall(x, y) {
@@ -1456,13 +1464,14 @@ function resetAllSettings() {
     namesEnabled = false;
     manualNameEnabled = false;
     customName = "";
+    showSpawnIndicator = true; // Reset to default
 
     engine.world.gravity.y = 1;
     engine.world.gravity.x = 0;
-    engine.airFriction = 0.01;
-    engine.timing.timeScale = 1;
-    boundaries.forEach(wall => wall.restitution = 1);
-
+    
+    // Force the engine to acknowledge the gravity change
+    Matter.Engine.update(engine, 0);
+    
     // Reset UI that isn't covered by updateUIFromState
     document.getElementById('toolbar-toggle').checked = true;
     document.getElementById('bottom-toolbar').classList.remove('hidden');
@@ -1798,13 +1807,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('gravity-y-slider').addEventListener('input', (e) => {
         if (!accelerometerEnabled) {
-            engine.world.gravity.y = parseFloat(e.target.value);
+            const value = parseFloat(e.target.value);
+            engine.world.gravity.y = value;
+            
+            // Force the engine to acknowledge the gravity change
+            Matter.Engine.update(engine, 0);
         }
     });
 
     document.getElementById('gravity-x-slider').addEventListener('input', (e) => {
         if (!accelerometerEnabled) {
-            engine.world.gravity.x = parseFloat(e.target.value);
+            const value = parseFloat(e.target.value);
+            engine.world.gravity.x = value;
+            
+            // Force the engine to acknowledge the gravity change
+            Matter.Engine.update(engine, 0);
         }
     });
 
@@ -1826,6 +1843,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         engine.world.gravity.y = gravityY;
         engine.world.gravity.x = gravityX;
+        
+        // Force the engine to acknowledge the gravity change
+        Matter.Engine.update(engine, 0);
 
         // Update sliders to reflect accelerometer values
         gravityYSlider.value = gravityY;
@@ -1835,7 +1855,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('accelerometer-toggle').addEventListener('change', (e) => {
         accelerometerEnabled = e.target.checked;
         gravityYSlider.disabled = accelerometerEnabled;
-        gravityXSlider.disabled = accelerometerEnabled;
+               gravityXSlider.disabled = accelerometerEnabled;
 
         if (accelerometerEnabled) {
             // Check for permission if it's a newer API
@@ -2532,7 +2552,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateBackground();
     });
 
-
+    document.getElementById('spawn-indicator-toggle').addEventListener('change', (e) => {
+        showSpawnIndicator = e.target.checked;
+    });
 
     const settingsPanel = document.getElementById('settings-panel');
     const toggleBtn = document.getElementById('toggle-settings-btn');
@@ -2562,6 +2584,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('open-library-btn').addEventListener('click', () => {
         templatesLibrary.classList.remove('hidden');
+    });
+
+    document.getElementById('open-wiki-btn').addEventListener('click', () => {
+        window.open('https://blygren.github.io/yes/Wiki.html', '_blank');
     });
 
     document.getElementById('close-library-btn').addEventListener('click', () => {
@@ -2680,6 +2706,21 @@ Events.on(render, 'afterRender', (event) => {
             context.setLineDash([5, 5]);
             context.beginPath();
             context.arc(mousePosition.x, mousePosition.y, attractionRadius, 0, Math.PI * 2);
+            context.stroke();
+            context.restore();
+        }
+    }
+
+    // Draw spawn indicator
+    if (currentMode === 'spawn' && mouseConstraint && mouseConstraint.mouse && showSpawnIndicator) {
+        const mousePosition = mouseConstraint.mouse.position;
+        if (mousePosition) {
+            context.save();
+            context.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // Semi-transparent white
+            context.lineWidth = 2;
+            context.setLineDash([4, 4]); // Dashed line
+            context.beginPath();
+            context.arc(mousePosition.x, mousePosition.y, ballRadius, 0, Math.PI * 2);
             context.stroke();
             context.restore();
         }

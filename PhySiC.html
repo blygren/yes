@@ -19,6 +19,9 @@
             <div class="setting-group">
                 <button id="open-library-btn" class="control-btn">🎨 Templates</button>
             </div>
+            <div class="setting-group">
+                <button id="open-wiki-btn" class="control-btn">✨ Wiki</button>
+            </div>
             <hr>
             <div class="setting-group">
                 <h4 style="margin-top: 0; margin-bottom: 10px; text-align: left; border: none; padding: 0; color: #fff;">Save Current Colors</h4>
@@ -137,6 +140,13 @@
                 <label for="names-toggle">Show Names</label>
                 <label class="switch">
                     <input type="checkbox" id="names-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="spawn-indicator-toggle">Show Spawn Indicator</label>
+                <label class="switch">
+                    <input type="checkbox" id="spawn-indicator-toggle" checked>
                     <span class="slider"></span>
                 </label>
             </div>
@@ -361,26 +371,7 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <script src="data.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
-        <button id="explode-mode-btn" class="toolbar-btn">Explode</button>
-        <button id="inspect-mode-btn" class="toolbar-btn">Inspect</button>
-    </div>
-
-    <div id="inspection-panel" class="hidden">
-        <div class="panel-header">
-            <h3>Object Inspector</h3>
-            <button id="close-inspection-btn">&times;</button>
-        </div>
-        <div class="panel-body">
-            <div id="inspection-content"></div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="matter.min.js"></script>
     <script src="data.js"></script>
     <script src="script.js"></script>
 </body>
