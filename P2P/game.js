@@ -276,11 +276,11 @@ function setupChat() {
     const chatSendBtn = document.getElementById('chat-send-btn');
     const chatHint = document.getElementById('chat-hint');
     
-    // Setup T key to toggle chat
+    // Setup T key to toggle chat (both open and close)
     window.addEventListener('keydown', (e) => {
-        if (e.key === 't' && !isChatOpen) {
+        if (e.key === 't') {
             e.preventDefault();
-            openChat();
+            toggleChat();
         } else if (e.key === 'Escape' && isChatOpen) {
             closeChat();
         }
@@ -293,8 +293,20 @@ function setupChat() {
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             sendChatMessage();
+            // Optionally close chat after sending with Enter
+            // closeChat();
         }
+        // Prevent event bubbling to avoid triggering game controls
+        e.stopPropagation();
     });
+    
+    function toggleChat() {
+        if (isChatOpen) {
+            closeChat();
+        } else {
+            openChat();
+        }
+    }
     
     function openChat() {
         isChatOpen = true;
@@ -403,12 +415,11 @@ function setupControls() {
     const keys = {};
     
     window.addEventListener('keydown', (e) => {
-        // Only handle movement keys if chat is not open
-        if (!isChatOpen || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && 
-                           e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && 
-                           e.key !== 'w' && e.key !== 'a' && e.key !== 's' && e.key !== 'd')) {
-            keys[e.key] = true;
+        // Don't process game controls if we're typing in the chat input
+        if (isChatOpen && document.activeElement === document.getElementById('chat-input')) {
+            return;
         }
+        keys[e.key] = true;
     });
     
     window.addEventListener('keyup', (e) => {
@@ -416,11 +427,11 @@ function setupControls() {
     });
     
     function movePlayer() {
-        // Only move if chat is not open
-        if (!isChatOpen) {
-            let moved = false;
-            const player = players[myId];
-            
+        let moved = false;
+        const player = players[myId];
+        
+        // Only move if chat is not open or focus is not on chat input
+        if (!isChatOpen || document.activeElement !== document.getElementById('chat-input')) {
             if (keys['ArrowUp'] || keys['w']) {
                 player.y = Math.max(0, player.y - playerSpeed);
                 moved = true;
