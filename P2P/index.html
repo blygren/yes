@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Cube Movement Game</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <div class="game-container">
+        <div id="connection-panel">
+            <h2>P2P Cube Game</h2>
+            <div id="player-info">
+                <p>Your ID: <span id="my-id">Generating...</span></p>
+                <input type="text" id="peer-id" placeholder="Enter peer ID to connect">
+                <button id="connect-btn">Connect</button>
+            </div>
+            <div id="connected-peers">
+                <h3>Connected Players:</h3>
+                <ul id="peer-list"></ul>
+            </div>
+        </div>
+        <canvas id="game-canvas"></canvas>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>

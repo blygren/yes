@@ -1,0 +1,72 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background-color: #333;
+    color: white;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#connection-panel {
+    background-color: #222;
+    padding: 10px;
+    border-bottom: 2px solid #444;
+}
+
+#player-info {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#my-id {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+input, button {
+    padding: 5px;
+    margin: 0 5px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#connected-peers {
+    margin-top: 10px;
+}
+
+#peer-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#peer-list li {
+    display: inline-block;
+    background: #444;
+    padding: 3px 8px;
+    margin: 2px;
+    border-radius: 3px;
+}
+
+#game-canvas {
+    flex: 1;
+    background-color: #111;
+}
