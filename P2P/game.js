@@ -7,6 +7,7 @@ let myId = '';
 const playerSize = 30;
 const playerSpeed = 5;
 const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#ff8800'];
+const MAX_PLAYERS = 4; // Maximum number of allowed players
 
 // Initialize the game
 function init() {
@@ -53,6 +54,19 @@ function setupPeer() {
     });
     
     peer.on('connection', (conn) => {
+        // Check if we already have maximum players
+        if (Object.keys(connections).length >= MAX_PLAYERS - 1) {
+            console.log('Maximum players reached, rejecting connection');
+            conn.on('open', () => {
+                conn.send({
+                    type: 'error',
+                    message: 'Game is full (max ' + MAX_PLAYERS + ' players)'
+                });
+                conn.close();
+            });
+            return;
+        }
+        
         handleConnection(conn);
     });
     
@@ -66,6 +80,12 @@ function setupPeer() {
 // Connect to another peer
 function connectToPeer() {
     const peerId = document.getElementById('peer-id').value.trim();
+    
+    // Check if we've reached max player limit
+    if (Object.keys(connections).length >= MAX_PLAYERS - 1) {
+        alert('Cannot connect: Maximum players (' + MAX_PLAYERS + ') reached');
+        return;
+    }
     
     if (peerId && peerId !== myId && !connections[peerId]) {
         const conn = peer.connect(peerId);
@@ -119,6 +139,10 @@ function handleConnection(conn) {
             if (data.player.id !== myId && !players[data.player.id]) {
                 players[data.player.id] = data.player;
             }
+        } else if (data.type === 'error') {
+            // Display error messages from peers
+            alert('Connection error: ' + data.message);
+            delete connections[conn.peer];
         }
     });
     
@@ -220,6 +244,12 @@ function gameLoop() {
         ctx.textAlign = 'center';
         ctx.fillText(id, player.x + playerSize / 2, player.y - 5);
     }
+    
+    // Show player count in corner
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Players: ' + Object.keys(players).length + '/' + MAX_PLAYERS, 10, 20);
     
     // Loop
     requestAnimationFrame(gameLoop);

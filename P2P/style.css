@@ -66,6 +66,15 @@ button:hover {
     border-radius: 3px;
 }
 
+.player-count {
+    margin-left: 10px;
+    color: #4CAF50;
+}
+
+.player-count.full {
+    color: #ff3333;
+}
+
 #game-canvas {
     flex: 1;
     background-color: #111;
