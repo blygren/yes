@@ -8,6 +8,7 @@ const playerSize = 30;
 const playerSpeed = 5;
 const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#ff8800'];
 const MAX_PLAYERS = 4; // Maximum number of allowed players
+const SYNC_INTERVAL = 3000; // Sync all player states every 3 seconds
 
 // Initialize the game
 function init() {
@@ -36,6 +37,9 @@ function init() {
     
     // Start game loop
     gameLoop();
+    
+    // Set up periodic full state synchronization
+    setInterval(syncFullState, SYNC_INTERVAL);
 }
 
 // Resize canvas to fit the window
@@ -106,14 +110,22 @@ function handleConnection(conn) {
     peerItem.id = 'peer-' + conn.peer;
     peerList.appendChild(peerItem);
     
+    // Update player count display
+    updatePlayerCountDisplay();
+    
     // Send initial state
     conn.on('open', () => {
         console.log('Connected to: ' + conn.peer);
         
-        // Share my player data
+        // Share my complete player data including all known players
         conn.send({
             type: 'init',
             players: players
+        });
+        
+        // Request their complete player data as well for bi-directional sync
+        conn.send({
+            type: 'request-players'
         });
         
         // Send my player list to the new connection
@@ -125,7 +137,17 @@ function handleConnection(conn) {
         if (data.type === 'init') {
             // Add new players to my game
             for (let id in data.players) {
-                if (id !== myId && !players[id]) {
+                if (id !== myId) {
+                    // Only update if player doesn't exist or it's a position update
+                    if (!players[id] || (data.players[id].x !== undefined && data.players[id].y !== undefined)) {
+                        players[id] = data.players[id];
+                    }
+                }
+            }
+        } else if (data.type === 'full-sync') {
+            // Update all player positions from full sync
+            for (let id in data.players) {
+                if (id !== myId) { // Don't override our own position
                     players[id] = data.players[id];
                 }
             }
@@ -138,11 +160,19 @@ function handleConnection(conn) {
             // Add a new player that someone else connected to
             if (data.player.id !== myId && !players[data.player.id]) {
                 players[data.player.id] = data.player;
+                updatePlayerCountDisplay();
             }
+        } else if (data.type === 'request-players') {
+            // Someone is requesting our complete player list
+            conn.send({
+                type: 'init',
+                players: players
+            });
         } else if (data.type === 'error') {
             // Display error messages from peers
             alert('Connection error: ' + data.message);
             delete connections[conn.peer];
+            updatePlayerCountDisplay();
         }
     });
     
@@ -156,6 +186,16 @@ function handleConnection(conn) {
         const peerItem = document.getElementById('peer-' + conn.peer);
         if (peerItem) {
             peerItem.remove();
+        }
+        
+        updatePlayerCountDisplay();
+        
+        // Notify other peers that this player has disconnected
+        for (let id in connections) {
+            connections[id].send({
+                type: 'player-disconnect',
+                playerId: conn.peer
+            });
         }
     });
 }
@@ -181,6 +221,34 @@ function broadcastPlayerUpdate() {
             type: 'update',
             player: playerData
         });
+    }
+}
+
+// Sync complete game state to ensure consistency across all peers
+function syncFullState() {
+    // Only initiate sync if we have connections
+    if (Object.keys(connections).length > 0) {
+        for (let id in connections) {
+            connections[id].send({
+                type: 'full-sync',
+                players: players
+            });
+        }
+        console.log('Full state sync sent to all peers');
+    }
+}
+
+// Update the player count display in the UI
+function updatePlayerCountDisplay() {
+    const playerCount = Object.keys(players).length;
+    const playerCountElement = document.getElementById('player-count');
+    
+    playerCountElement.textContent = 'Players: ' + playerCount + '/' + MAX_PLAYERS;
+    
+    if (playerCount >= MAX_PLAYERS) {
+        playerCountElement.classList.add('full');
+    } else {
+        playerCountElement.classList.remove('full');
     }
 }
 
@@ -235,14 +303,18 @@ function gameLoop() {
     // Draw all players
     for (let id in players) {
         const player = players[id];
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y, playerSize, playerSize);
         
-        // Draw player ID above the cube
-        ctx.fillStyle = '#fff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(id, player.x + playerSize / 2, player.y - 5);
+        // Make sure player has all required properties before rendering
+        if (player && player.x !== undefined && player.y !== undefined && player.color) {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, playerSize, playerSize);
+            
+            // Draw player ID above the cube
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(id, player.x + playerSize / 2, player.y - 5);
+        }
     }
     
     // Show player count in corner
@@ -256,4 +328,8 @@ function gameLoop() {
 }
 
 // Start the game when the window loads
-window.addEventListener('load', init);
+window.addEventListener('load', () => {
+    init();
+    // Initialize player count display
+    updatePlayerCountDisplay();
+});
