@@ -7,6 +7,12 @@ let myId = '';
 const playerSize = 30;
 const playerSpeed = 5;
 const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#ff8800'];
+const SYNC_INTERVAL = 3000; // Sync all player states every 3 seconds
+
+// Chat variables
+let isChatOpen = false;
+const chatHistory = [];
+const MAX_CHAT_HISTORY = 50;
 
 // Initialize the game
 function init() {
@@ -32,6 +38,12 @@ function init() {
     
     // Set up input handling
     setupControls();
+
+    // Set up chat functionality
+    setupChat();
+    
+    // Set up periodic full state synchronization
+    setInterval(syncFullState, SYNC_INTERVAL);
     
     // Start game loop
     gameLoop();
@@ -90,14 +102,18 @@ function handleConnection(conn) {
     conn.on('open', () => {
         console.log('Connected to: ' + conn.peer);
         
-        // Share my player data
+        // Share my player data and chat history
         conn.send({
             type: 'init',
-            players: players
+            players: players,
+            chatHistory: chatHistory
         });
         
         // Send my player list to the new connection
         broadcastNewPlayer(conn.peer);
+
+        // Add system message for new player joined
+        addChatMessage('System', `${conn.peer} has joined the game`, true);
     });
     
     // Handle received data
@@ -109,6 +125,29 @@ function handleConnection(conn) {
                     players[id] = data.players[id];
                 }
             }
+            
+            // Sync chat history
+            if (data.chatHistory && Array.isArray(data.chatHistory)) {
+                // Merge chat histories
+                data.chatHistory.forEach(msg => {
+                    if (!chatHistory.some(m => 
+                        m.sender === msg.sender && 
+                        m.message === msg.message && 
+                        m.timestamp === msg.timestamp
+                    )) {
+                        chatHistory.push(msg);
+                    }
+                });
+                
+                // Sort by timestamp and limit size
+                chatHistory.sort((a, b) => a.timestamp - b.timestamp);
+                if (chatHistory.length > MAX_CHAT_HISTORY) {
+                    chatHistory.splice(0, chatHistory.length - MAX_CHAT_HISTORY);
+                }
+                
+                // Update chat display
+                updateChatDisplay();
+            }
         } else if (data.type === 'update') {
             // Update player position
             if (data.player.id !== myId) {
@@ -118,6 +157,58 @@ function handleConnection(conn) {
             // Add a new player that someone else connected to
             if (data.player.id !== myId && !players[data.player.id]) {
                 players[data.player.id] = data.player;
+            }
+        } else if (data.type === 'chat') {
+            // Add received chat message
+            if (!chatHistory.some(m => 
+                m.sender === data.sender && 
+                m.message === data.message && 
+                m.timestamp === data.timestamp
+            )) {
+                chatHistory.push({
+                    sender: data.sender,
+                    message: data.message,
+                    timestamp: data.timestamp
+                });
+                
+                // Sort and limit chat history
+                chatHistory.sort((a, b) => a.timestamp - b.timestamp);
+                if (chatHistory.length > MAX_CHAT_HISTORY) {
+                    chatHistory.splice(0, chatHistory.length - MAX_CHAT_HISTORY);
+                }
+                
+                // Update chat display
+                updateChatDisplay();
+            }
+        } else if (data.type === 'full-sync') {
+            // Update all player positions from full sync
+            for (let id in data.players) {
+                if (id !== myId) { // Don't override our own position
+                    players[id] = data.players[id];
+                }
+            }
+            
+            // Sync chat history
+            if (data.chatHistory && Array.isArray(data.chatHistory)) {
+                // Merge chat histories
+                data.chatHistory.forEach(msg => {
+                    if (!chatHistory.some(m => 
+                        m.sender === msg.sender && 
+                        m.message === msg.message && 
+                        m.timestamp === msg.timestamp
+                    )) {
+                        chatHistory.push(msg);
+                    }
+                });
+                
+                // Sort by timestamp and limit size
+                chatHistory.sort((a, b) => a.timestamp - b.timestamp);
+                if (chatHistory.length > MAX_CHAT_HISTORY) {
+                    chatHistory.splice(0, chatHistory.length - MAX_CHAT_HISTORY);
+                }
+                
+                // Update chat display
+                updateChatDisplay();
             }
         }
     });
@@ -133,6 +224,9 @@ function handleConnection(conn) {
         if (peerItem) {
             peerItem.remove();
         }
+        
+        // Add system message for player left
+        addChatMessage('System', `${conn.peer} has left the game`, true);
     });
 }
 
@@ -160,12 +254,161 @@ function broadcastPlayerUpdate() {
     }
 }
 
+// Sync complete game state to ensure consistency across all peers
+function syncFullState() {
+    // Only initiate sync if we have connections
+    if (Object.keys(connections).length > 0) {
+        for (let id in connections) {
+            connections[id].send({
+                type: 'full-sync',
+                players: players,
+                chatHistory: chatHistory
+            });
+        }
+        console.log('Full state sync sent to all peers');
+    }
+}
+
+// Setup chat functionality
+function setupChat() {
+    const chatContainer = document.getElementById('chat-container');
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatHint = document.getElementById('chat-hint');
+    
+    // Setup T key to toggle chat
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 't' && !isChatOpen) {
+            e.preventDefault();
+            openChat();
+        } else if (e.key === 'Escape' && isChatOpen) {
+            closeChat();
+        }
+    });
+    
+    // Send button click
+    chatSendBtn.addEventListener('click', sendChatMessage);
+    
+    // Enter key in chat input
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            sendChatMessage();
+        }
+    });
+    
+    function openChat() {
+        isChatOpen = true;
+        chatContainer.classList.remove('hidden');
+        chatHint.style.display = 'none';
+        chatInput.focus();
+    }
+    
+    function closeChat() {
+        isChatOpen = false;
+        chatContainer.classList.add('hidden');
+        chatHint.style.display = 'block';
+        chatInput.value = '';
+    }
+    
+    // Initial chat display update
+    updateChatDisplay();
+}
+
+// Send a chat message
+function sendChatMessage() {
+    const chatInput = document.getElementById('chat-input');
+    const message = chatInput.value.trim();
+    
+    if (message) {
+        // Add message to local chat history
+        addChatMessage(myId, message);
+        
+        // Clear input
+        chatInput.value = '';
+        chatInput.focus();
+    }
+}
+
+// Add a chat message to history and broadcast to peers
+function addChatMessage(sender, message, isSystem = false) {
+    const timestamp = Date.now();
+    
+    // Create chat message object
+    const chatMessage = {
+        sender: sender,
+        message: message,
+        timestamp: timestamp,
+        isSystem: isSystem
+    };
+    
+    // Add to local history
+    chatHistory.push(chatMessage);
+    
+    // Sort and limit chat history
+    chatHistory.sort((a, b) => a.timestamp - b.timestamp);
+    if (chatHistory.length > MAX_CHAT_HISTORY) {
+        chatHistory.splice(0, chatHistory.length - MAX_CHAT_HISTORY);
+    }
+    
+    // Update chat display
+    updateChatDisplay();
+    
+    // Broadcast to all peers (except system messages)
+    if (!isSystem) {
+        for (let id in connections) {
+            connections[id].send({
+                type: 'chat',
+                sender: sender,
+                message: message,
+                timestamp: timestamp
+            });
+        }
+    }
+}
+
+// Update the chat display with current history
+function updateChatDisplay() {
+    const chatMessages = document.getElementById('chat-messages');
+    
+    // Clear current messages
+    chatMessages.innerHTML = '';
+    
+    // Add all messages
+    chatHistory.forEach(msg => {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'chat-message';
+        
+        if (msg.isSystem) {
+            // System message styling
+            messageElement.innerHTML = `<span class="chat-system">${msg.message}</span>`;
+        } else {
+            // Get player color if available
+            let senderColor = '#ffffff';
+            if (players[msg.sender] && players[msg.sender].color) {
+                senderColor = players[msg.sender].color;
+            }
+            
+            messageElement.innerHTML = `<span class="chat-sender" style="color:${senderColor}">${msg.sender}:</span> ${msg.message}`;
+        }
+        
+        chatMessages.appendChild(messageElement);
+    });
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 // Setup keyboard controls
 function setupControls() {
     const keys = {};
     
     window.addEventListener('keydown', (e) => {
-        keys[e.key] = true;
+        // Only handle movement keys if chat is not open
+        if (!isChatOpen || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && 
+                           e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && 
+                           e.key !== 'w' && e.key !== 'a' && e.key !== 's' && e.key !== 'd')) {
+            keys[e.key] = true;
+        }
     });
     
     window.addEventListener('keyup', (e) => {
@@ -173,28 +416,31 @@ function setupControls() {
     });
     
     function movePlayer() {
-        let moved = false;
-        const player = players[myId];
-        
-        if (keys['ArrowUp'] || keys['w']) {
-            player.y = Math.max(0, player.y - playerSpeed);
-            moved = true;
-        }
-        if (keys['ArrowDown'] || keys['s']) {
-            player.y = Math.min(canvas.height - playerSize, player.y + playerSpeed);
-            moved = true;
-        }
-        if (keys['ArrowLeft'] || keys['a']) {
-            player.x = Math.max(0, player.x - playerSpeed);
-            moved = true;
-        }
-        if (keys['ArrowRight'] || keys['d']) {
-            player.x = Math.min(canvas.width - playerSize, player.x + playerSpeed);
-            moved = true;
-        }
-        
-        if (moved) {
-            broadcastPlayerUpdate();
+        // Only move if chat is not open
+        if (!isChatOpen) {
+            let moved = false;
+            const player = players[myId];
+            
+            if (keys['ArrowUp'] || keys['w']) {
+                player.y = Math.max(0, player.y - playerSpeed);
+                moved = true;
+            }
+            if (keys['ArrowDown'] || keys['s']) {
+                player.y = Math.min(canvas.height - playerSize, player.y + playerSpeed);
+                moved = true;
+            }
+            if (keys['ArrowLeft'] || keys['a']) {
+                player.x = Math.max(0, player.x - playerSpeed);
+                moved = true;
+            }
+            if (keys['ArrowRight'] || keys['d']) {
+                player.x = Math.min(canvas.width - playerSize, player.x + playerSpeed);
+                moved = true;
+            }
+            
+            if (moved) {
+                broadcastPlayerUpdate();
+            }
         }
         
         requestAnimationFrame(movePlayer);
@@ -211,15 +457,25 @@ function gameLoop() {
     // Draw all players
     for (let id in players) {
         const player = players[id];
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y, playerSize, playerSize);
         
-        // Draw player ID above the cube
-        ctx.fillStyle = '#fff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(id, player.x + playerSize / 2, player.y - 5);
+        // Make sure player has all required properties before rendering
+        if (player && player.x !== undefined && player.y !== undefined && player.color) {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, playerSize, playerSize);
+            
+            // Draw player ID above the cube
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(id, player.x + playerSize / 2, player.y - 5);
+        }
     }
+    
+    // Show player count in corner
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Players: ' + Object.keys(players).length, 10, 20);
     
     // Loop
     requestAnimationFrame(gameLoop);
