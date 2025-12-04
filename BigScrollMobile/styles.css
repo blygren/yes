@@ -1,0 +1,102 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    height: 100%;
+    /* Disable native scrolling */
+    overflow: hidden; 
+    background-color: #fff; /* Reset to white default */
+    /* Prevent text selection on mobile */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Prevent touch callout */
+    -webkit-touch-callout: none;
+}
+
+.page-section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    box-sizing: border-box;
+    transition: background 0.5s ease, color 0.5s ease;
+    border-bottom: none; /* Remove border for cleaner look */
+    position: relative;
+    /* Force exact viewport height */
+    height: 100vh;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.page-section h1 {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation-delay: 0.3s;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.page-section p {
+    font-size: 1.5rem;
+    max-width: 600px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.8s forwards;
+    animation-delay: 0.6s;
+    padding: 0 1rem;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- New Themes --- */
+
+.theme-blueprint {
+    background-color: #0044cc;
+    color: #ffffff;
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.theme-sunset {
+    background: linear-gradient(to bottom, #2b32b2, #1488cc);
+    color: #ffcc00;
+}
+
+.theme-terminal {
+    background-color: #1a0505;
+    color: #ff3333;
+    font-family: 'Courier New', monospace;
+    border-left: 20px solid #ff0000;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .page-section h1 {
+        font-size: 2.5rem;
+        padding: 0 1rem;
+    }
+    
+    .page-section p {
+        font-size: 1rem;
+        padding: 0 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-section h1 {
+        font-size: 2rem;
+    }
+    
+    .page-section p {
+        font-size: 0.9rem;
+    }
+}
