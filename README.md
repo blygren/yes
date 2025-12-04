@@ -128,5 +128,5 @@
 
 [BigScroll](https://blygren.github.io/yes/BigScroll/index.html)
 
-[BigScroll](https://blygren.github.io/yes/BigScrollMobile/index.html)
+
 
