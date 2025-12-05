@@ -557,7 +557,8 @@ const zones = [
     { title: "Time Travel Zone", desc: "Welcome to the paradox.", bg: "#4B0082", color: "#00FFFF", emojis: ['⏳', '🕰️', '🌀', '⚡'] },
     { title: "Multiverse Zone", desc: "Welcome to the infinite.", bg: "#191970", color: "#FFD700", emojis: ['🌌', '🌀', '👯', '🌍'] },
     { title: "Omniverse Zone", desc: "Welcome to everything.", bg: "#FFFFFF", color: "#000000", emojis: ['♾️', '🌌', '⚛️', '👁️'] },
-    { title: "Infinity Zone", desc: "Welcome to forever.", bg: "#000000", color: "#FFFFFF", emojis: ['♾️', '🔁', '🌌', '✨'] }
+    { title: "Infinity Zone", desc: "Welcome to forever.", bg: "#000000", color: "#FFFFFF", emojis: ['♾️', '🔁', '🌌', '✨'] },
+    { title: "True Collector Zone", desc: "You found the unfindable.", bg: "#000000", color: "#FFD700", emojis: ['🏆', '👑', '💎', '🌟', '✨'] }
 ];
 
 // --- Rarity System ---
@@ -567,10 +568,12 @@ zones.forEach(z => z.weight = 100);
 // Define Rarity Groups
 const legendaryZones = ["Hacker Zone", "Glitch Zone", "Matrix Zone", "Void Zone", "God Zone", "Force Zone", "Ring Zone", "Hyrule Zone", "Cryptocurrency Zone", "NFT Zone", "Metaverse Zone", "Singularity Zone", "Illuminati Zone", "Area 51 Zone", "Time Travel Zone", "Multiverse Zone", "Omniverse Zone", "Infinity Zone"];
 const rareZones = ["Gold Zone", "Diamond Zone", "Royal Zone", "Cyber Zone", "Ninja Zone", "Dragon Zone", "Wizard Zone", "Block Zone", "Nether Zone", "End Zone", "Plumber Zone", "Pocket Zone", "Brainrot Zone", "Skibidi Zone", "Rizz Zone", "Sigma Zone", "Ohio Zone", "Fanum Tax Zone", "Grimace Zone", "Backrooms Zone", "Nostalgia Zone", "Deja Vu Zone", "Liminal Zone", "Inverted Zone", "ASCII Zone", "Wormhole Zone", "Black Hole Zone"];
+const impossibleZones = ["True Collector Zone"]; // Cannot be obtained without cheats
 
 // Apply Weights
 zones.forEach(z => {
-    if (legendaryZones.includes(z.title)) z.weight = 2;   // 2% chance relative to common
+    if (impossibleZones.includes(z.title)) z.weight = 0; // 0% chance - impossible without cheats
+    else if (legendaryZones.includes(z.title)) z.weight = 2;   // 2% chance relative to common
     else if (rareZones.includes(z.title)) z.weight = 15;  // 15% chance relative to common
 });
 
@@ -938,7 +941,8 @@ function createSection(index, forcedZoneIndex = null) {
             left: ${e.clientX}px; 
             top: ${e.clientY}px; 
             font-size: 50px; 
-            transform: translate(-50%, -50%); 
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 0.8;
             pointer-events: none; 
             animation: floatUp 1s ease-out forwards;
             z-index: 100;
