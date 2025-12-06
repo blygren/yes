@@ -59,6 +59,7 @@ $null = $script:beepRunspace.AddScript({
 $script:beepHandle = $script:beepRunspace.BeginInvoke()
 
 $script:typedPIN = ''
+$script:unlocked = $false
 
 # Timer for Security Only (No Animation/Redraw)
 $timer = New-Object Windows.Forms.Timer
@@ -131,6 +132,12 @@ $form.Add_Paint({
     $fontFooter.Dispose()
 })
 
+$form.Add_FormClosing({
+    if (-not $script:unlocked) {
+        $_.Cancel = $true
+    }
+})
+
 $form.Add_KeyDown({
     # Block Alt+F4
     if ($_.Alt -and $_.KeyCode -eq 'F4') { $_.Handled = $true }
@@ -140,6 +147,7 @@ $form.Add_KeyDown({
     }
     elseif ($_.KeyCode -eq 'Enter') {
         if ($script:typedPIN -eq $PIN) { 
+            $script:unlocked = $true
             $timer.Stop()
             $script:beepRunspace.Stop()
             $script:beepRunspace.Dispose()
