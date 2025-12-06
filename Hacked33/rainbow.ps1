@@ -62,11 +62,30 @@ $form.Add_Shown({
 
 # Start continuous audio loop (Replaces Beep)
 $mp3Path = Join-Path $PSScriptRoot "lock.mp3"
-$script:player = New-Object -ComObject WMPlayer.OCX.7
-$script:player.settings.volume = 100
-$script:player.settings.setMode("loop", $true)
-$script:player.URL = $mp3Path
-$script:player.controls.play()
+$script:useBeep = $true
+
+if (Test-Path $mp3Path) {
+    try {
+        $script:player = New-Object -ComObject WMPlayer.OCX
+        $script:player.URL = $mp3Path
+        $script:player.settings.volume = 100
+        $script:player.settings.setMode("loop", $true)
+        $script:player.controls.play()
+        $script:useBeep = $false
+    } catch {
+        # Fallback to beep if player fails
+    }
+}
+
+if ($script:useBeep) {
+    $script:beepRunspace = [powershell]::Create()
+    $null = $script:beepRunspace.AddScript({
+        while ($true) {
+            [System.Console]::Beep(2000, 500)
+        }
+    })
+    $script:beepHandle = $script:beepRunspace.BeginInvoke()
+}
 
 $script:typedPIN = ''
 $script:unlocked = $false
@@ -159,7 +178,11 @@ $form.Add_KeyDown({
         if ($script:typedPIN -eq $PIN) { 
             $script:unlocked = $true
             $timer.Stop()
-            $script:player.controls.stop()
+            if ($script:player) { $script:player.controls.stop() }
+            if ($script:beepRunspace) { 
+                $script:beepRunspace.Stop()
+                $script:beepRunspace.Dispose()
+            }
             Start-Process explorer
             $form.Close() 
         }
