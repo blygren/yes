@@ -55,41 +55,37 @@ for ($i = 1; $i -lt $bounds.Count; $i++) {
 }
 $form.Bounds = $totalBounds
 
-# Add GIF 1 (Center)
-$gifPath = Join-Path $PSScriptRoot "move.gif"
-if (Test-Path $gifPath) {
-    $pb = New-Object Windows.Forms.PictureBox
-    $pb.Image = [System.Drawing.Image]::FromFile($gifPath)
-    $pb.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::AutoSize
-    $pb.BackColor = [System.Drawing.Color]::Transparent
-    $pb.Left = ($totalBounds.Width - $pb.Image.Width) / 2
-    $pb.Top = ($totalBounds.Height / 2) + 100
-    $form.Controls.Add($pb)
+# Bouncing GIFs Setup
+$script:bouncingGifs = @()
+$rnd = New-Object Random
+
+function Add-BouncingGif ($fileName, $startX, $startY) {
+    $path = Join-Path $PSScriptRoot $fileName
+    if (Test-Path $path) {
+        $pb = New-Object Windows.Forms.PictureBox
+        $pb.Image = [System.Drawing.Image]::FromFile($path)
+        $pb.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::AutoSize
+        $pb.BackColor = [System.Drawing.Color]::Transparent
+        $pb.Left = $startX
+        $pb.Top = $startY
+        $form.Controls.Add($pb)
+        
+        # Random velocity
+        $vx = $rnd.Next(8, 15) * (1, -1 | Get-Random)
+        $vy = $rnd.Next(8, 15) * (1, -1 | Get-Random)
+
+        $script:bouncingGifs += [PSCustomObject]@{
+            Control = $pb
+            VX = $vx
+            VY = $vy
+        }
+    }
 }
 
-# Add GIF 2 (Left)
-$gifPath2 = Join-Path $PSScriptRoot "move2.gif"
-if (Test-Path $gifPath2) {
-    $pb2 = New-Object Windows.Forms.PictureBox
-    $pb2.Image = [System.Drawing.Image]::FromFile($gifPath2)
-    $pb2.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::AutoSize
-    $pb2.BackColor = [System.Drawing.Color]::Transparent
-    $pb2.Left = ($totalBounds.Width / 4) - ($pb2.Image.Width / 2)
-    $pb2.Top = ($totalBounds.Height / 2) + 100
-    $form.Controls.Add($pb2)
-}
-
-# Add GIF 3 (Right)
-$gifPath3 = Join-Path $PSScriptRoot "move3.gif"
-if (Test-Path $gifPath3) {
-    $pb3 = New-Object Windows.Forms.PictureBox
-    $pb3.Image = [System.Drawing.Image]::FromFile($gifPath3)
-    $pb3.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::AutoSize
-    $pb3.BackColor = [System.Drawing.Color]::Transparent
-    $pb3.Left = ($totalBounds.Width * 3 / 4) - ($pb3.Image.Width / 2)
-    $pb3.Top = ($totalBounds.Height / 2) + 100
-    $form.Controls.Add($pb3)
-}
+# Add GIFs
+Add-BouncingGif "move.gif" ($totalBounds.Width / 2) ($totalBounds.Height / 2)
+Add-BouncingGif "move2.gif" ($totalBounds.Width / 4) ($totalBounds.Height / 2)
+Add-BouncingGif "move3.gif" ($totalBounds.Width * 3 / 4) ($totalBounds.Height / 2)
 
 # Ensure window gets focus
 $form.Add_Shown({ 
@@ -156,6 +152,39 @@ $timer.Add_Tick({
     # Check if Task Manager is open and close it
     $tm = Get-Process -Name Taskmgr -ErrorAction SilentlyContinue
     if ($tm) { Stop-Process -InputObject $tm -Force -ErrorAction SilentlyContinue }
+
+    # Animation Logic (DVD Bounce)
+    $w = $form.ClientSize.Width
+    $h = $form.ClientSize.Height
+
+    foreach ($bg in $script:bouncingGifs) {
+        $pb = $bg.Control
+        
+        # Update position
+        $newX = $pb.Left + $bg.VX
+        $newY = $pb.Top + $bg.VY
+        
+        # Bounce X
+        if ($newX -le 0) {
+            $newX = 0
+            $bg.VX = -($bg.VX)
+        } elseif (($newX + $pb.Width) -ge $w) {
+            $newX = $w - $pb.Width
+            $bg.VX = -($bg.VX)
+        }
+        
+        # Bounce Y
+        if ($newY -le 0) {
+            $newY = 0
+            $bg.VY = -($bg.VY)
+        } elseif (($newY + $pb.Height) -ge $h) {
+            $newY = $h - $pb.Height
+            $bg.VY = -($bg.VY)
+        }
+        
+        $pb.Left = $newX
+        $pb.Top = $newY
+    }
 })
 $timer.Start()
 
@@ -166,7 +195,7 @@ $form.Add_Paint({
     $h = $form.ClientSize.Height
     
     # 1. Static Purple Background
-    $bgColor1 = [System.Drawing.Color]::Purple
+    $bgColor1 = [System.Drawing.Color]::DarkBlue
     $bgColor2 = [System.Drawing.Color]::Black
     
     $rect = New-Object System.Drawing.Rectangle(0, 0, $w, $h)
