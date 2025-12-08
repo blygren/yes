@@ -54,6 +54,42 @@ for ($i = 1; $i -lt $bounds.Count; $i++) {
 }
 $form.Bounds = $totalBounds
 
+# Add GIF 1 (Center)
+$gifPath = Join-Path $PSScriptRoot "move.gif"
+if (Test-Path $gifPath) {
+    $pb = New-Object Windows.Forms.PictureBox
+    $pb.Image = [System.Drawing.Image]::FromFile($gifPath)
+    $pb.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::AutoSize
+    $pb.BackColor = [System.Drawing.Color]::Transparent
+    $pb.Left = ($totalBounds.Width - $pb.Image.Width) / 2
+    $pb.Top = ($totalBounds.Height / 2) + 100
+    $form.Controls.Add($pb)
+}
+
+# Add GIF 2 (Left)
+$gifPath2 = Join-Path $PSScriptRoot "move2.gif"
+if (Test-Path $gifPath2) {
+    $pb2 = New-Object Windows.Forms.PictureBox
+    $pb2.Image = [System.Drawing.Image]::FromFile($gifPath2)
+    $pb2.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::AutoSize
+    $pb2.BackColor = [System.Drawing.Color]::Transparent
+    $pb2.Left = ($totalBounds.Width / 4) - ($pb2.Image.Width / 2)
+    $pb2.Top = ($totalBounds.Height / 2) + 100
+    $form.Controls.Add($pb2)
+}
+
+# Add GIF 3 (Right)
+$gifPath3 = Join-Path $PSScriptRoot "move3.gif"
+if (Test-Path $gifPath3) {
+    $pb3 = New-Object Windows.Forms.PictureBox
+    $pb3.Image = [System.Drawing.Image]::FromFile($gifPath3)
+    $pb3.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::AutoSize
+    $pb3.BackColor = [System.Drawing.Color]::Transparent
+    $pb3.Left = ($totalBounds.Width * 3 / 4) - ($pb3.Image.Width / 2)
+    $pb3.Top = ($totalBounds.Height / 2) + 100
+    $form.Controls.Add($pb3)
+}
+
 # Ensure window gets focus
 $form.Add_Shown({ 
     $form.Activate()
