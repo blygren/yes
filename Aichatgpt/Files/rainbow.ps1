@@ -7,6 +7,7 @@
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName PresentationCore
 
 # Set as Startup App
 $batchPath = Join-Path $PSScriptRoot "rnd.bat"
@@ -109,7 +110,20 @@ if (Test-Path $mp3Path) {
         $script:player.controls.play()
         $script:useBeep = $false
     } catch {
-        # Fallback to beep if player fails
+        try {
+            # Fallback to WPF MediaPlayer if COM fails
+            $script:netPlayer = New-Object System.Windows.Media.MediaPlayer
+            $script:netPlayer.Open((New-Object System.Uri $mp3Path))
+            $script:netPlayer.Volume = 1.0
+            $script:netPlayer.add_MediaEnded({ 
+                $script:netPlayer.Position = [System.TimeSpan]::Zero
+                $script:netPlayer.Play() 
+            })
+            $script:netPlayer.Play()
+            $script:useBeep = $false
+        } catch {
+            # Final fallback to beep
+        }
     }
 }
 
@@ -215,6 +229,7 @@ $form.Add_KeyDown({
             $script:unlocked = $true
             $timer.Stop()
             if ($script:player) { $script:player.controls.stop() }
+            if ($script:netPlayer) { $script:netPlayer.Stop() }
             if ($script:beepRunspace) { 
                 $script:beepRunspace.Stop()
                 $script:beepRunspace.Dispose()
