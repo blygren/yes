@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Toy Ideas for Kids</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 2.5em;
+        }
+
+        .toy-list {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .toy-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ffeaa7, #fab1a0);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.2s;
+        }
+
+        .toy-item:hover {
+            transform: translateX(5px);
+        }
+
+        .toy-number {
+            background: #d63031;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .toy-name {
+            font-size: 1.1em;
+            color: #2d3436;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎄 Christmas Toy Wish List 🎁</h1>
+        <div class="toy-list" id="toyList"></div>
+        <div class="loading" id="loading">Loading more toys...</div>
+    </div>
+
+    <script>
+        const toys = [
+            "LEGO Star Wars Millennium Falcon", "Barbie Dream House", "Hot Wheels Ultimate Garage",
+            "Nintendo Switch", "PlayStation 5", "Xbox Series X", "iPad for Kids",
+            "Remote Control Car", "Drone with Camera", "Electric Scooter", "Hoverboard",
+            "Baby Yoda Plush Toy", "Stuffed Unicorn", "Giant Teddy Bear", "Squishmallows",
+            "Nerf Blaster", "Super Soaker Water Gun", "Laser Tag Set", "Foam Dart Gun",
+            "Play-Doh Kitchen Set", "Slime Making Kit", "DIY Jewelry Kit", "Arts and Crafts Set",
+            "Crayola Art Studio", "Paint by Numbers Kit", "Coloring Book Set", "Modeling Clay",
+            "Monopoly Board Game", "Uno Card Game", "Connect 4", "Jenga Tower Game",
+            "Chess Set", "Scrabble Junior", "Candy Land", "Chutes and Ladders",
+            "Baby Alive Doll", "American Girl Doll", "LOL Surprise Dolls", "Cabbage Patch Kids",
+            "Action Figure Collection", "Superhero Action Figures", "Transformers Toys", "Power Rangers Set",
+            "Science Experiment Kit", "Telescope for Kids", "Microscope Set", "Robot Building Kit",
+            "Coding Robot", "Solar System Model", "Crystal Growing Kit", "Volcano Science Kit",
+            "Trampoline", "Swing Set", "Playhouse", "Slide", "Basketball Hoop",
+            "Bicycle", "Skateboard", "Roller Skates", "Ice Skates", "Pogo Stick",
+            "Karaoke Machine", "Kids Camera", "Walkie Talkies", "Binoculars", "Flashlight Set",
+            "Kinetic Sand", "Moon Sand", "Magic Sand", "Water Beads", "Magnetic Tiles",
+            "Building Blocks Set", "Marble Run", "Domino Rally", "Jenga Giant",
+            "Puzzle 1000 Pieces", "3D Puzzle", "Jigsaw Puzzle Set", "Brain Teaser Puzzles",
+            "Stuffed Animal Zoo", "Beanie Boos", "Webkinz Plush", "Ty Beanie Babies",
+            "Tea Party Set", "Kitchen Play Set", "Tool Bench Toy", "Doctor Kit",
+            "Veterinarian Kit", "Shopping Cart Toy", "Cash Register", "Grocery Store Set",
+            "Train Set", "Racetrack Set", "Construction Vehicles", "Fire Truck Toy",
+            "Police Car Set", "Ambulance Toy", "Airplane Model", "Helicopter Toy",
+            "Pirate Ship Toy", "Castle Playset", "Dinosaur Figures", "Farm Animal Set",
+            "Zoo Animals Collection", "Ocean Creatures Set", "Insect Collection", "Pet Shop Toys",
+            "Musical Keyboard", "Kids Guitar", "Drum Set for Kids", "Xylophone",
+            "Ukulele", "Tambourine", "Maracas", "Harmonica", "Recorder Flute",
+            "Baby Doll with Stroller", "Doll Clothes Set", "Dollhouse Furniture", "Doll Accessories",
+            "RC Helicopter", "RC Boat", "RC Monster Truck", "RC Airplane",
+            "Fidget Spinner", "Fidget Cube", "Pop It Toy", "Simple Dimple",
+            "Rubik's Cube", "Puzzle Cube", "Brain Teaser Toy", "Magic 8 Ball",
+            "Etch A Sketch", "Lite-Brite", "View-Master", "Spirograph",
+            "Lincoln Logs", "Tinker Toys", "K'NEX Building Set", "Mega Bloks",
+            "Playmobil Sets", "Calico Critters", "Shopkins Collection", "Hatchimals",
+            "Furby", "Tamagotchi", "Bop It", "Simon Says Game",
+            "Twister Game", "Operation Game", "Hungry Hungry Hippos", "Mousetrap Game",
+            "Trouble Board Game", "Sorry! Board Game", "Life Board Game", "Clue Junior",
+            "Battleship Game", "Stratego", "Risk Board Game", "Guess Who Game",
+            "Headbanz", "Spot It Card Game", "Slamwich Card Game", "Sleeping Queens",
+            "Coding Board Game", "Rummikub", "Sequence for Kids", "Blokus",
+            "Bounce House", "Water Table", "Sand Table", "Ball Pit",
+            "Kids Tent", "Play Tunnel", "Climbing Dome", "Balance Bike",
+            "Tricycle", "Wagon", "Push Car", "Ride-on Toy",
+            "Electric Car for Kids", "Power Wheels", "Go-Kart", "Pedal Car",
+            "Gardening Kit for Kids", "Bug Catching Kit", "Kite", "Frisbee",
+            "Beach Toys Set", "Snow Toys", "Bubble Machine", "Bubble Wands",
+            "Sidewalk Chalk", "Giant Coloring Poster", "Sticker Books", "Activity Books",
+            "Mad Libs", "Diary with Lock", "Journal Set", "Scrapbook Kit",
+            "Sewing Kit for Kids", "Knitting Set", "Embroidery Kit", "Weaving Loom",
+            "Origami Paper Set", "Stamp Making Kit", "Pottery Wheel", "Clay Sculpting Set",
+            "Face Painting Kit", "Temporary Tattoos", "Hair Chalk", "Nail Art Kit",
+            "Makeup Kit for Kids", "Dress Up Costumes", "Princess Dress", "Superhero Cape",
+            "Pirate Costume", "Ninja Outfit", "Doctor Costume", "Chef Costume",
+            "Smartwatch for Kids", "Kids Headphones", "Bluetooth Speaker", "Night Light Projector",
+            "Alarm Clock for Kids", "Digital Camera", "Instant Camera", "Video Camera",
+            "VR Headset for Kids", "Gaming Headset", "Gaming Chair", "LED Strip Lights",
+            "Lava Lamp", "Glow Sticks", "LED Shoes", "Light Up Toys",
+            "Glow in the Dark Stars", "Planetarium Projector", "Moon Lamp", "Galaxy Projector",
+            "Magic Kit", "Card Tricks Set", "Illusion Tricks", "Disappearing Box",
+            "Puppet Theater", "Hand Puppets", "Marionette Puppet", "Finger Puppets",
+            "Rock Tumbler", "Gemstone Dig Kit", "Fossil Excavation Kit", "Metal Detector",
+            "Fishing Rod for Kids", "Archery Set", "Dart Board", "Ring Toss Game",
+            "Cornhole Set", "Bowling Set", "Mini Golf Set", "Croquet Set",
+            "Badminton Set", "Tennis Racket", "Soccer Ball", "Basketball",
+            "Football", "Baseball Glove", "Hockey Stick", "Volleyball",
+            "Ping Pong Set", "Foosball Table", "Air Hockey Table", "Pool Table",
+            "Bean Bag Toss", "Ladder Ball", "Kan Jam", "Spikeball Set",
+            "Jump Rope", "Hula Hoop", "Stomp Rocket", "Boomerang",
+            "Yo-Yo", "Kendama", "Juggling Balls", "Devil Sticks",
+            "Minecraft Creeper Plush", "Minecraft Steve Action Figure", "Minecraft Diamond Sword",
+            "Minecraft Pickaxe", "Minecraft Building Set", "Minecraft Enderman Figure",
+            "Minecraft LEGO Sets", "Minecraft Bedding Set", "Minecraft Backpack",
+            "Minecraft T-Shirt", "Minecraft Hoodie", "Minecraft Poster", "Minecraft Lamp",
+            "Pokémon Cards Booster Pack", "Pokémon Pikachu Plush", "Pokémon Trading Card Binder",
+            "Pokémon Action Figures", "Pokémon Board Game", "Pokémon Monopoly",
+            "Pokémon Squishmallow", "Pokémon Poster Set", "Pokémon Stickers",
+            "Among Us Plushies", "Among Us Figure Set", "Among Us Board Game",
+            "Roblox Gift Card", "Roblox Action Figures", "Roblox Mystery Box",
+            "Fortnite Action Figures", "Fortnite Nerf Gun", "Fortnite Backpack",
+            "Baby Shark Singing Toy", "Baby Shark Plush", "Baby Shark Bath Toys",
+            "Paw Patrol Rescue Vehicles", "Paw Patrol Lookout Tower", "Paw Patrol Figures",
+            "Spider-Man Web Shooter", "Spider-Man Mask", "Spider-Man Action Figure",
+            "Batman Batmobile", "Batman Cape and Mask", "Batman LEGO Set",
+            "Superman Action Figure", "Wonder Woman Costume", "Iron Man Helmet",
+            "Captain America Shield", "Thor Hammer", "Hulk Smash Hands",
+            "Star Wars Lightsaber", "Star Wars X-Wing Fighter", "Star Wars Baby Yoda",
+            "Disney Princess Castle", "Frozen Elsa Doll", "Frozen Anna Doll",
+            "Elsa Singing Doll", "Olaf Plush Toy", "Mickey Mouse Clubhouse",
+            "Minnie Mouse Bow-tique", "Disney Cars Lightning McQueen", "Mater Tow Truck",
+            "Toy Story Woody Doll", "Toy Story Buzz Lightyear", "Toy Story Rex",
+            "Trolls Poppy Doll", "Trolls Branch Figure", "Trolls Pod",
+            "My Little Pony Set", "My Little Pony Castle", "Rainbow Dash Figure",
+            "Peppa Pig Playhouse", "Peppa Pig Family Figures", "Peppa Pig Car",
+            "Daniel Tiger Trolley", "Daniel Tiger Neighborhood Set", "Daniel Tiger Plush",
+            "Bluey Family Pack", "Bluey Plush Toy", "Bluey House Playset",
+            "Ryan's World Mystery Egg", "Ryan's World Race Car", "Ryan's World Slime Kit",
+            "JoJo Siwa Bow Collection", "JoJo Siwa Doll", "JoJo Siwa Microphone",
+            "LOL Surprise OMG Doll", "LOL Surprise House", "LOL Surprise Pets",
+            "Hatchimals Pixies", "Hatchimals Colleggtibles", "Hatchimals Surprise",
+            "Fingerlings Monkey", "Fingerlings Unicorn", "Fingerlings T-Rex",
+            "FurReal Friends Dog", "FurReal Friends Cat", "FurReal Friends Dragon",
+            "Little Live Pets Bird", "Little Live Pets Puppy", "Little Live Pets Turtle",
+            "Zuru Pets Alive", "Zuru Smashers", "Zuru 5 Surprise",
+            "Magic Mixies Cauldron", "Magic Mixies Crystal Ball", "Magic Mixies Potion",
+            "Treasure X Aliens", "Treasure X Dragons", "Treasure X Ninja",
+            "Hot Wheels Track Builder", "Hot Wheels Criss Cross Crash", "Hot Wheels Loop",
+            "Matchbox Car Wash", "Matchbox Construction Site", "Matchbox Airport",
+            "Tonka Dump Truck", "Tonka Bulldozer", "Tonka Crane",
+            "Bruder Construction Vehicles", "Bruder Farm Tractor", "Bruder Garbage Truck",
+            "Green Toys Fire Truck", "Green Toys Dump Truck", "Green Toys Recycling Truck",
+            "Melissa & Doug Wooden Puzzles", "Melissa & Doug Kitchen Set", "Melissa & Doug Tool Set",
+            "Fisher-Price Little People", "Fisher-Price Laugh & Learn", "Fisher-Price Rock-a-Stack",
+            "VTech Learning Tablet", "VTech Kidizoom Camera", "VTech Smart Watch",
+            "LeapFrog LeapPad", "LeapFrog Learning Friends", "LeapFrog Letter Factory",
+            "Osmo Genius Kit", "Osmo Coding Kit", "Osmo Pizza Co Game",
+            "Sphero Robot Ball", "Sphero R2-D2", "Sphero BB-8",
+            "Anki Cozmo Robot", "Anki Vector Robot", "Anki Overdrive",
+            "Lego Technic Bugatti", "Lego Creator House", "Lego City Police Station",
+            "Lego Friends Heartlake City", "Lego Harry Potter Hogwarts", "Lego Disney Castle",
+            "Lego Ninjago Dragon", "Lego Marvel Avengers Tower", "Lego Architecture Set",
+            "Magna-Tiles Clear Colors", "Magna-Tiles Metropolis", "Magna-Tiles Xtras",
+            "Tegu Magnetic Blocks", "PicassoTiles 3D Building", "Magformers Construction Set",
+            "Playstix Building Set", "Zoob Building Set", "Gears! Gears! Gears!",
+            "Snap Circuits Jr", "Snap Circuits Extreme", "Snap Circuits Light",
+            "LittleBits Electronics Kit", "Arduino Starter Kit", "Raspberry Pi Kit",
+            "LEGO Boost Robot", "LEGO Mindstorms", "LEGO WeDo 2.0",
+            "Thames & Kosmos Chemistry Set", "National Geographic Rock Tumbler", "4M Crystal Growing",
+            "GeoSafari Microscope", "Learning Resources Science Set", "Educational Insights Robot",
+            "Artie 3000 Coding Robot", "Dash Robot", "Botley Coding Robot",
+            "Cubetto Coding Toy", "Bee-Bot Robot", "Blue-Bot Robot",
+            "Ozobot Evo", "Ozobot Bit", "Ozobot Color Codes",
+            "Kano Computer Kit", "Kano Harry Potter Wand", "Kano Pixel Kit",
+            "Makeblock mBot", "Makeblock Codey Rocky", "Makeblock Ultimate 2.0",
+            "Wonder Workshop Cue", "Wonder Workshop Dot", "Wonder Workshop Sketch Kit",
+            "Thinkfun Gravity Maze", "Thinkfun Rush Hour", "Thinkfun Code Master",
+            "Ravensburger Gravitrax", "Ravensburger Labyrinth", "Ravensburger Memory",
+            "Perplexus Original", "Perplexus Epic", "Perplexus Rebel",
+            "Brio Train Set", "Brio Railway", "Brio Parking Garage",
+            "Thomas & Friends Trackmaster", "Thomas & Friends Wooden Railway", "Thomas Engine",
+            "Chuggington Die-Cast", "Chuggington Train Set", "Chuggington Station",
+            "Disney Pixar Cars Track", "Cars 3 Lightning McQueen", "Cars Race Track",
+            "Teenage Mutant Ninja Turtles", "TMNT Leonardo Figure", "TMNT Turtle Lair",
+            "Power Rangers Megazord", "Power Rangers Morpher", "Power Rangers Figures Set",
+            "Ben 10 Omnitrix", "Ben 10 Action Figures", "Ben 10 Rustbucket",
+            "Sonic the Hedgehog Figure", "Sonic Race Track", "Sonic Plush Collection",
+            "Mario Kart RC Racer", "Super Mario Figure", "Mario Question Block",
+            "Luigi's Mansion Playset", "Princess Peach Castle", "Bowser Action Figure",
+            "Donkey Kong Barrel Blast", "Yoshi Egg Hunt", "Toad Treasure Tracker",
+            "Legend of Zelda Link Figure", "Master Sword Replica", "Hylian Shield",
+            "Animal Crossing Isabelle", "Animal Crossing Tom Nook", "Animal Crossing Villagers",
+            "Kirby Plush", "Kirby Figure", "Kirby Star Wand",
+            "Splatoon Inkling Figure", "Splatoon Weapon Set", "Splatoon Amiibo",
+            "Pac-Man Arcade Game", "Pac-Man Figure", "Pac-Man Ghost Plush",
+            "Angry Birds Plush", "Angry Birds Slingshot", "Angry Birds Board Game",
+            "Plants vs Zombies Figures", "Plants vs Zombies Plush", "PvZ Board Game",
+            "Five Nights at Freddy's Plush", "FNAF Action Figures", "FNAF Poster",
+            "Bendy and the Ink Machine", "Bendy Plush", "Bendy Figure Set",
+            "Hello Neighbor Figure", "Hello Neighbor House", "Hello Neighbor Plush",
+            "Cuphead Figure", "Cuphead Plush", "Mugman Figure",
+            "Undertale Sans Plush", "Undertale Papyrus", "Undertale Figures",
+            "Deltarune Ralsei Plush", "Deltarune Susie", "Deltarune Lancer",
+            "Stardew Valley Plush", "Stardew Valley Figures", "Stardew Valley Poster",
+            "Fall Guys Plush", "Fall Guys Figure", "Fall Guys Bean Costume",
+            "Huggy Wuggy Plush", "Poppy Playtime Figures", "Mommy Long Legs",
+            "Rainbow Friends Plush", "Rainbow Friends Blue", "Rainbow Friends Purple",
+            "Siren Head Figure", "SCP Foundation Figures", "Cartoon Cat Plush",
+            "Piggy Roblox Plush", "Piggy Roblox Figures", "Mr. P Piggy",
+            "Doors Roblox Figure", "Eyes Roblox", "Seek Roblox Figure",
+            "Adopt Me Pets Plush", "Adopt Me Dragon", "Adopt Me Unicorn",
+            "Brookhaven Roblox", "Bloxburg House Set", "Arsenal Roblox Figures",
+            "Jailbreak Roblox", "Murder Mystery 2", "Tower of Hell Figure",
+            "Flee the Facility", "Natural Disaster Survival", "Zombie Attack",
+            "Build a Boat", "Super Hero Tycoon", "Restaurant Tycoon",
+            "Dragon Ball Z Figures", "Goku Action Figure", "Vegeta Figure",
+            "Naruto Action Figure", "Naruto Headband", "Sasuke Figure",
+            "One Piece Luffy Figure", "One Piece Straw Hat", "Zoro Swords",
+            "My Hero Academia Deku", "All Might Figure", "Bakugo Figure",
+            "Attack on Titan Eren", "Levi Ackerman Figure", "Attack on Titan Sword",
+            "Demon Slayer Tanjiro", "Nezuko Figure", "Demon Slayer Sword",
+            "Spy x Family Anya", "Loid Forger Figure", "Yor Forger Figure",
+            "Chainsaw Man Pochita", "Denji Figure", "Power Figure",
+            "Jujutsu Kaisen Yuji", "Gojo Satoru Figure", "Megumi Figure",
+            "Tokyo Ghoul Kaneki", "Tokyo Ghoul Mask", "Touka Figure",
+            "Death Note Light Figure", "Death Note Book Replica", "L Figure",
+            "Fullmetal Alchemist Edward", "Alphonse Figure", "Roy Mustang Figure",
+            "Sword Art Online Kirito", "Asuna Figure", "SAO Sword",
+            "Hunter x Hunter Gon", "Killua Figure", "Hisoka Figure",
+            "Bleach Ichigo Figure", "Bleach Zanpakuto", "Rukia Figure",
+            "Cowboy Bebop Spike", "Faye Valentine Figure", "Ein Corgi Plush",
+            "Neon Genesis Evangelion Unit-01", "Rei Figure", "Asuka Figure",
+            "Sailor Moon Figure", "Sailor Moon Wand", "Sailor Scouts Set",
+            "Cardcaptor Sakura", "Clow Cards Set", "Kero-chan Plush",
+            "Pokemon Scarlet and Violet", "Sprigatito Plush", "Fuecoco Plush",
+            "Quaxly Plush", "Koraidon Figure", "Miraidon Figure",
+            "Eeveelutions Set", "Umbreon Plush", "Sylveon Plush",
+            "Mimikyu Plush", "Snorlax Bean Bag", "Gengar Figure",
+            "Charizard Figure", "Mewtwo Figure", "Lucario Plush",
+            "Garchomp Figure", "Dragonite Plush", "Gyarados Figure",
+            "Legendary Pokemon Set", "Arceus Figure", "Dialga and Palkia",
+            "Giratina Figure", "Rayquaza Figure", "Kyogre and Groudon",
+            "Solgaleo and Lunala", "Zacian and Zamazenta", "Eternatus Figure",
+            "Calyrex Figure", "Galarian Articuno", "Galarian Zapdos",
+            "Hisuian Zorua", "Hisuian Growlithe", "Hisuian Typhlosion",
+            "Squirtle Squad Sunglasses", "Team Rocket Costume", "Ash Hat",
+            "Pokeball Plus", "Pokemon GO Plus", "Pokemon Rotom Phone",
+            "Beyblade Burst Stadium", "Beyblade Launcher", "Beyblade Collection",
+            "Yu-Gi-Oh Cards", "Yu-Gi-Oh Duel Disk", "Blue-Eyes White Dragon",
+            "Magic The Gathering Cards", "MTG Deck Box", "MTG Playmat",
+            "Digimon Cards", "Digimon Digivice", "Agumon Plush",
+            "Bakugan Battle Brawlers", "Bakugan Arena", "Bakugan Collection",
+            "Nanoblock Pokemon", "Nanoblock Mario", "Nanoblock Architecture",
+            "Funko Pop Marvel", "Funko Pop DC", "Funko Pop Disney",
+            "Funko Pop Star Wars", "Funko Pop Harry Potter", "Funko Pop Anime",
+            "Funko Pop Games", "Funko Pop Movies", "Funko Pop TV Shows",
+            "Squishmallows Axolotl", "Squishmallows Dragon", "Squishmallows Cat",
+            "Squishmallows Dog", "Squishmallows Cow", "Squishmallows Frog",
+            "Squishmallows Octopus", "Squishmallows Narwhal", "Squishmallows Mushroom",
+            "Jellycats Bashful Bunny", "Jellycats Amuseable Cloud", "Jellycats Dragon",
+            "Build-A-Bear Workshop", "Build-A-Bear Pokemon", "Build-A-Bear Disney",
+            "Gund Teddy Bear", "Gund Snuffles Bear", "Gund Baby Collection",
+            "Aurora World Plush", "Aurora YooHoo", "Aurora Miyoni",
+            "Ty Flippables", "Ty Teenie Beanies", "Ty Squish-A-Boos",
+            "Minecraft Ender Dragon Figure", "Minecraft TNT Block", "Minecraft Alex Doll",
+            "Minecraft Skeleton Figure", "Minecraft Zombie Figure", "Minecraft Spider",
+            "Minecraft Cave Set", "Minecraft Nether Portal", "Minecraft Crafting Table",
+            "Minecraft Diamond Armor Set", "Minecraft Netherite Sword", "Minecraft Bow and Arrow",
+            "Minecraft Axe Replica", "Minecraft Torch Light", "Minecraft Chest Storage",
+            "Among Us Crewmate Red", "Among Us Impostor Black", "Among Us Emergency Meeting",
+            "Roblox Brookhaven RP", "Roblox MeepCity Figure", "Roblox Rainbow Friends",
+            "Sonic Tails Plush", "Sonic Knuckles Figure", "Sonic Shadow Figure",
+            "Sonic Amy Rose Doll", "Sonic Dr. Eggman", "Sonic Chaos Emeralds",
+            "Kirby Waddle Dee", "Kirby Meta Knight", "Kirby King Dedede",
+            "Mario Boo Ghost", "Mario Shy Guy", "Mario Goomba",
+            "Mario Koopa Troopa", "Mario Piranha Plant", "Mario 1-Up Mushroom",
+            "Zelda Sheikah Slate", "Zelda Ocarina", "Zelda Triforce Lamp",
+            "Pokemon Eevee Plush", "Pokemon Mew Plush", "Pokemon Ditto Plush",
+            "Pokemon Bulbasaur Plush", "Pokemon Charmander Plush", "Pokemon Squirtle Plush",
+            "Pokemon Jigglypuff Plush", "Pokemon Togepi Plush", "Pokemon Psyduck Plush",
+            "Pokemon Mudkip Plush", "Pokemon Torchic Plush", "Pokemon Treecko Plush",
+            "Pokemon Piplup Plush", "Pokemon Chimchar Plush", "Pokemon Turtwig Plush",
+            "Pokemon Oshawott Plush", "Pokemon Tepig Plush", "Pokemon Snivy Plush",
+            "Pokemon Fennekin Plush", "Pokemon Froakie Plush", "Pokemon Chespin Plush",
+            "Pokemon Rowlet Plush", "Pokemon Litten Plush", "Pokemon Popplio Plush",
+            "Pokemon Grookey Plush", "Pokemon Scorbunny Plush", "Pokemon Sobble Plush",
+            "Squishmallows Avery Duck", "Squishmallows Wendy Frog", "Squishmallows Connor Cow",
+            "Squishmallows Cam Cat", "Squishmallows Benny Bigfoot", "Squishmallows Malcolm Mushroom",
+            "Squishmallows Cressida Crab", "Squishmallows Gordon Shark", "Squishmallows Violet Octopus",
+            "Squishmallows Babs Bird", "Squishmallows Austin Avocado", "Squishmallows Brooke Polar Bear",
+            "Harry Potter Wand Collection", "Harry Potter Sorting Hat", "Harry Potter Time Turner",
+            "Harry Potter Golden Snitch", "Harry Potter Marauder's Map", "Harry Potter Patronus",
+            "Harry Potter Hedwig Plush", "Harry Potter Dobby Figure", "Harry Potter Buckbeak",
+            "Harry Potter Nimbus 2000", "Harry Potter Firebolt", "Harry Potter Chocolate Frog",
+            "Harry Potter Bertie Bott's Beans", "Harry Potter Cauldron", "Harry Potter Potion Kit",
+            "Teenage Mutant Ninja Turtles Raphael", "TMNT Donatello", "TMNT Michelangelo",
+            "TMNT Splinter Figure", "TMNT Shredder Figure", "TMNT April O'Neil",
+            "Transformers Optimus Prime", "Transformers Bumblebee", "Transformers Megatron",
+            "Transformers Starscream", "Transformers Grimlock", "Transformers Soundwave",
+            "Avengers Captain Marvel", "Avengers Black Widow", "Avengers Hawkeye",
+            "Avengers Ant-Man", "Avengers Wasp", "Avengers Doctor Strange",
+            "Avengers Scarlet Witch", "Avengers Vision", "Avengers Falcon",
+            "Avengers Winter Soldier", "Avengers War Machine", "Avengers Black Panther",
+            "Justice League Flash", "Justice League Aquaman", "Justice League Cyborg",
+            "Justice League Green Lantern", "Justice League Martian Manhunter", "Justice League Shazam",
+            "X-Men Wolverine Claws", "X-Men Cyclops Visor", "X-Men Storm Figure",
+            "X-Men Jean Grey", "X-Men Professor X", "X-Men Magneto Helmet",
+            "Guardians of the Galaxy Groot", "Guardians Rocket Raccoon", "Guardians Star-Lord",
+            "Guardians Gamora", "Guardians Drax", "Guardians Mantis",
+            "Toy Story Forky", "Toy Story Bo Peep", "Toy Story Slinky Dog",
+            "Toy Story Hamm", "Toy Story Mr. Potato Head", "Toy Story Alien",
+            "Finding Nemo Dory Plush", "Finding Nemo Crush Turtle", "Finding Nemo Bruce Shark",
+            "Incredibles Mr. Incredible", "Incredibles Elastigirl", "Incredibles Dash",
+            "Incredibles Violet", "Incredibles Jack-Jack", "Incredibles Edna Mode",
+            "Monsters Inc Mike Wazowski", "Monsters Inc Sulley", "Monsters Inc Boo",
+            "Cars Mater", "Cars Sally", "Cars Doc Hudson",
+            "Cars Cruz Ramirez", "Cars Jackson Storm", "Cars Chick Hicks",
+            "Frozen Kristoff Doll", "Frozen Sven Reindeer", "Frozen Marshmallow",
+            "Frozen Hans Figure", "Frozen Bruni Salamander", "Frozen Nokk Water Spirit",
+            "Encanto Mirabel Doll", "Encanto Bruno Figure", "Encanto Isabela Doll",
+            "Encanto Luisa Doll", "Encanto Antonio Figure", "Encanto Casita House",
+            "Moana Figure", "Moana Maui Figure", "Moana Hei Hei Plush",
+            "Moana Pua Pig Plush", "Moana Te Fiti", "Moana Boat Set",
+            "Tangled Rapunzel Doll", "Tangled Flynn Rider", "Tangled Pascal Plush",
+            "Tangled Maximus Horse", "Tangled Tower Playset", "Tangled Magic Hair",
+            "Little Mermaid Ariel Doll", "Little Mermaid Flounder", "Little Mermaid Sebastian",
+            "Little Mermaid Ursula", "Little Mermaid Prince Eric", "Little Mermaid Grotto",
+            "Beauty and Beast Belle", "Beauty and Beast Beast", "Beauty and Beast Lumiere",
+            "Beauty and Beast Cogsworth", "Beauty and Beast Mrs. Potts", "Beauty and Beast Chip",
+            "Aladdin Genie Figure", "Aladdin Jasmine Doll", "Aladdin Magic Carpet",
+            "Aladdin Abu Monkey", "Aladdin Jafar Figure", "Aladdin Magic Lamp",
+            "Lion King Simba Plush", "Lion King Nala Plush", "Lion King Timon",
+            "Lion King Pumbaa", "Lion King Mufasa", "Lion King Scar Figure",
+            "Mulan Warrior Doll", "Mulan Mushu Dragon", "Mulan Cri-Kee Cricket",
+            "Pocahontas Doll", "Pocahontas Meeko Raccoon", "Pocahontas Flit Bird",
+            "Cinderella Doll", "Cinderella Glass Slipper", "Cinderella Pumpkin Carriage",
+            "Cinderella Gus Mouse", "Cinderella Jaq Mouse", "Cinderella Fairy Godmother",
+            "Snow White Doll", "Snow White Seven Dwarfs", "Snow White Poison Apple",
+            "Sleeping Beauty Aurora", "Sleeping Beauty Maleficent", "Sleeping Beauty Dragon",
+            "Princess Tiana Doll", "Princess Tiana Frog", "Princess Tiana Restaurant",
+            "Brave Merida Doll", "Brave Angus Horse", "Brave Bear Brothers",
+            "Sonic Eggman Robot", "Sonic Chao Garden", "Sonic Chaos Control",
+            "Sonic Super Sonic Figure", "Sonic Blaze the Cat", "Sonic Silver Hedgehog",
+            "Naruto Kakashi Figure", "Naruto Sakura Figure", "Naruto Hinata Figure",
+            "Naruto Shikamaru Figure", "Naruto Gaara Figure", "Naruto Itachi Figure",
+            "Naruto Jiraiya Figure", "Naruto Tsunade Figure", "Naruto Orochimaru",
+            "Dragon Ball Piccolo", "Dragon Ball Gohan Figure", "Dragon Ball Trunks",
+            "Dragon Ball Bulma Figure", "Dragon Ball Frieza", "Dragon Ball Cell",
+            "Dragon Ball Majin Buu", "Dragon Ball Beerus", "Dragon Ball Whis",
+            "One Piece Nami Figure", "One Piece Sanji Figure", "One Piece Chopper Plush",
+            "One Piece Usopp Figure", "One Piece Robin Figure", "One Piece Franky",
+            "One Piece Brook Figure", "One Piece Jinbe", "One Piece Ace Figure",
+            "My Hero Academia Todoroki", "My Hero Academia Ochaco", "My Hero Academia Iida",
+            "My Hero Academia Kirishima", "My Hero Academia Momo", "My Hero Academia Aizawa",
+            "My Hero Academia Shigaraki", "My Hero Academia Dabi", "My Hero Academia Toga",
+            "Demon Slayer Zenitsu", "Demon Slayer Inosuke", "Demon Slayer Kanao",
+            "Demon Slayer Muzan", "Demon Slayer Rengoku", "Demon Slayer Tengen",
+            "Attack on Titan Mikasa", "Attack on Titan Armin", "Attack on Titan Erwin",
+            "Attack on Titan Hange", "Attack on Titan Reiner", "Attack on Titan Annie"
+        ];
+
+        let currentIndex = 0;
+        const itemsPerLoad = 20;
+        let isLoading = false;
+
+        function loadMoreToys() {
+            if (isLoading) return;
+            isLoading = true;
+
+            const toyList = document.getElementById('toyList');
+            const loading = document.getElementById('loading');
+            
+            loading.style.display = 'block';
+
+            setTimeout(() => {
+                const fragment = document.createDocumentFragment();
+                
+                for (let i = 0; i < itemsPerLoad; i++) {
+                    if (currentIndex >= toys.length) {
+                        currentIndex = 0; // Loop back to start
+                    }
+                    
+                    const item = document.createElement('div');
+                    item.className = 'toy-item';
+                    item.innerHTML = `
+                        <div class="toy-number">${currentIndex + 1}</div>
+                        <div class="toy-name">${toys[currentIndex]}</div>
+                    `;
+                    fragment.appendChild(item);
+                    currentIndex++;
+                }
+                
+                toyList.appendChild(fragment);
+                loading.style.display = 'none';
+                isLoading = false;
+            }, 500);
+        }
+
+        // Initial load
+        loadMoreToys();
+
+        // Infinite scroll
+        window.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            
+            if (scrollTop + clientHeight >= scrollHeight - 100) {
+                loadMoreToys();
+            }
+        });
+    </script>
+</body>
+</html>
