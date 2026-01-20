@@ -9,7 +9,31 @@
 	<link rel="stylesheet" href="styles.css">
 </head>
 <body>
+	<nav class="topbar">
+		<div class="container topbar-content">
+			<a href="index.html" class="topbar-logo">🥛 Falling Milk</a>
+			<ul class="topbar-links">
+				<li><a href=""></a></li>
+				<li><a href="#gallery">Gallery</a></li>
+				<li><a href="https://milkcoder.itch.io/milksimulator" target="_blank">Play</a></li>
+			</ul>
+		</div>
+	</nav>
+
 	<div class="milk-rain" id="milkRain"></div>
+	
+	<!-- Jeff the Guide -->
+	<div class="guide-container" id="guideContainer">
+		<div class="guide-character">
+			<div class="guide-nametag">Jeff</div>
+			<img src="assets/milk.png" alt="Jeff the Milk Guide" class="guide-image">
+		</div>
+		<div class="guide-speech" id="guideSpeech">
+			<p id="guideText">Hello! I'm Jeff, your milk guide! 🥛</p>
+			<div class="guide-options" id="guideOptions"></div>
+			<button class="guide-close" id="guideClose">×</button>
+		</div>
+	</div>
 	
 	<header class="site-header">
 		<div class="container">
@@ -147,5 +171,6 @@
 	
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 	<script src="milk-animation.js"></script>
+	<script src="guide.js"></script>
 </body>
 </html>
